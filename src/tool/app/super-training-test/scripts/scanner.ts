@@ -1,0 +1,292 @@
+(function () {
+  const Config = window.SuperTraining.Config;
+  const Utils = window.SuperTraining.Utils;
+
+  function readWorkbookFile(file) {
+    if (!window.XLSX) {
+      throw new Error("未加载 XLSX 库，无法读取 Excel 文件。");
+    }
+    return file.arrayBuffer().then((buffer) => window.XLSX.read(buffer, {
+      type: "array",
+      cellDates: false,
+      cellFormula: true,
+      cellNF: true,
+      cellStyles: true
+    }));
+  }
+
+  function sheetToMatrix(sheet): SuperTrainingSheetRow["cells"][] {
+    return window.XLSX.utils.sheet_to_json(sheet, {
+      header: 1,
+      raw: true,
+      defval: null,
+      blankrows: false
+    }) as SuperTrainingSheetRow["cells"][];
+  }
+
+  function readSheetInfo(workbook, sheetName) {
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) {
+      throw new Error(`未找到工作表：${sheetName}`);
+    }
+
+    const matrix = sheetToMatrix(sheet);
+    const headers = (matrix[0] || []).map((item) => Utils.normalizeText(item));
+    const headerMap = Utils.buildHeaderMap(headers);
+    const rows = matrix.slice(1)
+      .map((cells, index) => ({
+        rowNumber: index + 2,
+        cells: [...cells]
+      }))
+      .filter((row) => row.cells.some((value) => Utils.hasMeaningfulValue(value)));
+
+    return {
+      name: sheetName,
+      sheet,
+      matrix,
+      headers,
+      headerMap,
+      rows
+    };
+  }
+
+  function findSheetName(workbook, candidates) {
+    const normalizedCandidates = new Set(
+      candidates
+        .map((name) => Utils.normalizeText(name).replace(/\s+/g, ""))
+        .filter(Boolean)
+    );
+
+    for (const sheetName of workbook.SheetNames) {
+      const normalizedSheetName = Utils.normalizeText(sheetName).replace(/\s+/g, "");
+      if (normalizedCandidates.has(normalizedSheetName)) {
+        return sheetName;
+      }
+    }
+    return "";
+  }
+
+  function resolvePeopleSheetName(workbook) {
+    if (workbook.Sheets[Config.PEOPLE_SHEET_NAME]) {
+      return Config.PEOPLE_SHEET_NAME;
+    }
+
+    for (const sheetName of workbook.SheetNames) {
+      if (Config.IGNORED_SHEET_NAMES.has(sheetName)) continue;
+      const info = readSheetInfo(workbook, sheetName);
+      const hasRequiredHeaders = Config.REQUIRED_PEOPLE_HEADERS.every(
+        (header) => info.headerMap.has(header)
+      );
+      if (hasRequiredHeaders) {
+        return sheetName;
+      }
+    }
+
+    throw new Error("未识别到人员信息表，至少需要包含“员工号”和“姓名”表头。");
+  }
+
+  function ensureRequiredHeaders(sheetInfo, requiredHeaders, label) {
+    const missing = requiredHeaders.filter((header) => !sheetInfo.headerMap.has(header));
+    if (missing.length) {
+      throw new Error(`${label}缺少必要表头：${missing.join("、")}。`);
+    }
+  }
+
+  function extractMonthKeys(sheetInfo) {
+    const months = new Set();
+    sheetInfo.rows.forEach((row) => {
+      const startMonth = Utils.toMonthKey(Utils.getValueByHeader(row, sheetInfo, "培训开始日期"));
+      const endMonth = Utils.toMonthKey(Utils.getValueByHeader(row, sheetInfo, "培训结束日期"));
+      if (startMonth) months.add(startMonth);
+      else if (endMonth) months.add(endMonth);
+    });
+    return Utils.sortMonthKeys([...months]);
+  }
+
+  function buildPeopleIndex(peopleInfo) {
+    const byName = new Map();
+    const byId = new Map();
+    const nameIndex = Utils.findHeaderIndex(peopleInfo, "姓名");
+    const employeeIndex = Utils.findHeaderIndex(peopleInfo, "员工号");
+
+    peopleInfo.rows.forEach((row, index) => {
+      const name = Utils.normalizeText(row.cells[nameIndex]);
+      const employeeId = Utils.normalizeText(row.cells[employeeIndex]);
+
+      if (name) {
+        const current = byName.get(name) || [];
+        current.push(index);
+        byName.set(name, current);
+      }
+
+      if (employeeId) {
+        const current = byId.get(employeeId) || [];
+        current.push(index);
+        byId.set(employeeId, current);
+      }
+    });
+
+    return {
+      employeeColumnIndex: employeeIndex,
+      nameColumnIndex: nameIndex,
+      byName,
+      byId
+    };
+  }
+
+  function createSheetSlice(sheetInfo, rows) {
+    const sampleRowNumber = rows.length
+      ? rows[0].rowNumber
+      : (sheetInfo.rows.length ? sheetInfo.rows[0].rowNumber : 2);
+
+    return {
+      ...sheetInfo,
+      rows,
+      sampleRowNumber
+    };
+  }
+
+  function splitProjectRowsByRecordedStatus(sheetInfo) {
+    const recordedRows = [];
+    const pendingRows = [];
+
+    sheetInfo.rows.forEach((row) => {
+      const infoEntered = Utils.normalizeText(
+        Utils.getValueByHeader(row, sheetInfo, "培训信息是否录入")
+      ) === "是";
+      if (infoEntered) {
+        recordedRows.push(row);
+        return;
+      }
+      pendingRows.push(row);
+    });
+
+    return { recordedRows, pendingRows };
+  }
+
+  function collectPendingDefaults(rows, sheetInfo) {
+    const defaults = {};
+    rows.forEach((row) => {
+      sheetInfo.headers.forEach((header) => {
+        if (!header || Config.DYNAMIC_SCHEDULE_HEADERS.has(header)) return;
+        if (Utils.hasMeaningfulValue(defaults[header])) return;
+        const value = Utils.getValueByHeader(row, sheetInfo, header);
+        if (!Utils.hasMeaningfulValue(value)) return;
+        defaults[header] = value;
+      });
+    });
+    return defaults;
+  }
+
+  function buildPendingDefaultsByMonth(pendingInfo) {
+    const grouped = new Map();
+    pendingInfo.rows.forEach((row) => {
+      const monthKey = Utils.toMonthKey(
+        Utils.getValueByHeader(row, pendingInfo, "培训开始日期")
+        || Utils.getValueByHeader(row, pendingInfo, "培训结束日期")
+      );
+      if (!monthKey) return;
+      const bucket = grouped.get(monthKey) || [];
+      bucket.push(row);
+      grouped.set(monthKey, bucket);
+    });
+
+    const result = new Map();
+    grouped.forEach((rows, monthKey) => {
+      result.set(monthKey, collectPendingDefaults(rows, pendingInfo));
+    });
+    return result;
+  }
+
+  function buildPendingSessionsByMonth(pendingInfo) {
+    const sessions = new Map();
+    pendingInfo.rows.forEach((row) => {
+      const startDate = Utils.parseDate(Utils.getValueByHeader(row, pendingInfo, "培训开始日期"));
+      const endDate = Utils.parseDate(Utils.getValueByHeader(row, pendingInfo, "培训结束日期"));
+      const monthKey = Utils.toMonthKey(startDate || endDate);
+      if (!monthKey) return;
+
+      const key = `${Utils.formatDate(startDate)}|${Utils.formatDate(endDate)}`;
+      const bucket = sessions.get(monthKey) || [];
+      if (!bucket.some((item) => item.key === key)) {
+        bucket.push({
+          key,
+          startDate,
+          endDate
+        });
+      }
+      sessions.set(monthKey, bucket);
+    });
+    return sessions;
+  }
+
+  function buildProjectInfo(workbook, peopleInfo, rule) {
+    const peopleColumnIndex = peopleInfo.headers.findIndex(
+      (header) => Utils.normalizeProjectName(header) === rule.canonical
+    );
+    const sheetName = findSheetName(workbook, [rule.canonical, ...rule.aliases]);
+
+    if (!sheetName) {
+      return null;
+    }
+
+    const sheetInfo = readSheetInfo(workbook, sheetName);
+    ensureRequiredHeaders(sheetInfo, Config.REQUIRED_PROJECT_HEADERS, `${rule.canonical}项目 sheet`);
+
+    const { recordedRows, pendingRows } = splitProjectRowsByRecordedStatus(sheetInfo);
+    const recordedInfo = createSheetSlice(sheetInfo, recordedRows);
+    const pendingInfo = createSheetSlice(sheetInfo, pendingRows);
+    const recordedMonths = extractMonthKeys(recordedInfo);
+    const pendingMonths = extractMonthKeys(pendingInfo);
+
+    return {
+      canonical: rule.canonical,
+      rule,
+      peopleColumnIndex,
+      peopleHeader: peopleColumnIndex >= 0 ? peopleInfo.headers[peopleColumnIndex] : "",
+      sheetName,
+      sheetInfo,
+      recordedInfo,
+      pendingInfo,
+      recordedRowCount: recordedRows.length,
+      pendingRowCount: pendingRows.length,
+      recordedMonths,
+      pendingMonths,
+      availableMonths: Utils.sortMonthKeys([...recordedMonths, ...pendingMonths]),
+      pendingDefaultsByMonth: buildPendingDefaultsByMonth(pendingInfo),
+      pendingGlobalDefaults: collectPendingDefaults(pendingInfo.rows, pendingInfo),
+      pendingSessionsByMonth: buildPendingSessionsByMonth(pendingInfo)
+    };
+  }
+
+  function analyzeWorkbook(workbook) {
+    const peopleSheetName = resolvePeopleSheetName(workbook);
+    const peopleInfo = readSheetInfo(workbook, peopleSheetName);
+    ensureRequiredHeaders(peopleInfo, Config.REQUIRED_PEOPLE_HEADERS, "人员信息表");
+
+    const peopleIndex = buildPeopleIndex(peopleInfo);
+    const projects = Config.PROJECT_RULES
+      .map((rule) => buildProjectInfo(workbook, peopleInfo, rule))
+      .filter(Boolean);
+
+    const projectMap = new Map(projects.map((project) => [project.canonical, project]));
+    const availableMonths = Utils.sortMonthKeys(projects.flatMap((project) => project.availableMonths));
+
+    return {
+      peopleInfo,
+      peopleIndex,
+      projects,
+      projectMap,
+      availableMonths,
+      sheetNames: [...workbook.SheetNames]
+    };
+  }
+
+  window.SuperTraining.Scanner = {
+    readWorkbookFile,
+    readSheetInfo,
+    findSheetName,
+    resolvePeopleSheetName,
+    analyzeWorkbook
+  };
+})();

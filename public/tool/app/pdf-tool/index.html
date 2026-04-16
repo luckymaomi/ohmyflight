@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF工具箱</title>
+    <link rel="stylesheet" href="../../../libs/bootstrap.min.css">
+    <style>
+        body { background: transparent; padding: 20px; }
+        .container { max-width: 1200px; }
+        .nav-tabs .nav-link { cursor: pointer; }
+        .upload-area { border: 2px dashed #dee2e6; border-radius: 8px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 15px; }
+        .upload-area:hover, .upload-area.dragover { border-color: #0d6efd; background: #f8f9fa; }
+        .upload-area input { display: none; }
+        .file-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; margin-bottom: 8px; }
+        .file-item .drag-handle { cursor: move; color: #999; }
+        .file-item .file-info { flex: 1; min-width: 0; }
+        .file-item .file-name { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-item .file-meta { font-size: 12px; color: #666; }
+        .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 15px; }
+        .preview-page { border: 2px solid #dee2e6; border-radius: 4px; overflow: hidden; cursor: pointer; transition: all 0.15s; }
+        .preview-page:hover { transform: scale(1.02); }
+        .preview-page.selected { border-color: #0d6efd; background: #e7f1ff; }
+        .preview-page canvas { width: 100%; display: block; }
+        .preview-page .page-label { text-align: center; padding: 4px; font-size: 12px; background: #f8f9fa; }
+        .result-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 15px; }
+        .result-item { border: 1px solid #dee2e6; border-radius: 4px; overflow: hidden; }
+        .result-item img { width: 100%; display: block; }
+        .result-item .item-footer { padding: 8px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .status-bar { padding: 10px 15px; background: #e7f1ff; border-radius: 4px; margin: 10px 0; }
+        .status-bar.error { background: #f8d7da; color: #842029; }
+        .hidden { display: none !important; }
+        .extract-file-card { border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #fff; }
+        .extract-file-card .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #dee2e6; }
+        .extract-file-card .card-header .file-title { flex: 1; font-weight: 500; }
+        .extract-file-card .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card mb-3">
+        <div class="card-body text-center position-relative py-2">
+            <a href="../../../index.html" class="position-absolute start-0 top-50 translate-middle-y ms-3 text-decoration-none">返回</a>
+            <h5 class="card-title mb-0">PDF工具箱</h5>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-extract">页面提取</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-merge">PDF合并</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pdf2img">PDF转图片</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-img2pdf">图片转PDF</a></li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- 页面提取 -->
+        <div class="tab-pane fade show active" id="tab-extract">
+            <div class="mb-3">
+                <div class="row g-2">
+                    <div class="col-auto">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoLoadPreview">
+                            <label class="form-check-label" for="autoLoadPreview">
+                                上传文件后自动加载预览
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">预选范围</span>
+                            <input type="text" class="form-control" id="presetRange" style="width:150px" placeholder="如: 1-10">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="upload-area" id="extractUpload">
+                <input type="file" id="extractInput" accept=".pdf" multiple>
+                <p class="mb-1">点击或拖拽PDF文件到此处（支持多个）</p>
+                <small class="text-muted">预览页面并提取指定页</small>
+            </div>
+            <div id="extractFileList"></div>
+            <div id="extractInfo" class="status-bar hidden"></div>
+        </div>
+
+        <!-- PDF合并 -->
+        <div class="tab-pane fade" id="tab-merge">
+            <div class="upload-area" id="mergeUpload">
+                <input type="file" id="mergeInput" accept=".pdf" multiple>
+                <p class="mb-1">点击或拖拽多个PDF文件到此处</p>
+                <small class="text-muted">按顺序合并为一个PDF，可拖拽排序</small>
+            </div>
+            <div id="mergeList"></div>
+            <div id="mergeActions" class="hidden">
+                <button class="btn btn-primary" onclick="doMerge()">合并PDF</button>
+                <button class="btn btn-outline-secondary ms-2" onclick="clearMergeList()">清空</button>
+            </div>
+            <div id="mergeStatus" class="status-bar hidden"></div>
+        </div>
+
+        <!-- PDF转图片 -->
+        <div class="tab-pane fade" id="tab-pdf2img">
+            <div class="upload-area" id="pdf2imgUpload">
+                <input type="file" id="pdf2imgInput" accept=".pdf" multiple>
+                <p class="mb-1">点击或拖拽PDF文件到此处（支持多个）</p>
+                <small class="text-muted">将PDF每页转换为图片，多个PDF打包为zip</small>
+            </div>
+            <div id="pdf2imgList"></div>
+            <div id="pdf2imgInfo" class="status-bar hidden"></div>
+            <div id="pdf2imgOptions" class="hidden mb-3">
+                <div class="row g-2 align-items-center">
+                    <div class="col-auto"><label class="col-form-label">格式:</label></div>
+                    <div class="col-auto">
+                        <select id="imgFormat" class="form-select form-select-sm">
+                            <option value="jpeg">JPG</option>
+                            <option value="png">PNG</option>
+                        </select>
+                    </div>
+                    <div class="col-auto"><label class="col-form-label">缩放:</label></div>
+                    <div class="col-auto">
+                        <select id="imgScale" class="form-select form-select-sm">
+                            <option value="1">1x</option>
+                            <option value="1.5">1.5x</option>
+                            <option value="2" selected>2x</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-primary btn-sm" onclick="doPdf2Img()">开始转换</button>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="clearPdf2ImgList()">清空</button>
+                    </div>
+                </div>
+            </div>
+            <div id="pdf2imgGrid" class="result-grid"></div>
+        </div>
+
+        <!-- 图片转PDF -->
+        <div class="tab-pane fade" id="tab-img2pdf">
+            <div class="upload-area" id="img2pdfUpload">
+                <input type="file" id="img2pdfInput" accept="image/*" multiple>
+                <p class="mb-1">点击或拖拽图片到此处</p>
+                <small class="text-muted">多张图片合成一个PDF，可拖拽排序</small>
+            </div>
+            <div id="img2pdfList"></div>
+            <div id="img2pdfActions" class="hidden">
+                <button class="btn btn-primary" onclick="doImg2Pdf()">生成PDF</button>
+                <button class="btn btn-outline-secondary ms-2" onclick="clearImg2PdfList()">清空</button>
+            </div>
+            <div id="img2pdfStatus" class="status-bar hidden"></div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h6 class="card-title">使用说明</h6>
+            <ul class="text-muted small mb-0">
+                <li>所有操作在浏览器本地完成，文件不会上传</li>
+                <li>页面提取支持多文件同时处理，每个文件独立选择页面和命名</li>
+                <li>点击缩略图选择页面，支持Ctrl多选、Shift范围选；双击查看高清大图</li>
+                <li>页码输入支持范围格式，如: 1,3,5-10</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- 高清预览模态框 -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewModalTitle">页面预览</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center" style="max-height: 80vh; overflow: auto;">
+                <canvas id="previewCanvas" style="max-width: 100%;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="../../../libs/bootstrap.bundle.min.js"></script>
+<script src="../../../libs/pdf.min.js"></script>
+<script src="../../../libs/pdf-lib.min.js"></script>
+<script src="../../../libs/jszip.min.js"></script>
+<script src="shared.js"></script>
+<script src="extract.js"></script>
+<script src="merge.js"></script>
+<script src="pdf-to-image.js"></script>
+<script src="image-to-pdf.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

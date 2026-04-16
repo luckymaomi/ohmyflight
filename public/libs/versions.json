@@ -1,0 +1,78 @@
+{
+  "说明": "记录各第三方库的版本和来源，方便以后升级",
+  "更新日期": "2026-03-20",
+  "libraries": {
+    "coreui": {
+      "version": "5.2.0",
+      "files": ["coreui.min.css", "coreui.bundle.min.js"],
+      "source": "https://coreui.io/",
+      "cdn": "https://cdn.jsdelivr.net/npm/@coreui/coreui@5.2.0/dist/"
+    },
+    "simplebar": {
+      "version": "6.2.5",
+      "files": ["simplebar.min.css", "simplebar.min.js"],
+      "source": "https://github.com/Grsmto/simplebar",
+      "cdn": "https://cdn.jsdelivr.net/npm/simplebar@6.2.5/dist/"
+    },
+    "xlsx": {
+      "version": "0.20.3",
+      "files": ["xlsx.full.min.js", "xlsx.bundle.js"],
+      "source": "https://sheetjs.com/",
+      "cdn": "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/"
+    },
+    "xlsx-js-style": {
+      "version": "1.2.0",
+      "files": ["xlsx-js-style.min.js"],
+      "source": "https://github.com/gitbrent/xlsx-js-style",
+      "cdn": "https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/"
+    },
+    "pdf-lib": {
+      "version": "1.17.1",
+      "files": ["pdf-lib.min.js"],
+      "source": "https://pdf-lib.js.org/",
+      "cdn": "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/"
+    },
+    "pdfjs": {
+      "version": "4.8.69",
+      "files": ["pdf.min.js", "pdf.worker.min.js"],
+      "source": "https://mozilla.github.io/pdf.js/",
+      "cdn": "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/"
+    },
+    "docxtemplater": {
+      "version": "3.50.0",
+      "files": ["docxtemplater.min.js"],
+      "source": "https://docxtemplater.com/",
+      "cdn": "https://cdn.jsdelivr.net/npm/docxtemplater@3.50.0/build/"
+    },
+    "pizzip": {
+      "version": "3.1.7",
+      "files": ["pizzip.min.js"],
+      "source": "https://github.com/open-xml-templating/pizzip",
+      "cdn": "https://cdn.jsdelivr.net/npm/pizzip@3.1.7/dist/"
+    },
+    "jszip": {
+      "version": "3.10.1",
+      "files": ["jszip.min.js"],
+      "source": "https://stuk.github.io/jszip/",
+      "cdn": "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/"
+    },
+    "mammoth": {
+      "version": "1.8.0",
+      "files": ["mammoth.min.js"],
+      "source": "https://github.com/mwilliamson/mammoth.js",
+      "cdn": "https://cdn.jsdelivr.net/npm/mammoth@1.8.0/"
+    },
+    "marked": {
+      "version": "15.0.12",
+      "files": ["marked.min.js"],
+      "source": "https://marked.js.org/",
+      "cdn": "https://cdn.jsdelivr.net/npm/marked@15.0.12/"
+    },
+    "noto-serif-sc-home-hero": {
+      "version": "Google Fonts subset",
+      "files": ["noto-serif-sc-home-hero.ttf"],
+      "source": "https://fonts.google.com/specimen/Noto+Serif+SC",
+      "notes": "Subset used for the home hero title only"
+    }
+  }
+}

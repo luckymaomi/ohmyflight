@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word模板填充器（测试）</title>
+    <link rel="stylesheet" href="../../../libs/bootstrap.min.css">
+    <style>
+        body { background: transparent; padding: 20px; }
+        .container { max-width: 900px; }
+        .upload-section { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+        .upload-box { border: 2px dashed #dee2e6; border-radius: 8px; padding: 20px; text-align: center; transition: all 0.2s; }
+        .upload-box:hover { border-color: #6c757d; background: #f8f9fa; }
+        .upload-box.loaded { border-color: #6c757d; }
+        .upload-box h3 { margin: 0 0 8px; font-size: 15px; }
+        .upload-box p { margin: 0 0 12px; font-size: 13px; color: #6c757d; }
+        .upload-box input[type="file"] { display: none; }
+        .upload-box label.file-btn { display: inline-block; padding: 8px 16px; background: #fff; color: #212529; border: 1px solid #dee2e6; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        .upload-box label.file-btn:hover { background: #f8f9fa; border-color: #6c757d; }
+        .upload-box .status { margin-top: 10px; font-size: 13px; color: #6c757d; word-break: break-all; display: block; }
+        .upload-box .status.success { color: #198754; font-weight: 500; }
+        .upload-box .status.error { color: #dc3545; font-weight: 500; }
+        .preview-section { margin-top: 20px; padding: 16px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; }
+        .preview-section h3 { margin: 0 0 12px; font-size: 15px; }
+        .field-list { max-height: 200px; overflow-y: auto; }
+        .field-item { display: flex; justify-content: space-between; padding: 8px 12px; background: #fff; border: 1px solid #dee2e6; border-radius: 4px; margin-bottom: 6px; font-size: 13px; }
+        .field-item .name { font-weight: 500; }
+        .field-item .type { color: #6c757d; }
+        .generate-section { margin-top: 24px; padding-top: 20px; border-top: 1px solid #dee2e6; text-align: center; }
+        @media (max-width: 768px) { .upload-section { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card mb-4">
+            <div class="card-body text-center position-relative">
+                <a href="../../../index.html" class="position-absolute start-0 top-50 translate-middle-y ms-3 text-decoration-none">返回首页</a>
+                <h4 class="card-title mb-1">Word模板填充器（测试）</h4>
+                <p class="text-muted mb-0 small">上传配置和模板，生成可独立使用的填写页面</p>
+                <span class="position-absolute end-0 top-50 translate-middle-y me-3" style="font-size:14px;">
+                    <a href="javascript:void(0)" onclick="downloadConfigTemplate()" class="text-decoration-none me-3">下载配置模板</a>
+                    <a href="javascript:void(0)" onclick="downloadSample()" class="text-decoration-none">下载示例</a>
+                </span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="upload-section">
+                    <div class="upload-box" id="configBox">
+                        <h3>1. 上传配置文件</h3>
+                        <p>Excel格式，定义表单字段</p>
+                        <label class="file-btn">选择文件 <input type="file" id="configFile" accept=".xlsx,.xls"></label>
+                        <div id="configStatus" class="status">未上传</div>
+                    </div>
+                    
+                    <div class="upload-box" id="templateBox">
+                        <h3>2. 上传Word模板</h3>
+                        <p>包含占位符的docx文件</p>
+                        <label class="file-btn">选择文件 <input type="file" id="templateFile" accept=".docx"></label>
+                        <div id="templateStatus" class="status">未上传</div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">3. 应用名称</label>
+                    <input type="text" class="form-control" id="appName" placeholder="请填写应用名称">
+                </div>
+                
+                <div class="preview-section" id="previewSection" style="display:none;">
+                    <h3>字段预览</h3>
+                    <div class="field-list" id="fieldList"></div>
+                </div>
+                
+                <div class="generate-section">
+                    <button class="btn btn-outline-secondary btn-lg" id="generateBtn" disabled>生成应用</button>
+                    <p class="mt-3 text-muted small">生成后会下载一个压缩包，包含HTML文件、模板和部署说明</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../../libs/xlsx.full.min.js"></script>
+    <script src="../../../libs/jszip.min.js"></script>
+    <script src="config-template.js"></script>
+    <script src="config-parser.js"></script>
+    <script src="html-generator.js"></script>
+    <script src="app-packager.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

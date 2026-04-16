@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>培训克星</title>
+    <link rel="stylesheet" href="../../../libs/bootstrap.min.css">
+    <link rel="stylesheet" href="./styles/main.css">
+</head>
+<body>
+    <main class="page">
+        <section class="hero">
+            <div class="hero-bar">
+                <div class="hero-copy">
+                    <h1 class="hero-title">培训克星</h1>
+                    <p class="hero-subtitle">独立的超级培训测试工具，按新总表结构识别人员信息表和项目 sheet，并在同一项目 sheet 内拆分已录入/未录入记录，支持一键更新有效期、一键生成预排班并输出更新报告。</p>
+                </div>
+                <a class="hero-link" href="../../../index.html">返回首页</a>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">导入文件</h2>
+                    <p class="section-intro">导入总培训表后，系统会自动识别人员信息表、项目 sheet、已录入月份和未录入月份。</p>
+                </div>
+            </div>
+            <div class="field">
+                <label for="workbookFile">总培训表文件</label>
+                <input id="workbookFile" type="file" accept=".xlsx,.xls">
+                <div class="field-help">当前工具不会覆盖原文件，会先生成预览，再导出更新后的副本。</div>
+            </div>
+            <div class="summary-box" id="workbookOverview">
+                <div class="empty-block">导入文件后，这里会显示识别到的主表、项目数量和月份范围。</div>
+            </div>
+            <div class="status-line" id="statusLine">请先导入总培训表文件。</div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">有效期更新设置</h2>
+                    <p class="section-intro">先确认人员信息表，再多选培训类型和共同已录入月份，点击“一键更新”生成预览。</p>
+                </div>
+            </div>
+            <div class="form-grid form-grid-3">
+                <div class="field">
+                    <label for="updateValiditySheetSelect">人员信息表</label>
+                    <select id="updateValiditySheetSelect" disabled>
+                        <option value="">请先导入文件</option>
+                    </select>
+                </div>
+                <div class="field field-project-picker">
+                    <label>培训类型</label>
+                    <div class="checkbox-panel is-disabled" id="updateProjectGroup">
+                        <div class="checkbox-toolbar">
+                            <label class="checkbox-inline" for="updateProjectSelectAll">
+                                <input id="updateProjectSelectAll" type="checkbox" data-role="select-all" disabled>
+                                <span class="checkbox-inline-box" aria-hidden="true"></span>
+                                <span class="checkbox-inline-text">全选</span>
+                            </label>
+                            <span class="checkbox-summary" id="updateProjectSummary">请先导入文件</span>
+                        </div>
+                        <div class="checkbox-list" id="updateProjectList">
+                            <div class="checkbox-empty">请先导入文件</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="updateMonthSelect">已录入月份</label>
+                    <select id="updateMonthSelect" disabled>
+                        <option value="">请先选择培训类型</option>
+                    </select>
+                </div>
+            </div>
+            <div class="toolbar">
+                <button class="action-button action-button-primary" id="updateValidityButton" type="button" disabled>一键更新</button>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">预排班设置</h2>
+                    <p class="section-intro">先确认人员信息表，再多选培训类型和预排起止日期，点击“一键预排”生成预览。</p>
+                </div>
+            </div>
+            <div class="form-grid form-grid-3">
+                <div class="field">
+                    <label for="scheduleValiditySheetSelect">人员信息表</label>
+                    <select id="scheduleValiditySheetSelect" disabled>
+                        <option value="">请先导入文件</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="scheduleStartDateInput">预排开始日期</label>
+                    <input id="scheduleStartDateInput" type="date">
+                </div>
+                <div class="field">
+                    <label for="scheduleEndDateInput">预排结束日期</label>
+                    <input id="scheduleEndDateInput" type="date">
+                </div>
+                <div class="field field-project-picker">
+                    <label>培训类型</label>
+                    <div class="checkbox-panel is-disabled" id="scheduleProjectGroup">
+                        <div class="checkbox-toolbar">
+                            <label class="checkbox-inline" for="scheduleProjectSelectAll">
+                                <input id="scheduleProjectSelectAll" type="checkbox" data-role="select-all" disabled>
+                                <span class="checkbox-inline-box" aria-hidden="true"></span>
+                                <span class="checkbox-inline-text">全选</span>
+                            </label>
+                            <span class="checkbox-summary" id="scheduleProjectSummary">请先导入文件</span>
+                        </div>
+                        <div class="checkbox-list" id="scheduleProjectList">
+                            <div class="checkbox-empty">请先导入文件</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="toolbar">
+                <button class="action-button action-button-primary" id="generateScheduleButton" type="button" disabled>一键预排</button>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">导出</h2>
+                    <p class="section-intro">先生成预览，确认无误后，再导出当前预览结果。</p>
+                </div>
+            </div>
+            <div class="toolbar">
+                <button class="action-button" id="exportButton" type="button" disabled>导出当前预览 Excel</button>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">执行结果</h2>
+                    <p id="resultSummary" class="section-intro">尚未执行任何操作。</p>
+                </div>
+            </div>
+            <div class="stats-grid" id="statsGrid">
+                <article class="stat-card">
+                    <span class="muted">等待执行</span>
+                    <strong>-</strong>
+                </article>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title" id="detailTableTitle">结果明细</h2>
+                </div>
+            </div>
+            <div class="table-shell">
+                <table class="table table-hover align-middle result-table detail-result-table">
+                    <thead id="detailTableHead"></thead>
+                    <tbody id="detailTableBody">
+                        <tr>
+                            <td class="empty-block" colspan="8">生成预览后显示结果明细。</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <details class="collapse-shell" id="skippedDetails">
+                <summary id="skippedSummaryLabel">跳过 / 提示（默认折叠）</summary>
+                <div class="table-shell collapse-body">
+                    <table class="table table-hover align-middle result-table skipped-result-table">
+                        <thead id="skippedTableHead"></thead>
+                        <tbody id="skippedTableBody">
+                            <tr>
+                                <td class="empty-block" colspan="5">生成预览后显示跳过记录和提示信息。</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">工作表识别结果</h2>
+                    <p class="section-intro">这里展示人员信息表、项目 sheet，以及每个项目拆分后的已录入/未录入行数和月份，方便确认识别是否正确。</p>
+                </div>
+            </div>
+            <div class="tool-grid" id="projectCards">
+                <div class="empty-block">导入文件后显示各项目识别详情。</div>
+            </div>
+        </section>
+    </main>
+
+    <script src="../../../libs/xlsx-js-style.min.js"></script>
+    <script src="./scripts/config.js"></script>
+    <script src="./scripts/utils.js"></script>
+    <script src="./scripts/scanner.js"></script>
+    <script src="./scripts/rule-engine.js"></script>
+    <script src="./scripts/validity.js"></script>
+    <script src="./scripts/schedule.js"></script>
+    <script src="./scripts/report-sheet.js"></script>
+    <script src="./scripts/generated-sheet.js"></script>
+    <script src="./scripts/result-status.js"></script>
+    <script src="./scripts/app-copy.js"></script>
+    <script src="./scripts/app-state.js"></script>
+    <script src="./scripts/app-elements.js"></script>
+    <script src="./scripts/app.js"></script>
+</body>
+</html>

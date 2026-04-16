@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>培训预排班</title>
+    <link rel="stylesheet" href="../../../libs/bootstrap.min.css">
+    <link rel="stylesheet" href="./styles/suite.css">
+</head>
+<body>
+    <main class="page">
+        <section class="hero">
+            <div class="hero-bar hero-bar-split">
+                <a class="hero-link" href="../../../index.html" target="_blank" rel="noopener noreferrer">返回首页</a>
+                <h1 class="hero-title">培训预排班</h1>
+                <a class="hero-link" href="./index.html" target="_blank" rel="noopener noreferrer">返回培训工具合集</a>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">导入与设置</h2>
+                    <p class="section-intro">保留合集版的独立页面风格，但预排筛选口径已经切到成品版的“区间预排”逻辑。</p>
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="ruleFile">规则表文件</label>
+                    <input id="ruleFile" type="file" accept=".xlsx,.xls">
+                </div>
+                <div class="field">
+                    <label for="validityFile">有效期表文件</label>
+                    <input id="validityFile" type="file" accept=".xlsx,.xls">
+                </div>
+                <div class="field">
+                    <label for="projectSelect">项目</label>
+                    <select id="projectSelect" disabled>
+                        <option value="">请先导入规则表</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="stageStartInput">预排开始日期</label>
+                    <input id="stageStartInput" type="date">
+                </div>
+                <div class="field">
+                    <label for="stageEndInput">预排结束日期</label>
+                    <input id="stageEndInput" type="date">
+                </div>
+            </div>
+            <div class="toolbar">
+                <button id="runButton" class="btn-primary" type="button">生成预排名单</button>
+                <button id="exportButton" class="btn-secondary" type="button" disabled>导出结果 Excel</button>
+            </div>
+            <div id="statusLine" class="status-line">先导入规则表和有效期表，再选择项目与预排区间。</div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">导入 / 导出规则</h2>
+                </div>
+            </div>
+            <div class="grid-3">
+                <article class="doc-card">
+                    <h3>规则表导入</h3>
+                    <p>优先识别名为“规则表”的工作表；若工作表未命名，也会按规则表必填字段自动匹配。</p>
+                </article>
+                <article class="doc-card">
+                    <h3>预排口径</h3>
+                    <p>现在按“预排开始日期 + 预排结束日期”的区间筛人。有窗口项目看区间是否命中窗口，危险品 / 英语能力 / 汉语能力这三类窗口项目会进一步细分为 90 / 60 / 30 天内到期。</p>
+                </article>
+                <article class="doc-card">
+                    <h3>结果导出</h3>
+                    <p>导出结果包含摘要、已过期、命中窗口、本阶段到期、缺少旧有效期和未命中窗口等工作表，便于分组复核。</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">规则摘要</h2>
+                </div>
+            </div>
+            <div id="ruleSummary" class="table-shell">
+                <div class="empty-block">导入规则表后，这里会显示所选项目的规则摘要。</div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">处理统计</h2>
+                    <p class="section-intro">预排名单现在由“已过期、命中窗口、本阶段到期”三类组成；其中危险品 / 英语能力 / 汉语能力会额外细分 30 / 60 / 90 天内到期。</p>
+                </div>
+            </div>
+            <div id="statsGrid" class="stats-grid">
+                <article class="stat-card"><span class="muted">已检查人数</span><strong>0</strong></article>
+                <article class="stat-card"><span class="muted">预排名单</span><strong>0</strong></article>
+                <article class="stat-card"><span class="muted">已过期</span><strong>0</strong></article>
+                <article class="stat-card"><span class="muted">命中窗口</span><strong>0</strong></article>
+                <article class="stat-card"><span class="muted">本阶段到期</span><strong>0</strong></article>
+                <article class="stat-card"><span class="muted">30天内到期</span><strong>0</strong></article>
+                <article class="stat-card"><span class="muted">60天内到期</span><strong>0</strong></article>
+                <article class="stat-card"><span class="muted">90天内到期</span><strong>0</strong></article>
+                <article class="stat-card"><span class="muted">缺少旧有效期</span><strong>0</strong></article>
+                <article class="stat-card"><span class="muted">未命中窗口 / 阶段外未到期</span><strong>0</strong></article>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">已过期</h2>
+                </div>
+            </div>
+            <div class="table-shell">
+                <table class="table table-hover align-middle result-table schedule-result-table">
+                    <thead>
+                        <tr>
+                            <th>排序</th>
+                            <th>员工号</th>
+                            <th>姓名</th>
+                            <th>旧有效期</th>
+                            <th>窗口开始</th>
+                            <th>窗口结束</th>
+                            <th>轻重缓急</th>
+                            <th>状态</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expiredBody">
+                        <tr><td colspan="9" class="empty-block">暂无已过期记录</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">命中窗口</h2>
+                </div>
+            </div>
+            <div class="table-shell">
+                <table class="table table-hover align-middle result-table schedule-result-table">
+                    <thead>
+                        <tr>
+                            <th>排序</th>
+                            <th>员工号</th>
+                            <th>姓名</th>
+                            <th>旧有效期</th>
+                            <th>窗口开始</th>
+                            <th>窗口结束</th>
+                            <th>轻重缓急</th>
+                            <th>状态</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody id="windowBody">
+                        <tr><td colspan="9" class="empty-block">暂无命中窗口记录</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">本阶段到期</h2>
+                </div>
+            </div>
+            <div class="table-shell">
+                <table class="table table-hover align-middle result-table schedule-result-table">
+                    <thead>
+                        <tr>
+                            <th>排序</th>
+                            <th>员工号</th>
+                            <th>姓名</th>
+                            <th>旧有效期</th>
+                            <th>窗口开始</th>
+                            <th>窗口结束</th>
+                            <th>轻重缓急</th>
+                            <th>状态</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stageDueBody">
+                        <tr><td colspan="9" class="empty-block">暂无本阶段到期记录</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">缺少旧有效期</h2>
+                </div>
+            </div>
+            <div class="table-shell">
+                <table class="table table-hover align-middle result-table schedule-result-table">
+                    <thead>
+                        <tr>
+                            <th>排序</th>
+                            <th>员工号</th>
+                            <th>姓名</th>
+                            <th>旧有效期</th>
+                            <th>窗口开始</th>
+                            <th>窗口结束</th>
+                            <th>轻重缓急</th>
+                            <th>状态</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody id="missingBody">
+                        <tr><td colspan="9" class="empty-block">暂无缺少旧有效期的记录</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">未命中窗口 / 阶段外未到期</h2>
+                </div>
+            </div>
+            <div class="table-shell">
+                <table class="table table-hover align-middle result-table schedule-result-table">
+                    <thead>
+                        <tr>
+                            <th>排序</th>
+                            <th>员工号</th>
+                            <th>姓名</th>
+                            <th>旧有效期</th>
+                            <th>窗口开始</th>
+                            <th>窗口结束</th>
+                            <th>轻重缓急</th>
+                            <th>状态</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ignoredBody">
+                        <tr><td colspan="9" class="empty-block">暂无未命中窗口或阶段外未到期记录</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script src="../../../libs/xlsx-js-style.min.js"></script>
+    <script src="./scripts/core.js"></script>
+    <script src="./scripts/rule-engine.js"></script>
+    <script src="./scripts/schedule-engine.js"></script>
+    <script src="./scripts/ui-dom.js"></script>
+    <script src="./scripts/schedule-state.js"></script>
+    <script src="./scripts/schedule-elements.js"></script>
+    <script src="./scripts/schedule.js"></script>
+</body>
+</html>

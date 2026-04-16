@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ohmyflight</title>
+    <link rel="stylesheet" href="./index.css">
+</head>
+<body>
+    <main class="app">
+        <header class="topbar">
+            <div class="search-region">
+                <label class="sr-only" for="searchInput">搜索</label>
+                <input id="searchInput" class="search-input" type="search" placeholder="搜索工具" aria-label="搜索工具" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="switch-row">
+                <div class="switch-label" id="toolLabel">
+                    <strong>工具</strong>
+                    <span>tools</span>
+                </div>
+                <div class="button-box" id="toggleButton" data-mode="tool" data-motion="steady">
+                    <div class="sky">
+                        <div class="inner-shadow"></div>
+                        <div class="day" id="skyLayer"></div>
+                    </div>
+                    <div class="star-cloud-box">
+                        <div class="star-box" id="starBox"></div>
+                        <div class="cloud-box">
+                            <div class="cloud-near" id="cloudNear"></div>
+                            <div class="cloud-far" id="cloudFar"></div>
+                        </div>
+                    </div>
+                    <div class="halo-box">
+                        <div class="halo-flex">
+                            <div class="halo-inner halo-left" id="haloInner"></div>
+                            <div class="halo-middle halo-left" id="haloMiddle"></div>
+                            <div class="halo-outer halo-left" id="haloOuter"></div>
+                        </div>
+                    </div>
+                    <div class="ball-box">
+                        <div class="ball-cut-in to-left" id="ball">
+                            <div class="sun"></div>
+                            <div class="moon" id="moon">
+                                <div class="moon-body" id="moonBody">
+                                    <div class="moon-crater" style="--crater-size:0.172;--crater-top:15%;--crater-left:38%;"></div>
+                                    <div class="moon-crater" style="--crater-size:0.287;--crater-top:46%;--crater-left:13%;"></div>
+                                    <div class="moon-crater" style="--crater-size:0.201;--crater-top:61%;--crater-left:61%;"></div>
+                                </div>
+                                <div class="moon-shadow"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="switch-label muted" id="workflowLabel">
+                    <strong>工作流</strong>
+                    <span>workflow</span>
+                </div>
+            </div>
+        </header>
+
+        <section class="workspace" id="toolsView" aria-label="工具面板">
+            <nav class="subnav" aria-label="工具分类">
+                <button class="category-link active" type="button" data-category="common">常用</button>
+                <button class="category-link" type="button" data-category="other">其他</button>
+            </nav>
+            <section class="cards" id="toolCards"></section>
+        </section>
+        <section class="workflow-placeholder" id="workflowPlaceholder" aria-label="工作流面板" hidden>
+            <strong>尚未接入</strong>
+        </section>
+    </main>
+    <a class="source-download-link" href="../downloads/ohmyflight-source.zip" download>下载本站源码</a>
+
+    <script src="./tools-data.js"></script>
+    <script src="./workflows-data.js"></script>
+    <script src="./tool-mode-toggle.js"></script>
+    <script src="./tools-render.js"></script>
+</body>
+</html>

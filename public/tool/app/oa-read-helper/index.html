@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自动点OA助手（测试）</title>
+    <link rel="stylesheet" href="../../../libs/bootstrap.min.css">
+    <style>
+        body { background: transparent; padding: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card mb-4">
+            <div class="card-body text-center position-relative">
+                <a href="../../../index.html" class="position-absolute start-0 top-50 translate-middle-y ms-3 text-decoration-none">返回首页</a>
+                <h4 class="card-title mb-1">自动点OA助手（测试）</h4>
+                <p class="text-muted mb-0 small">自动打开 OA 待办页并自动点击“已阅”；自动点击百分之95以上oa，部分类型（如督办）需人工处理，自动点击失败时手动完成后等待刷新即可。</p>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">工具介绍</h5>
+                <p>这是一个 Python + Playwright 脚本，用于自动处理 OA 待办列表。</p>
+                <p class="mt-2 mb-0">自动打开 OA 待办页并自动点击“已阅”；自动点击百分之95以上oa，部分类型（如督办）需人工处理，自动点击失败时手动完成后等待刷新即可。</p>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">下载</h5>
+                <a href="app.py" download class="btn btn-outline-secondary">下载 app.py</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">使用说明</h5>
+                <p>安装依赖：</p>
+                <pre class="bg-light p-2 rounded"><code>pip install playwright colorama
+playwright install chromium</code></pre>
+                <p class="mt-3">运行：</p>
+                <pre class="bg-light p-2 rounded mb-0"><code>python app.py</code></pre>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="shell.js"></script>
+</html>

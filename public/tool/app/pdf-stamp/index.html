@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF加水印</title>
+    <link rel="stylesheet" href="../../../libs/bootstrap.min.css">
+    <style>
+        body { background: transparent; padding: 20px; }
+        .container { max-width: 1100px; }
+        .upload-area { border: 2px dashed #dee2e6; border-radius: 8px; padding: 25px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .upload-area:hover, .upload-area.dragover { border-color: #0d6efd; background: #f8f9fa; }
+        .upload-area input { display: none; }
+        .upload-area.has-file { border-style: solid; border-color: #198754; background: #d1e7dd; padding: 12px; }
+        .status-bar { padding: 10px 15px; border-radius: 4px; margin: 10px 0; font-size: 13px; }
+        .status-bar.success { background: #d1e7dd; color: #0f5132; }
+        .status-bar.error { background: #f8d7da; color: #842029; }
+        .status-bar.info { background: #e7f1ff; color: #084298; }
+        .hidden { display: none !important; }
+        .canvas-wrap { position: relative; border: 1px solid #dee2e6; border-radius: 4px; overflow: hidden; background: #e9ecef; display: inline-block; max-width: 100%; }
+        .canvas-wrap canvas { display: block; max-width: 100%; }
+        .img-overlay { position: absolute; border: 2px dashed #0d6efd; cursor: move; box-sizing: border-box; }
+        .img-overlay img { width: 100%; height: 100%; object-fit: fill; pointer-events: none; }
+        .img-overlay .resize-handle { position: absolute; width: 12px; height: 12px; background: #0d6efd; border: 2px solid #fff; border-radius: 2px; z-index: 2; }
+        .img-overlay .resize-handle.br { bottom: -6px; right: -6px; cursor: nwse-resize; }
+        .img-overlay .resize-handle.bl { bottom: -6px; left: -6px; cursor: nesw-resize; }
+        .img-overlay .resize-handle.tr { top: -6px; right: -6px; cursor: nesw-resize; }
+        .img-overlay .resize-handle.tl { top: -6px; left: -6px; cursor: nwse-resize; }
+        .pos-input { width: 75px; }
+        .page-nav { display: flex; align-items: center; gap: 8px; }
+        .rule-card { border: 1px solid #dee2e6; border-radius: 6px; padding: 12px; margin-bottom: 10px; background: #fff; }
+        .rule-card.active { border-color: #0d6efd; box-shadow: 0 0 0 2px rgba(13,110,253,0.15); }
+        .rule-card .rule-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .rule-card .rule-header .badge { cursor: pointer; }
+        .rule-actions button { padding: 2px 8px; font-size: 12px; }
+        .preview-overlay { position: absolute; pointer-events: none; box-sizing: border-box; }
+        .preview-overlay img { width: 100%; height: 100%; object-fit: fill; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card mb-3">
+        <div class="card-body text-center position-relative py-2">
+            <a href="../../../index.html" class="position-absolute start-0 top-50 translate-middle-y ms-3 text-decoration-none">返回</a>
+            <h5 class="card-title mb-0">PDF 加水印</h5>
+            <small class="text-muted">手册工作使用，在 PDF 每页的相同位置添加图片，支持拖拽定位和精确数值调整</small>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <div class="upload-area" id="pdfUpload">
+                <input type="file" id="pdfInput" accept=".pdf">
+                <p class="mb-1">上传 PDF 文件</p>
+                <small class="text-muted">.pdf</small>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="upload-area" id="imgUpload">
+                <input type="file" id="imgInput" accept="image/*">
+                <p class="mb-1">上传要添加的图片</p>
+                <small class="text-muted">PNG / JPG 等</small>
+            </div>
+        </div>
+    </div>
+
+    <div id="statusBar" class="status-bar info hidden">
+        <div class="d-flex align-items-center gap-2"><span id="statusText"></span></div>
+        <div class="progress mt-1 hidden" id="progressWrap" style="height:4px">
+            <div class="progress-bar" id="progressBar" style="width:0%"></div>
+        </div>
+    </div>
+
+    <div id="editorSection" class="hidden">
+        <div class="row g-3">
+            <!-- Left: Rules -->
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="card-title mb-0">水印规则</h6>
+                            <button class="btn btn-sm btn-outline-primary" id="addRuleBtn">添加规则</button>
+                        </div>
+                        <div id="ruleList"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Right: Preview -->
+            <div class="col-md-7">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="page-nav">
+                                <button class="btn btn-sm btn-outline-secondary" id="prevPage">上一页</button>
+                                <input type="number" class="form-control form-control-sm" id="pageJump" min="1" value="1" style="width:60px;text-align:center">
+                                <span class="small text-muted">/ <span id="pageTotal">1</span></span>
+                                <button class="btn btn-sm btn-outline-secondary" id="nextPage">下一页</button>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="previewMode">
+                                <label class="form-check-label small" for="previewMode">导出预览</label>
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mb-2" id="canvasHint">点击左侧规则后可在画布上拖拽定位</small>
+                        <div class="canvas-wrap" id="canvasWrap">
+                            <canvas id="pdfCanvas"></canvas>
+                            <div class="img-overlay hidden" id="imgOverlay">
+                                <img id="overlayImg" alt="">
+                                <div class="resize-handle tl" data-dir="tl"></div>
+                                <div class="resize-handle tr" data-dir="tr"></div>
+                                <div class="resize-handle bl" data-dir="bl"></div>
+                                <div class="resize-handle br" data-dir="br"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <span class="small text-muted" id="exportHint"></span>
+                <button class="btn btn-primary btn-sm" id="exportBtn" disabled>导出 PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <h6 class="card-title">使用说明</h6>
+            <ol class="text-muted small mb-2">
+                <li>上传 PDF 和水印图片</li>
+                <li>添加水印规则，每条规则可设置不同的页面范围（全部/奇数页/偶数页/指定页码）和位置</li>
+                <li>点击规则卡片后，在右侧画布上拖拽图片到目标位置，或直接输入 mm 数值</li>
+                <li>打开"导出预览"可查看最终效果（所有规则叠加后的样子）</li>
+                <li>确认无误后点击"导出 PDF"</li>
+            </ol>
+            <p class="text-muted small mb-0">所有操作在浏览器本地完成，文件不会上传到任何服务器。</p>
+        </div>
+    </div>
+</div>
+
+<script src="../../../libs/bootstrap.bundle.min.js"></script>
+<script src="../../../libs/pdf.min.js"></script>
+<script src="../../../libs/pdf-lib.min.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

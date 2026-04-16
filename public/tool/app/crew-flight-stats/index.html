@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>航线班次统计</title>
+    <link rel="stylesheet" href="../../../libs/bootstrap.min.css">
+    <style>
+        body { background: transparent; padding: 20px; }
+        .container { max-width: 1200px; }
+        .sheet-selector { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+        .sheet-checkbox { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        .sheet-checkbox:hover { background: #e9ecef; }
+        .sheet-checkbox input { cursor: pointer; }
+        .sheet-checkbox.checked { background: #e7f1ff; border-color: #0d6efd; }
+        .warning-list { max-height: 150px; overflow-y: auto; padding: 10px; background: #fff3cd; border-radius: 4px; font-size: 13px; line-height: 1.6; }
+        #resultTable { width: 100%; border-collapse: collapse; font-size: 13px; }
+        #resultTable th, #resultTable td { padding: 8px 12px; border: 1px solid #dee2e6; text-align: center; white-space: nowrap; }
+        #resultTable th { background: #f8f9fa; font-weight: 600; position: sticky; top: 0; }
+        #resultTable th:first-child, #resultTable td:first-child { text-align: left; position: sticky; left: 0; background: #fff; z-index: 1; }
+        #resultTable th:first-child { background: #f8f9fa; z-index: 2; }
+        #resultTable tbody tr:hover { background: #f8f9fa; }
+        #resultTable tbody tr:hover td:first-child { background: #f8f9fa; }
+        #crewTable { width: 100%; border-collapse: collapse; }
+        #crewTable th { padding: 6px 8px; background: #f8f9fa; border: 1px solid #dee2e6; text-align: left; font-size: 13px; }
+        #crewTable td { border: 1px solid #dee2e6; }
+        #crewTable input, #crewTable textarea { width: 100%; border: none; padding: 6px 8px; font-size: 13px; }
+        #crewTable input:focus, #crewTable textarea:focus { outline: none; background: #f0f6ff; }
+        .status { margin-top: 8px; padding: 6px 10px; border-radius: 4px; font-size: 12px; display: none; }
+        .status-success { background: #d1e7dd; color: #0f5132; display: block; }
+        .status-error { background: #f8d7da; color: #842029; display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card mb-4">
+            <div class="card-body text-center position-relative">
+                <a href="../../../index.html" class="position-absolute start-0 top-50 translate-middle-y ms-3 text-decoration-none">返回首页</a>
+                <h4 class="card-title mb-0">航线班次统计</h4>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">第一步：上传文件</h5>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label">排班表 (.xlsx)</label>
+                        <input type="file" class="form-control" id="scheduleFile" accept=".xlsx,.xls">
+                        <div id="scheduleStatus" class="status"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">机组花名册 (.xlsx)</label>
+                        <input type="file" class="form-control" id="rosterFile" accept=".xlsx,.xls">
+                        <div id="rosterStatus" class="status"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4" id="sheetSection" style="display:none;">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">第二步：选择要统计的工作表（月份）</h5>
+                <div class="d-flex gap-2 mb-2">
+                    <button id="selectAllBtn" class="btn btn-outline-secondary btn-sm">全选</button>
+                    <button id="selectNoneBtn" class="btn btn-outline-secondary btn-sm">全不选</button>
+                </div>
+                <div id="sheetSelector" class="sheet-selector"></div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">第三步：统计与导出</h5>
+                <div class="d-flex gap-2">
+                    <button id="analyzeBtn" class="btn btn-outline-secondary" disabled>开始统计</button>
+                    <button id="exportBtn" class="btn btn-outline-secondary" disabled>导出Excel</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4" id="warningSection" style="display:none;">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">⚠️ 未匹配的内容</h5>
+                <div id="warningList" class="warning-list"></div>
+            </div>
+        </div>
+        
+        <div class="card mb-4" id="resultSection" style="display:none;">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">统计结果</h5>
+                <div id="resultInfo" class="text-muted mb-3"></div>
+                <div class="table-responsive" style="max-height: 500px;">
+                    <table id="resultTable">
+                        <thead id="resultHead"></thead>
+                        <tbody id="resultBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">使用说明</h5>
+                <ol class="text-muted">
+                    <li>上传排班表（A列为航线名称，其他列为日期对应的机组人员）</li>
+                    <li>机组花名册会自动加载，也可手动选择其他文件</li>
+                    <li>选择要统计的工作表（可多选）</li>
+                    <li>点击"开始统计"进行分析</li>
+                    <li>查看结果，点击"导出Excel"下载统计表</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">附加工具：机组识别</h5>
+                <p class="text-muted mb-3">从文本中识别花名册里的机组姓名，按出现顺序输出，结果可编辑</p>
+                <div class="d-flex gap-2 mb-3">
+                    <button id="extractAllBtn" class="btn btn-outline-secondary">识别全部</button>
+                    <button id="clearAllBtn" class="btn btn-outline-secondary">清空全部</button>
+                    <button id="addRowBtn" class="btn btn-outline-secondary">添加行</button>
+                </div>
+                <table id="crewTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 45%;">输入</th>
+                            <th style="width: 45%;">结果（可编辑）</th>
+                            <th style="width: 10%; text-align: center;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="crewTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+<script src="../../../libs/xlsx.full.min.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

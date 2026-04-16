@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>培训冲突核对</title>
+    <link rel="stylesheet" href="../../../libs/bootstrap.min.css">
+    <link rel="stylesheet" href="./styles/suite.css">
+</head>
+<body>
+    <main class="page">
+        <section class="hero">
+            <div class="hero-bar hero-bar-split">
+                <a class="hero-link" href="../../../index.html" target="_blank" rel="noopener noreferrer">返回首页</a>
+                <h1 class="hero-title">培训冲突核对</h1>
+                <a class="hero-link" href="./index.html" target="_blank" rel="noopener noreferrer">返回培训工具合集</a>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">导入文件</h2>
+                    <p class="section-intro">只需导入 1 个包含 <span class="mono">姓名 / 项目名称 / 培训开始日期 / 培训结束日期</span> 的表；也可直接导入含 <span class="mono">培训表</span> 工作表的整本文件。</p>
+                </div>
+            </div>
+            <div class="form-grid form-grid-2">
+                <div class="field">
+                    <label for="sourceFile">培训表文件</label>
+                    <input id="sourceFile" type="file" accept=".xlsx,.xls">
+                </div>
+            </div>
+            <div class="toolbar">
+                <button id="runButton" class="btn-primary" type="button">开始核对</button>
+                <button id="exportButton" class="btn-secondary" type="button" disabled>导出结果 Excel</button>
+            </div>
+            <div id="statusLine" class="status-line">先导入培训表文件。</div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">处理统计</h2>
+                    <p class="section-intro">同名人员只要培训日期区间有重叠，就会判定为冲突。</p>
+                </div>
+            </div>
+            <div id="statsGrid" class="stats-grid">
+                <article class="stat-card"><span class="muted">记录总数</span><strong>0</strong></article>
+                <article class="stat-card"><span class="muted">冲突记录</span><strong>0</strong></article>
+                <article class="stat-card"><span class="muted">正常记录</span><strong>0</strong></article>
+                <article class="stat-card"><span class="muted">跳过记录</span><strong>0</strong></article>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">冲突预览</h2>
+                    <p class="section-intro">这里只显示检测到冲突的记录；导出结果里会保留原表并将冲突行整行标红。</p>
+                </div>
+            </div>
+            <div class="table-shell">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>培训表行号</th>
+                            <th>姓名</th>
+                            <th>项目名称</th>
+                            <th>培训开始日期</th>
+                            <th>培训结束日期</th>
+                            <th>冲突行号</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody id="conflictBody">
+                        <tr><td colspan="7" class="empty-block">暂无冲突记录</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">跳过记录</h2>
+                    <p class="section-intro">包括姓名为空、项目名称为空、日期无法解析、结束日期早于开始日期等情况。</p>
+                </div>
+            </div>
+            <div class="table-shell">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>培训表行号</th>
+                            <th>姓名</th>
+                            <th>项目名称</th>
+                            <th>状态</th>
+                            <th>原因</th>
+                        </tr>
+                    </thead>
+                    <tbody id="skippedBody">
+                        <tr><td colspan="5" class="empty-block">暂无跳过记录</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script src="../../../libs/xlsx-js-style.min.js"></script>
+    <script src="./scripts/core.js"></script>
+    <script src="./scripts/ui-dom.js"></script>
+    <script src="./scripts/conflict-state.js"></script>
+    <script src="./scripts/conflict-elements.js"></script>
+    <script src="./scripts/conflict.js"></script>
+</body>
+</html>

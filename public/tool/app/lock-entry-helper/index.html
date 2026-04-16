@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>通用锁班助手（测试）</title>
+    <link rel="stylesheet" href="../../../libs/bootstrap.min.css">
+    <style>
+        body { background: transparent; padding: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card mb-4">
+            <div class="card-body text-center position-relative">
+                <a href="../../../index.html" class="position-absolute start-0 top-50 translate-middle-y ms-3 text-decoration-none">返回首页</a>
+                <a href="../../../template/通用批量锁班模板.xlsx" download class="position-absolute end-0 top-50 translate-middle-y me-3 text-decoration-none">下载录入模板</a>
+                <h4 class="card-title mb-1">通用锁班助手（测试）</h4>
+                <p class="text-muted mb-0 small">自动化填写飞行门户非生产任务录入表单</p>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">工具介绍</h5>
+                <p>这是一个 Python 脚本工具，用于自动化填写飞行门户的非生产任务录入表单，支持批量录入锁班信息。</p>
+                <p class="mt-2">支持批量/手动模式、白名单过滤、可选统一备注、冲突检测等功能。</p>
+                <div class="alert alert-info mt-3 mb-0">
+                    <strong>当前版本说明：</strong>
+                    <ul class="mb-0 mt-2">
+                        <li><strong>app.py</strong> - 当前唯一版本：支持批量、手动、Excel 导入三种模式</li>
+                        <li>启动时可选填写统一备注，输入 <code>OK</code> 确认后复用于本次全部记录</li>
+                        <li>遇到冲突或错误时会自动跳过并记录，最后统一输出失败报告</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">下载</h5>
+                <a href="app.py" download class="btn btn-outline-secondary">下载 app.py</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">使用文档</h5>
+                <p>第一次使用？请阅读详细的安装和使用教程：</p>
+                <a href="./README.md" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary mt-2">查看详细文档</a>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="shell.js"></script>
+</html>

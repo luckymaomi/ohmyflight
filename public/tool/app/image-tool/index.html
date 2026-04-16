@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片工具箱</title>
+    <link rel="stylesheet" href="../../../libs/bootstrap.min.css">
+    <link rel="stylesheet" href="../../../libs/cropper.min.css">
+    <style>
+        body { background: transparent; padding: 20px; }
+        .container { max-width: 1200px; }
+        .nav-tabs .nav-link { cursor: pointer; }
+        .upload-area { border: 2px dashed #dee2e6; border-radius: 8px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 15px; }
+        .upload-area:hover, .upload-area.dragover { border-color: #0d6efd; background: #f8f9fa; }
+        .upload-area input { display: none; }
+        .image-list { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+        .image-item { position: relative; border: 1px solid #dee2e6; border-radius: 4px; padding: 6px; text-align: center; }
+        .image-item img { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; display: block; }
+        .image-item .info { font-size: 11px; color: #666; margin-top: 4px; }
+        .image-item .preview-info { font-size: 11px; color: #198754; }
+        .image-item .remove-btn { position: absolute; top: 2px; right: 2px; background: #dc3545; color: #fff; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; line-height: 18px; padding: 0; cursor: pointer; }
+        .result-list { margin-top: 15px; }
+        .result-item { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; margin-bottom: 8px; }
+        .result-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
+        .result-item .meta { flex: 1; font-size: 13px; }
+        .status-bar { padding: 10px 15px; background: #e7f1ff; border-radius: 4px; margin: 10px 0; font-size: 13px; }
+        .status-bar.error { background: #f8d7da; color: #842029; }
+        .hidden { display: none !important; }
+        .crop-wrapper { max-height: 500px; margin: 10px 0; }
+        .crop-wrapper img { max-width: 100%; display: block; }
+        #base64Output { width: 100%; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card mb-3">
+        <div class="card-body text-center position-relative py-2">
+            <a href="../../../index.html" class="position-absolute start-0 top-50 translate-middle-y ms-3 text-decoration-none">返回</a>
+            <h5 class="card-title mb-0">图片工具箱</h5>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-convert">格式转换</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-compress">图片压缩</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-resize">调整尺寸</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-crop">图片裁剪</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-base64">Base64互转</a></li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- 格式转换 -->
+        <div class="tab-pane fade show active" id="tab-convert">
+            <div class="upload-area" id="convertUpload">
+                <input type="file" id="convertInput" accept="image/*" multiple>
+                <p class="mb-1">点击或拖拽图片到此处（支持多选）</p>
+                <small class="text-muted">支持 JPG/PNG/WebP/GIF/BMP</small>
+            </div>
+            <div id="convertList" class="image-list"></div>
+            <div id="convertOptions" class="hidden">
+                <div class="row g-2 align-items-center mb-2">
+                    <div class="col-auto"><label class="col-form-label">输出格式:</label></div>
+                    <div class="col-auto">
+                        <select id="convertFormat" class="form-select form-select-sm">
+                            <option value="webp">WebP</option>
+                            <option value="jpeg">JPEG</option>
+                            <option value="png">PNG</option>
+                        </select>
+                    </div>
+                    <div class="col-auto"><label class="col-form-label">质量:</label></div>
+                    <div class="col-auto d-flex align-items-center gap-2">
+                        <input type="range" id="convertQuality" class="form-range" style="width:120px" min="1" max="100" value="85">
+                        <span id="convertQualityVal" style="font-size:13px">85</span>
+                    </div>
+                    <div class="col-auto"><button class="btn btn-primary btn-sm" id="convertBtn">批量转换</button></div>
+                    <div class="col-auto"><button class="btn btn-outline-secondary btn-sm" id="convertClearBtn">清空</button></div>
+                </div>
+            </div>
+            <div id="convertResults" class="result-list"></div>
+        </div>
+
+        <!-- 图片压缩 -->
+        <div class="tab-pane fade" id="tab-compress">
+            <div class="upload-area" id="compressUpload">
+                <input type="file" id="compressInput" accept="image/*" multiple>
+                <p class="mb-1">点击或拖拽图片到此处（支持多选）</p>
+                <small class="text-muted">支持 JPG/PNG/WebP/GIF/BMP</small>
+            </div>
+            <div id="compressList" class="image-list"></div>
+            <div id="compressOptions" class="hidden">
+                <div class="row g-2 align-items-center mb-2">
+                    <div class="col-auto"><label class="col-form-label">压缩质量:</label></div>
+                    <div class="col-auto d-flex align-items-center gap-2">
+                        <input type="range" id="compressQuality" class="form-range" style="width:120px" min="1" max="100" value="70">
+                        <span id="compressQualityVal" style="font-size:13px">70</span>
+                    </div>
+                    <div class="col-auto"><label class="col-form-label">最大宽度:</label></div>
+                    <div class="col-auto"><input type="number" id="compressMaxWidth" class="form-control form-control-sm" style="width:80px" value="1920" min="0"></div>
+                    <div class="col-auto"><small class="text-muted">0=不限</small></div>
+                    <div class="col-auto"><button class="btn btn-primary btn-sm" id="compressBtn">批量压缩</button></div>
+                    <div class="col-auto"><button class="btn btn-outline-secondary btn-sm" id="compressClearBtn">清空</button></div>
+                </div>
+            </div>
+            <div id="compressResults" class="result-list"></div>
+        </div>
+
+        <!-- 调整尺寸 -->
+        <div class="tab-pane fade" id="tab-resize">
+            <div class="upload-area" id="resizeUpload">
+                <input type="file" id="resizeInput" accept="image/*" multiple>
+                <p class="mb-1">点击或拖拽图片到此处（支持多选）</p>
+                <small class="text-muted">支持 JPG/PNG/WebP/GIF/BMP</small>
+            </div>
+            <div id="resizeList" class="image-list"></div>
+            <div id="resizeOptions" class="hidden">
+                <div class="row g-2 align-items-center mb-2">
+                    <div class="col-auto"><label class="col-form-label">宽度:</label></div>
+                    <div class="col-auto"><input type="number" id="resizeWidth" class="form-control form-control-sm" style="width:80px" value="800" min="1"></div>
+                    <div class="col-auto"><label class="col-form-label">高度:</label></div>
+                    <div class="col-auto"><input type="number" id="resizeHeight" class="form-control form-control-sm" style="width:80px" value="600" min="1"></div>
+                    <div class="col-auto">
+                        <div class="form-check"><input type="checkbox" id="resizeKeepRatio" class="form-check-input" checked><label class="form-check-label" for="resizeKeepRatio">保持比例</label></div>
+                    </div>
+                    <div class="col-auto"><button class="btn btn-primary btn-sm" id="resizeBtn">批量调整</button></div>
+                    <div class="col-auto"><button class="btn btn-outline-secondary btn-sm" id="resizeClearBtn">清空</button></div>
+                </div>
+            </div>
+            <div id="resizeResults" class="result-list"></div>
+        </div>
+
+        <!-- 图片裁剪 -->
+        <div class="tab-pane fade" id="tab-crop">
+            <div class="upload-area" id="cropUpload">
+                <input type="file" id="cropInput" accept="image/*">
+                <p class="mb-1">点击或拖拽图片到此处</p>
+                <small class="text-muted">支持 JPG/PNG/WebP/GIF/BMP</small>
+            </div>
+            <div id="cropEditor" class="hidden">
+                <div class="crop-wrapper"><img id="cropImage"></div>
+                <div class="d-flex gap-2 mt-2">
+                    <button class="btn btn-primary btn-sm" id="cropBtn">裁剪</button>
+                    <button class="btn btn-outline-secondary btn-sm" id="cropResetBtn">重新选择</button>
+                </div>
+            </div>
+            <div id="cropResult" class="hidden mt-3">
+                <div class="result-item">
+                    <img id="cropOutput">
+                    <span class="meta" id="cropInfo"></span>
+                    <button class="btn btn-outline-secondary btn-sm" id="cropDownloadBtn">下载</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Base64互转 -->
+        <div class="tab-pane fade" id="tab-base64">
+            <h6>图片转Base64</h6>
+            <div class="upload-area" id="b64Upload">
+                <input type="file" id="b64Input" accept="image/*">
+                <p class="mb-1">点击或拖拽图片到此处</p>
+                <small class="text-muted">支持 JPG/PNG/WebP/GIF/BMP</small>
+            </div>
+            <div id="b64ToResult" class="hidden mb-3">
+                <textarea id="base64Output" class="form-control" rows="5" readonly></textarea>
+                <button class="btn btn-outline-secondary btn-sm mt-2" id="b64CopyBtn">复制</button>
+            </div>
+            <hr>
+            <h6>Base64转图片</h6>
+            <textarea id="base64Input" class="form-control mb-2" rows="4" placeholder="粘贴Base64编码"></textarea>
+            <button class="btn btn-primary btn-sm" id="b64ConvertBtn">转换</button>
+            <div id="b64FromResult" class="hidden mt-3">
+                <div class="result-item">
+                    <img id="b64Output">
+                    <span class="meta" id="b64Info"></span>
+                    <button class="btn btn-outline-secondary btn-sm" id="b64DownloadBtn">下载</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h6 class="card-title">使用说明</h6>
+            <ul class="text-muted small mb-0">
+                <li>所有操作在浏览器本地完成，文件不会上传</li>
+                <li>格式转换、压缩、调整尺寸支持批量操作</li>
+                <li>图片裁剪使用可视化框选，支持拖拽调整</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script src="../../../libs/bootstrap.bundle.min.js"></script>
+<script src="../../../libs/browser-image-compression.min.js"></script>
+<script src="../../../libs/pica.min.js"></script>
+<script src="../../../libs/cropper.min.js"></script>
+<script src="shared.js"></script>
+<script src="convert.js"></script>
+<script src="compress.js"></script>
+<script src="resize.js"></script>
+<script src="crop.js"></script>
+<script src="base64.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

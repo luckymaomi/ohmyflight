@@ -1,0 +1,20 @@
+{
+  "name": "ohmyflight",
+  "private": true,
+  "scripts": {
+    "build": "tsx scripts/build.mts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "tsx scripts/build.mts && vitest run",
+    "test:watch": "tsx scripts/build.mts && vitest",
+    "test:smoke": "tsx scripts/build.mts && vitest run tests/smoke tests/structure",
+    "test:tool": "tsx scripts/build.mts && vitest run tests/tool",
+    "test:structure": "tsx scripts/build.mts && vitest run tests/structure"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0",
+    "xlsx-js-style": "^1.2.0"
+  }
+}

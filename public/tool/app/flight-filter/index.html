@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>历史航班统计</title>
+    <link rel="stylesheet" href="../../../libs/bootstrap.min.css">
+    <style>
+        body { background: transparent; padding: 20px; }
+        .container { max-width: 1200px; }
+        .flight-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; min-height: 40px; padding: 10px; background: #f8f9fa; border-radius: 6px; }
+        .flight-tag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: #0d6efd; color: white; border-radius: 15px; font-size: 13px; }
+        .flight-tag .remove { cursor: pointer; font-weight: bold; }
+        .status { margin-top: 8px; padding: 8px 12px; border-radius: 4px; font-size: 13px; display: none; }
+        .status-success { background: #d1e7dd; color: #0f5132; display: block; }
+        .status-error { background: #f8d7da; color: #842029; display: block; }
+        .status-info { background: #cff4fc; color: #055160; display: block; }
+        .result-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 15px; }
+        .result-table th, .result-table td { padding: 8px 12px; border: 1px solid #dee2e6; text-align: left; }
+        .result-table th { background: #f8f9fa; font-weight: 600; position: sticky; top: 0; }
+        .result-table tbody tr:hover { background: #f8f9fa; }
+        .result-table .row-yellow { background: #FFFFCC; }
+        .result-table .row-red { background: #FFCCCC; }
+        .result-table .row-blue { background: #CCE5FF; }
+        .table-wrapper { max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 6px; }
+        .legend { display: flex; gap: 15px; margin-top: 10px; font-size: 13px; }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .legend-color { width: 30px; height: 18px; border: 1px solid #dee2e6; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card mb-4">
+            <div class="card-body text-center position-relative">
+                <a href="../../../index.html" class="position-absolute start-0 top-50 translate-middle-y ms-3 text-decoration-none">返回首页</a>
+                <h4 class="card-title mb-0">历史航班统计</h4>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">第一步：上传Excel文件</h5>
+                <input type="file" class="form-control" style="max-width:400px" id="fileInput" accept=".xlsx,.xls">
+                <div id="fileStatus" class="status"></div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">第二步：输入目标航班号</h5>
+                <input type="text" class="form-control mb-2" id="flightInput" placeholder="">
+                <small class="text-muted">输入4位数字航班号，多个用逗号分隔</small>
+                <div class="d-flex gap-2 mt-2">
+                    <button class="btn btn-outline-secondary btn-sm" id="addBtn">确认添加</button>
+                    <button class="btn btn-outline-secondary btn-sm" id="clearBtn">清空重输</button>
+                </div>
+                <div class="flight-tags" id="flightTags"></div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">第三步：设置统计截止日期</h5>
+                <input type="date" class="form-control" style="max-width:200px" id="dateInput">
+                <small class="text-muted">仅筛选此日期之前的历史数据</small>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">第四步：处理与导出</h5>
+                <button class="btn btn-outline-secondary" id="processBtn">开始处理数据</button>
+                <div id="processStatus" class="status"></div>
+                
+                <div id="resultSection" style="display:none; margin-top: 20px;">
+                    <div class="legend">
+                        <div class="legend-item"><div class="legend-color" style="background:#FFFFCC;"></div><span>匹配航班</span></div>
+                        <div class="legend-item"><div class="legend-color" style="background:#FFCCCC;"></div><span>各航班最后一班</span></div>
+                        <div class="legend-item"><div class="legend-color" style="background:#CCE5FF;"></div><span>机长最后执飞</span></div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="result-table" id="resultTable">
+                            <thead>
+                                <tr>
+                                    <th>行号</th>
+                                    <th>员工号</th>
+                                    <th>中文名</th>
+                                    <th>日期</th>
+                                    <th>任务</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div style="text-align: right; margin-top: 10px;">
+                        <a href="#" id="downloadLink" style="font-size: 13px;">导出Excel</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">使用说明</h5>
+                <ol class="text-muted mb-0">
+                    <li>上传任务导出Excel文件（包含员工号、中文名、日期、任务四列）</li>
+                    <li>输入目标航班号，多个航班号用逗号分隔</li>
+                    <li>选择统计截止日期</li>
+                    <li>点击"开始处理数据"进行筛选和标色</li>
+                    <li>黄色标记：所有匹配目标航班号的记录</li>
+                    <li>红色标记：每个机长执行每个航班的最后一班记录</li>
+                    <li>蓝色标记：每个机长在所有匹配记录中最后执飞的航班</li>
+                    <li>点击右下角"导出Excel"链接下载标色结果</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+<script src="../../../libs/xlsx-js-style.min.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
