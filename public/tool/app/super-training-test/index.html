@@ -13,7 +13,7 @@
             <div class="hero-bar">
                 <div class="hero-copy">
                     <h1 class="hero-title">培训克星</h1>
-                    <p class="hero-subtitle">独立的超级培训测试工具，按新总表结构识别人员信息表和项目 sheet，并在同一项目 sheet 内拆分已录入/未录入记录，支持一键更新有效期、一键生成预排班并输出更新报告。</p>
+                    <p class="hero-subtitle">独立的超级培训测试工具，按新总表结构识别人员信息表和项目 sheet，并在同一项目 sheet 内拆分已录入/未录入记录，支持一键更新有效期、一键生成预排班，以及按月核对培训计划并直接在原项目 sheet 标绿/补红。</p>
                 </div>
                 <a class="hero-link" href="../../../index.html">返回首页</a>
             </div>
@@ -126,6 +126,46 @@
         <section class="section">
             <div class="section-head">
                 <div>
+                    <h2 class="section-title">培训计划核对</h2>
+                    <p class="section-intro">按月筛出当月到期人员，再核对原项目 sheet 里当月有没有这个人；已排标绿，缺失直接补加姓名和有效期并标红。</p>
+                </div>
+            </div>
+            <div class="form-grid form-grid-3">
+                <div class="field">
+                    <label for="planCheckValiditySheetSelect">人员信息表</label>
+                    <select id="planCheckValiditySheetSelect" disabled>
+                        <option value="">请先导入文件</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="planCheckMonthInput">核对月份</label>
+                    <input id="planCheckMonthInput" type="month">
+                </div>
+                <div class="field field-project-picker">
+                    <label>培训类型</label>
+                    <div class="checkbox-panel is-disabled" id="planCheckProjectGroup">
+                        <div class="checkbox-toolbar">
+                            <label class="checkbox-inline" for="planCheckProjectSelectAll">
+                                <input id="planCheckProjectSelectAll" type="checkbox" data-role="select-all" disabled>
+                                <span class="checkbox-inline-box" aria-hidden="true"></span>
+                                <span class="checkbox-inline-text">全选</span>
+                            </label>
+                            <span class="checkbox-summary" id="planCheckProjectSummary">请先导入文件</span>
+                        </div>
+                        <div class="checkbox-list" id="planCheckProjectList">
+                            <div class="checkbox-empty">请先导入文件</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="toolbar">
+                <button class="action-button action-button-primary" id="planCheckButton" type="button" disabled>核对培训计划</button>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
                     <h2 class="section-title">导出</h2>
                     <p class="section-intro">先生成预览，确认无误后，再导出当前预览结果。</p>
                 </div>
@@ -204,6 +244,7 @@
     <script src="./scripts/rule-engine.js"></script>
     <script src="./scripts/validity.js"></script>
     <script src="./scripts/schedule.js"></script>
+    <script src="./scripts/plan-check.js"></script>
     <script src="./scripts/report-sheet.js"></script>
     <script src="./scripts/generated-sheet.js"></script>
     <script src="./scripts/result-status.js"></script>

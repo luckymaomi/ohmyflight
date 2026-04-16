@@ -549,6 +549,40 @@ select {
     min-width: 1180px;
 }
 
+.detail-result-table.result-table-plan-check {
+    min-width: 980px;
+}
+
+.detail-result-table.result-table-plan-check :is(th, td):nth-child(1) {
+    width: 16%;
+    white-space: nowrap;
+}
+
+.detail-result-table.result-table-plan-check :is(th, td):nth-child(2) {
+    width: 11%;
+    white-space: nowrap;
+}
+
+.detail-result-table.result-table-plan-check :is(th, td):nth-child(3) {
+    width: 12%;
+    white-space: nowrap;
+}
+
+.detail-result-table.result-table-plan-check :is(th, td):nth-child(4) {
+    width: 12%;
+    white-space: nowrap;
+}
+
+.detail-result-table.result-table-plan-check :is(th, td):nth-child(5),
+.detail-result-table.result-table-plan-check :is(th, td):nth-child(6) {
+    width: 11%;
+    white-space: nowrap;
+}
+
+.detail-result-table.result-table-plan-check :is(th, td):nth-child(7) {
+    width: 28%;
+}
+
 .detail-result-table.result-table-schedule :is(th, td):nth-child(1) {
     width: 14%;
     white-space: nowrap;

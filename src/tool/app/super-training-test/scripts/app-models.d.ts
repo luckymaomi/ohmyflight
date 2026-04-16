@@ -56,6 +56,7 @@ interface SuperTrainingAppState {
   pendingExportLabel: string;
   updateSelectedProjects: string[];
   scheduleSelectedProjects: string[];
+  planCheckSelectedProjects: string[];
 }
 
 interface SuperTrainingUpdatedRowEntry {
@@ -80,8 +81,15 @@ interface SuperTrainingAppElements {
   scheduleProjectList: HTMLElement;
   scheduleStartDateInput: HTMLInputElement;
   scheduleEndDateInput: HTMLInputElement;
+  planCheckValiditySheetSelect: HTMLSelectElement;
+  planCheckProjectGroup: HTMLElement;
+  planCheckProjectSelectAll: HTMLInputElement;
+  planCheckProjectSummary: HTMLElement;
+  planCheckProjectList: HTMLElement;
+  planCheckMonthInput: HTMLInputElement;
   updateValidityButton: HTMLButtonElement;
   generateScheduleButton: HTMLButtonElement;
+  planCheckButton: HTMLButtonElement;
   exportButton: HTMLButtonElement;
   resultSummary: HTMLElement;
   statsGrid: HTMLElement;

@@ -73,6 +73,8 @@
       case "日期异常":
       case "匹配失败":
         return "danger";
+      case "有效期异常":
+        return "danger";
       case "培训未录入":
       case "缺少旧有效期":
         return "info";
@@ -84,12 +86,36 @@
     }
   }
 
+  function badgeToneForPlanCheckStatus(value) {
+    switch (value) {
+      case "当月已排":
+        return "ok";
+      case "当月缺失":
+        return "warn";
+      default:
+        return "info";
+    }
+  }
+
+  function badgeToneForPlanCheckResult(value) {
+    switch (value) {
+      case "已标绿":
+        return "ok";
+      case "已补加":
+        return "danger";
+      default:
+        return "info";
+    }
+  }
+
   window.SuperTraining.ResultStatus = {
     makeBadgeCell,
     badgeToneForUpdateJudgement,
     badgeToneForUpdateResult,
     badgeToneForSchedulePriority,
     badgeToneForScheduleStatus,
-    badgeToneForSkippedStatus
+    badgeToneForSkippedStatus,
+    badgeToneForPlanCheckStatus,
+    badgeToneForPlanCheckResult
   };
 })();

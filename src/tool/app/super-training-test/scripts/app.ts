@@ -3,6 +3,7 @@
   const Scanner = window.SuperTraining.Scanner;
   const Validity = window.SuperTraining.Validity;
   const Schedule = window.SuperTraining.Schedule;
+  const PlanCheck = window.SuperTraining.PlanCheck;
   const ReportSheet = window.SuperTraining.ReportSheet;
   const GeneratedSheet = window.SuperTraining.GeneratedSheet;
   const ResultStatus = window.SuperTraining.ResultStatus;
@@ -17,16 +18,21 @@
     elements.workbookFile.addEventListener("change", handleWorkbookChange);
     elements.updateValiditySheetSelect.addEventListener("change", invalidateExportPreview);
     elements.scheduleValiditySheetSelect.addEventListener("change", invalidateExportPreview);
+    elements.planCheckValiditySheetSelect.addEventListener("change", invalidateExportPreview);
     elements.updateMonthSelect.addEventListener("change", invalidateExportPreview);
     elements.scheduleStartDateInput.addEventListener("change", invalidateExportPreview);
     elements.scheduleEndDateInput.addEventListener("change", invalidateExportPreview);
+    elements.planCheckMonthInput.addEventListener("change", invalidateExportPreview);
     elements.updateProjectGroup.addEventListener("change", handleUpdateProjectGroupChange);
     elements.scheduleProjectGroup.addEventListener("change", handleScheduleProjectGroupChange);
+    elements.planCheckProjectGroup.addEventListener("change", handlePlanCheckProjectGroupChange);
     elements.updateValidityButton.addEventListener("click", handleUpdatePreview);
     elements.generateScheduleButton.addEventListener("click", handleSchedulePreview);
+    elements.planCheckButton.addEventListener("click", handlePlanCheckPreview);
     elements.exportButton.addEventListener("click", handleExport);
     elements.scheduleStartDateInput.value = todayString();
     elements.scheduleEndDateInput.value = monthEndString();
+    elements.planCheckMonthInput.value = monthString();
 
     renderEmptyState();
   }
@@ -40,6 +46,11 @@
     const now = new Date();
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return `${monthEnd.getFullYear()}-${String(monthEnd.getMonth() + 1).padStart(2, "0")}-${String(monthEnd.getDate()).padStart(2, "0")}`;
+  }
+
+  function monthString() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   }
 
   function setStatus(message, isError = false) {
@@ -79,8 +90,15 @@
       && Boolean(elements.scheduleEndDateInput.value)
       && !state.busy;
 
+    const canPlanCheck = Boolean(state.analysis)
+      && Boolean(elements.planCheckValiditySheetSelect.value)
+      && state.planCheckSelectedProjects.length > 0
+      && Boolean(elements.planCheckMonthInput.value)
+      && !state.busy;
+
     elements.updateValidityButton.disabled = !canUpdate;
     elements.generateScheduleButton.disabled = !canSchedule;
+    elements.planCheckButton.disabled = !canPlanCheck;
     elements.exportButton.disabled = !state.pendingExport || state.busy;
   }
 
@@ -92,6 +110,11 @@
   }
 
   function getScheduleProjects() {
+    if (!state.analysis) return [];
+    return state.analysis.projects.filter((project) => project.peopleColumnIndex >= 0);
+  }
+
+  function getPlanCheckProjects() {
     if (!state.analysis) return [];
     return state.analysis.projects.filter((project) => project.peopleColumnIndex >= 0);
   }
@@ -150,16 +173,46 @@
 
     elements.updateValiditySheetSelect.innerHTML = options.join("");
     elements.scheduleValiditySheetSelect.innerHTML = options.join("");
+    elements.planCheckValiditySheetSelect.innerHTML = options.join("");
     elements.updateValiditySheetSelect.disabled = !state.analysis;
     elements.scheduleValiditySheetSelect.disabled = !state.analysis;
+    elements.planCheckValiditySheetSelect.disabled = !state.analysis;
+  }
+
+  function getProjectGroupElements(kind) {
+    if (kind === "update") {
+      return {
+        groupElement: elements.updateProjectGroup,
+        selectAllElement: elements.updateProjectSelectAll,
+        summaryElement: elements.updateProjectSummary,
+        listElement: elements.updateProjectList
+      };
+    }
+
+    if (kind === "schedule") {
+      return {
+        groupElement: elements.scheduleProjectGroup,
+        selectAllElement: elements.scheduleProjectSelectAll,
+        summaryElement: elements.scheduleProjectSummary,
+        listElement: elements.scheduleProjectList
+      };
+    }
+
+    return {
+      groupElement: elements.planCheckProjectGroup,
+      selectAllElement: elements.planCheckProjectSelectAll,
+      summaryElement: elements.planCheckProjectSummary,
+      listElement: elements.planCheckProjectList
+    };
   }
 
   function renderProjectCheckboxGroup(kind, projects, selectedNames) {
-    const isUpdate = kind === "update";
-    const groupElement = isUpdate ? elements.updateProjectGroup : elements.scheduleProjectGroup;
-    const selectAllElement = isUpdate ? elements.updateProjectSelectAll : elements.scheduleProjectSelectAll;
-    const summaryElement = isUpdate ? elements.updateProjectSummary : elements.scheduleProjectSummary;
-    const listElement = isUpdate ? elements.updateProjectList : elements.scheduleProjectList;
+    const {
+      groupElement,
+      selectAllElement,
+      summaryElement,
+      listElement
+    } = getProjectGroupElements(kind);
 
     groupElement.classList.toggle("is-disabled", !state.analysis || !projects.length);
 
@@ -207,12 +260,15 @@
   function renderProjectGroups() {
     const updateProjects = getUpdateProjects();
     const scheduleProjects = getScheduleProjects();
+    const planCheckProjects = getPlanCheckProjects();
 
     state.updateSelectedProjects = normalizeSelectedProjects(state.updateSelectedProjects, updateProjects);
     state.scheduleSelectedProjects = normalizeSelectedProjects(state.scheduleSelectedProjects, scheduleProjects);
+    state.planCheckSelectedProjects = normalizeSelectedProjects(state.planCheckSelectedProjects, planCheckProjects);
 
     renderProjectCheckboxGroup("update", updateProjects, state.updateSelectedProjects);
     renderProjectCheckboxGroup("schedule", scheduleProjects, state.scheduleSelectedProjects);
+    renderProjectCheckboxGroup("planCheck", planCheckProjects, state.planCheckSelectedProjects);
   }
 
   function getCheckedProjectValues(listElement) {
@@ -323,6 +379,9 @@
     if (signature === "项目|员工号|姓名|原有效期|状态|开始日期|结束日期|说明") {
       return "result-table-schedule";
     }
+    if (signature === "项目|员工号|姓名|有效期|状态|处理结果|说明") {
+      return "result-table-plan-check";
+    }
     if (signature === "项目|项目 sheet|项目行号|员工号|姓名|旧有效期|新有效期|判断|处理结果|说明") {
       return "result-table-validity";
     }
@@ -336,6 +395,9 @@
     const signature = (columns || []).join("|");
     if (signature === "项目|员工号|姓名|原有效期|轻重缓急|状态|开始日期|结束日期|说明") {
       return "result-table-schedule";
+    }
+    if (signature === "项目|员工号|姓名|有效期|状态|处理结果|说明") {
+      return "result-table-plan-check";
     }
     if (signature === "项目|项目 sheet|项目行号|员工号|姓名|旧有效期|新有效期|判断|处理结果|说明") {
       return "result-table-validity";
@@ -400,6 +462,7 @@
   function renderEmptyState() {
     state.updateSelectedProjects = [];
     state.scheduleSelectedProjects = [];
+    state.planCheckSelectedProjects = [];
     renderWorkbookOverview();
     renderValiditySheetOptions();
     renderProjectGroups();
@@ -470,6 +533,27 @@
     ]);
   }
 
+  function toPlanCheckDetailRows(rows) {
+    return rows.map((row) => [
+      row.projectName,
+      row.employeeId,
+      row.name,
+      row.expiry,
+      ResultStatus.makeBadgeCell(row.status, ResultStatus.badgeToneForPlanCheckStatus(row.status)),
+      ResultStatus.makeBadgeCell(row.result, ResultStatus.badgeToneForPlanCheckResult(row.result)),
+      row.reason
+    ]);
+  }
+
+  function toPlanCheckSkippedRows(rows) {
+    return rows.map((row) => [
+      row.projectName,
+      row.name,
+      ResultStatus.makeBadgeCell(row.status, ResultStatus.badgeToneForSkippedStatus(row.status)),
+      row.reason
+    ]);
+  }
+
   function renderActionResult(kind, result) {
     elements.resultSummary.textContent = result.summaryText;
     renderStats(result.statsCards);
@@ -489,6 +573,26 @@
         result.skippedColumns,
         toValiditySkippedRows(result.skippedRows),
         "本次没有跳过记录。"
+      );
+      renderSkippedSummary(result.skippedRows.length);
+      return;
+    }
+
+    if (kind === "planCheck") {
+      elements.detailTableTitle.textContent = "核对明细";
+      renderTable(
+        elements.detailTableHead,
+        elements.detailTableBody,
+        result.detailColumns,
+        toPlanCheckDetailRows(result.detailRows),
+        "本次没有命中需要核对的到期人员。"
+      );
+      renderTable(
+        elements.skippedTableHead,
+        elements.skippedTableBody,
+        result.skippedColumns,
+        toPlanCheckSkippedRows(result.skippedRows),
+        "本次没有额外提示。"
       );
       renderSkippedSummary(result.skippedRows.length);
       return;
@@ -540,6 +644,7 @@
       state.analysis = analysis;
       state.updateSelectedProjects = [];
       state.scheduleSelectedProjects = [];
+      state.planCheckSelectedProjects = [];
 
       renderWorkbookOverview();
       renderValiditySheetOptions();
@@ -598,6 +703,25 @@
     }
 
     renderProjectCheckboxGroup("schedule", scheduleProjects, state.scheduleSelectedProjects);
+    invalidateExportPreview();
+  }
+
+  function handlePlanCheckProjectGroupChange(event) {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) return;
+
+    const planCheckProjects = getPlanCheckProjects();
+    if (target.dataset.role === "select-all") {
+      state.planCheckSelectedProjects = target.checked
+        ? planCheckProjects.map((project) => project.canonical)
+        : [];
+    } else if (target.dataset.role === "project") {
+      state.planCheckSelectedProjects = getCheckedProjectValues(elements.planCheckProjectList);
+    } else {
+      return;
+    }
+
+    renderProjectCheckboxGroup("planCheck", planCheckProjects, state.planCheckSelectedProjects);
     invalidateExportPreview();
   }
 
@@ -684,6 +808,30 @@
     };
   }
 
+  function validatePlanCheckSelection() {
+    if (!state.analysis) {
+      setStatus("请先导入总培训表文件。", true);
+      return null;
+    }
+    if (!elements.planCheckValiditySheetSelect.value) {
+      setStatus("请先确认人员信息表。", true);
+      return null;
+    }
+    if (!state.planCheckSelectedProjects.length) {
+      setStatus("请先选择培训类型。", true);
+      return null;
+    }
+    if (!elements.planCheckMonthInput.value) {
+      setStatus("请先选择核对月份。", true);
+      return null;
+    }
+
+    return {
+      projectNames: [...state.planCheckSelectedProjects],
+      monthKey: elements.planCheckMonthInput.value
+    };
+  }
+
   async function handleUpdatePreview() {
     const selection = validateUpdateSelection();
     if (!selection) return;
@@ -757,6 +905,38 @@
     } catch (error) {
       clearPendingExport();
       setStatus(error.message || "生成预排班预览失败。", true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handlePlanCheckPreview() {
+    const selection = validatePlanCheckSelection();
+    if (!selection) return;
+
+    setBusy(true);
+    clearPendingExport();
+    setStatus("正在生成培训计划核对预览...");
+
+    try {
+      const workbook = Utils.deepClone(state.workbook) as SuperTrainingWorkbook;
+      const analysis = Scanner.analyzeWorkbook(workbook);
+      const result = PlanCheck.buildMonthlyPlanCheck(
+        workbook,
+        analysis,
+        selection.projectNames,
+        selection.monthKey
+      );
+
+      renderActionResult("planCheck", result);
+      state.pendingExport = workbook;
+      state.pendingExportName = Utils.buildOutputFileName(state.sourceFileName, "培训计划核对");
+      state.pendingExportLabel = "培训计划核对预览";
+      elements.exportButton.textContent = "导出培训计划核对结果 Excel";
+      setStatus("培训计划核对预览已生成，确认无误后可导出 Excel。");
+    } catch (error) {
+      clearPendingExport();
+      setStatus(error.message || "生成培训计划核对预览失败。", true);
     } finally {
       setBusy(false);
     }

@@ -10,6 +10,7 @@
     pendingExportName: "",
     pendingExportLabel: "",
     updateSelectedProjects: [],
-    scheduleSelectedProjects: []
+    scheduleSelectedProjects: [],
+    planCheckSelectedProjects: []
   };
 })();

@@ -1,0 +1,95 @@
+import * as XLSX from "xlsx-js-style";
+import { beforeAll, describe, expect, it } from "vitest";
+
+import { loadBrowserScripts } from "../../helpers/browser-context";
+
+function makeDate(year: number, month: number, day: number) {
+  return new Date(year, month - 1, day, 12, 0, 0, 0);
+}
+
+function buildWorkbook() {
+  const workbook = XLSX.utils.book_new();
+
+  const peopleSheet = XLSX.utils.aoa_to_sheet([
+    ["员工号", "姓名", "危险品"],
+    ["1001", "张三", makeDate(2026, 5, 20)],
+    ["1002", "李四", makeDate(2026, 5, 31)],
+    ["1003", "王五", makeDate(2026, 5, 28)],
+    ["1004", "赵六", makeDate(2026, 6, 15)],
+    ["1005", "孙七", "无效日期"]
+  ], { cellDates: true });
+
+  const projectSheet = XLSX.utils.aoa_to_sheet([
+    ["员工号", "姓名", "项目名称", "培训信息是否录入", "培训开始日期", "培训结束日期", "有效期"],
+    ["1001", "张三", "危险品", "否", makeDate(2026, 5, 10), makeDate(2026, 5, 10), ""],
+    ["1003", "王五", "危险品", "是", makeDate(2026, 5, 18), makeDate(2026, 5, 18), ""],
+    ["9001", "无关人员", "危险品", "否", makeDate(2026, 4, 15), makeDate(2026, 4, 15), ""]
+  ], { cellDates: true });
+
+  XLSX.utils.book_append_sheet(workbook, peopleSheet, "人员信息表");
+  XLSX.utils.book_append_sheet(workbook, projectSheet, "危险品");
+  return workbook;
+}
+
+describe("super-training-test monthly plan check", () => {
+  let context: ReturnType<typeof loadBrowserScripts>;
+  let Scanner: any;
+  let PlanCheck: any;
+  let Utils: any;
+
+  beforeAll(() => {
+    context = loadBrowserScripts([
+      "tool/app/super-training-test/scripts/config.js",
+      "tool/app/super-training-test/scripts/utils.js",
+      "tool/app/super-training-test/scripts/scanner.js",
+      "tool/app/super-training-test/scripts/plan-check.js"
+    ], {
+      XLSX
+    });
+
+    const superTraining = context.SuperTraining as {
+      Scanner: any;
+      PlanCheck: any;
+      Utils: any;
+    };
+
+    Scanner = superTraining.Scanner;
+    PlanCheck = superTraining.PlanCheck;
+    Utils = superTraining.Utils;
+  });
+
+  it("marks any existing row in the selected month as covered and appends missing names plus expiry into the original sheet", () => {
+    const workbook = buildWorkbook();
+    const analysis = Scanner.analyzeWorkbook(workbook);
+    const result = PlanCheck.buildMonthlyPlanCheck(workbook, analysis, ["危险品"], "2026-05");
+
+    expect(result.detailRows).toHaveLength(3);
+
+    const zhangSan = result.detailRows.find((row: any) => row.name === "张三");
+    const liSi = result.detailRows.find((row: any) => row.name === "李四");
+    const wangWu = result.detailRows.find((row: any) => row.name === "王五");
+
+    expect(zhangSan.status).toBe("当月已排");
+    expect(zhangSan.result).toBe("已标绿");
+    expect(wangWu.status).toBe("当月已排");
+    expect(wangWu.result).toBe("已标绿");
+    expect(liSi.status).toBe("当月缺失");
+    expect(liSi.result).toBe("已补加");
+    expect(liSi.expiry).toBe("2026-05-31");
+
+    expect(result.skippedRows).toHaveLength(1);
+    expect(result.skippedRows[0].name).toBe("孙七");
+    expect(result.skippedRows[0].status).toBe("有效期异常");
+
+    const projectSheet = workbook.Sheets["危险品"];
+    expect(projectSheet.B2?.s?.fill?.fgColor?.rgb).toBe("D9F2D9");
+    expect(projectSheet.B3?.s?.fill?.fgColor?.rgb).toBe("D9F2D9");
+
+    const bounds = XLSX.utils.decode_range(projectSheet["!ref"] || "A1");
+    expect(bounds.e.r).toBe(4);
+    expect(projectSheet.B5?.v).toBe("李四");
+    expect(projectSheet.G5?.t).toBe("d");
+    expect(Utils.formatDate(projectSheet.G5?.v)).toBe("2026-05-31");
+    expect(projectSheet.B5?.s?.fill?.fgColor?.rgb).toBe("FDE2E1");
+  });
+});
