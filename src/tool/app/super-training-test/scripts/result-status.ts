@@ -88,9 +88,9 @@
 
   function badgeToneForPlanCheckStatus(value) {
     switch (value) {
-      case "当月已排":
+      case "已排覆盖":
         return "ok";
-      case "当月缺失":
+      case "未覆盖":
         return "warn";
       default:
         return "info";

@@ -21,8 +21,9 @@ function buildWorkbook() {
 
   const projectSheet = XLSX.utils.aoa_to_sheet([
     ["员工号", "姓名", "项目名称", "培训信息是否录入", "培训开始日期", "培训结束日期", "有效期"],
-    ["1001", "张三", "危险品", "否", makeDate(2026, 5, 10), makeDate(2026, 5, 10), ""],
-    ["1003", "王五", "危险品", "是", makeDate(2026, 5, 18), makeDate(2026, 5, 18), ""],
+    ["1001", "张三", "危险品", "是", makeDate(2026, 4, 15), makeDate(2026, 4, 15), ""],
+    ["1002", "李四", "危险品", "否", makeDate(2026, 5, 10), makeDate(2026, 5, 10), ""],
+    ["1003", "王五", "危险品", "是", makeDate(2026, 5, 28), makeDate(2026, 5, 28), ""],
     ["9001", "无关人员", "危险品", "否", makeDate(2026, 4, 15), makeDate(2026, 4, 15), ""]
   ], { cellDates: true });
 
@@ -42,6 +43,7 @@ describe("super-training-test monthly plan check", () => {
       "tool/app/super-training-test/scripts/config.js",
       "tool/app/super-training-test/scripts/utils.js",
       "tool/app/super-training-test/scripts/scanner.js",
+      "tool/app/super-training-test/scripts/rule-engine.js",
       "tool/app/super-training-test/scripts/plan-check.js"
     ], {
       XLSX
@@ -58,7 +60,7 @@ describe("super-training-test monthly plan check", () => {
     Utils = superTraining.Utils;
   });
 
-  it("marks any existing row in the selected month as covered and appends missing names plus expiry into the original sheet", () => {
+  it("treats valid prior scheduling as covered, notes missing recorded info, and still appends rows when existing records cannot cover the expiry", () => {
     const workbook = buildWorkbook();
     const analysis = Scanner.analyzeWorkbook(workbook);
     const result = PlanCheck.buildMonthlyPlanCheck(workbook, analysis, ["危险品"], "2026-05");
@@ -69,13 +71,18 @@ describe("super-training-test monthly plan check", () => {
     const liSi = result.detailRows.find((row: any) => row.name === "李四");
     const wangWu = result.detailRows.find((row: any) => row.name === "王五");
 
-    expect(zhangSan.status).toBe("当月已排");
+    expect(zhangSan.status).toBe("已排覆盖");
     expect(zhangSan.result).toBe("已标绿");
-    expect(wangWu.status).toBe("当月已排");
-    expect(wangWu.result).toBe("已标绿");
-    expect(liSi.status).toBe("当月缺失");
-    expect(liSi.result).toBe("已补加");
+    expect(zhangSan.reason).toContain("2026-04-15");
+
+    expect(liSi.status).toBe("已排覆盖");
+    expect(liSi.result).toBe("已标绿");
+    expect(liSi.reason).toContain("未发现已录入信息");
+
+    expect(wangWu.status).toBe("未覆盖");
+    expect(wangWu.result).toBe("已补加");
     expect(liSi.expiry).toBe("2026-05-31");
+    expect(wangWu.reason).toContain("不能覆盖本轮到期");
 
     expect(result.skippedRows).toHaveLength(1);
     expect(result.skippedRows[0].name).toBe("孙七");
@@ -84,12 +91,13 @@ describe("super-training-test monthly plan check", () => {
     const projectSheet = workbook.Sheets["危险品"];
     expect(projectSheet.B2?.s?.fill?.fgColor?.rgb).toBe("D9F2D9");
     expect(projectSheet.B3?.s?.fill?.fgColor?.rgb).toBe("D9F2D9");
+    expect(projectSheet.B4?.s?.fill?.fgColor?.rgb).not.toBe("D9F2D9");
 
     const bounds = XLSX.utils.decode_range(projectSheet["!ref"] || "A1");
-    expect(bounds.e.r).toBe(4);
-    expect(projectSheet.B5?.v).toBe("李四");
-    expect(projectSheet.G5?.t).toBe("d");
-    expect(Utils.formatDate(projectSheet.G5?.v)).toBe("2026-05-31");
-    expect(projectSheet.B5?.s?.fill?.fgColor?.rgb).toBe("FDE2E1");
+    expect(bounds.e.r).toBe(5);
+    expect(projectSheet.B6?.v).toBe("王五");
+    expect(projectSheet.G6?.t).toBe("d");
+    expect(Utils.formatDate(projectSheet.G6?.v)).toBe("2026-05-28");
+    expect(projectSheet.B6?.s?.fill?.fgColor?.rgb).toBe("FDE2E1");
   });
 });

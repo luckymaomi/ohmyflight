@@ -274,6 +274,60 @@
     };
   }
 
+  function evaluatePlanCoverage(rule, trainingDate, oldExpiry) {
+    if (!oldExpiry) {
+      return {
+        covered: false,
+        dueDate: null,
+        newExpiry: null,
+        windowInfo: getWindowInfo(rule, oldExpiry),
+        reason: "无旧有效期，无法判断本轮到期是否已被覆盖。"
+      };
+    }
+
+    const windowInfo = getWindowInfo(rule, oldExpiry);
+    const dueDate = resolveDueDate(oldExpiry, windowInfo);
+
+    if (!trainingDate) {
+      return {
+        covered: false,
+        dueDate,
+        newExpiry: null,
+        windowInfo,
+        reason: "培训日期无法解析，不能判断是否已覆盖本轮到期。"
+      };
+    }
+
+    if (dueDate && trainingDate > dueDate) {
+      return {
+        covered: false,
+        dueDate,
+        newExpiry: null,
+        windowInfo,
+        reason: `培训日期 ${Utils.formatDate(trainingDate)} 晚于本轮最晚完成日期 ${Utils.formatDate(dueDate)}，不能覆盖本轮到期。`
+      };
+    }
+
+    const computed = computeExpiry(rule, trainingDate, oldExpiry);
+    if (!computed.newExpiry || sameDay(computed.newExpiry, oldExpiry) || isEarlierDay(computed.newExpiry, oldExpiry)) {
+      return {
+        covered: false,
+        dueDate,
+        newExpiry: computed.newExpiry,
+        windowInfo,
+        reason: `按规则计算的新有效期 ${Utils.formatDate(computed.newExpiry)} 未晚于当前有效期 ${Utils.formatDate(oldExpiry)}，不能覆盖本轮到期。`
+      };
+    }
+
+    return {
+      covered: true,
+      dueDate,
+      newExpiry: computed.newExpiry,
+      windowInfo,
+      reason: `培训日期 ${Utils.formatDate(trainingDate)} 可覆盖本轮到期。${computed.reason}`
+    };
+  }
+
   function describeIgnored(cutoffDate, oldExpiry, windowInfo) {
     const dueDate = resolveDueDate(oldExpiry, windowInfo);
     if (!windowInfo.hasWindow) {
@@ -451,6 +505,7 @@
     computeExpiry,
     classifyUpdateJudgement,
     evaluateUpdateResult,
+    evaluatePlanCoverage,
     classifyScheduleStatus,
     classifyScheduleStageStatus,
     classifyScheduleUrgency,

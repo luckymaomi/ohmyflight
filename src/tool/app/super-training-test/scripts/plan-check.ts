@@ -1,5 +1,6 @@
 (function () {
   const Utils = window.SuperTraining.Utils;
+  const RuleEngine = window.SuperTraining.RuleEngine;
 
   const COVERED_NAME_STYLE = {
     font: { bold: true, color: { rgb: "1F6F43" } },
@@ -50,12 +51,13 @@
     Utils.expandSheetRef(sheet, rowNumber - 1, columnIndex);
   }
 
-  function buildMonthRows(project, monthKey) {
-    return project.sheetInfo.rows.filter((row) => {
-      const startMonth = Utils.toMonthKey(Utils.getValueByHeader(row, project.sheetInfo, "培训开始日期"));
-      const endMonth = Utils.toMonthKey(Utils.getValueByHeader(row, project.sheetInfo, "培训结束日期"));
-      return startMonth === monthKey || endMonth === monthKey;
-    });
+  function getRowTrainingDate(row, sheetInfo) {
+    return Utils.parseDate(Utils.getValueByHeader(row, sheetInfo, "培训开始日期"))
+      || Utils.parseDate(Utils.getValueByHeader(row, sheetInfo, "培训结束日期"));
+  }
+
+  function isRecordedRow(row, sheetInfo) {
+    return Utils.normalizeText(Utils.getValueByHeader(row, sheetInfo, "培训信息是否录入")) === "是";
   }
 
   function samePerson(candidate, row, sheetInfo) {
@@ -115,9 +117,55 @@
 
   function buildInsertReason(project, hasExpiryColumn) {
     if (hasExpiryColumn) {
-      return `原项目 sheet 在所选月份未找到该人员，已直接补加到 ${project.sheetName}，并写入姓名与有效期。`;
+      return `原项目 sheet 中未找到可覆盖本轮到期的安排，已直接补加到 ${project.sheetName}，并写入姓名与有效期。`;
     }
-    return `原项目 sheet 在所选月份未找到该人员，已直接补加到 ${project.sheetName}，但该表缺少“有效期”列，本次仅写入姓名。`;
+    return `原项目 sheet 中未找到可覆盖本轮到期的安排，已直接补加到 ${project.sheetName}，但该表缺少“有效期”列，本次仅写入姓名。`;
+  }
+
+  function sortMatchedRows(left, right) {
+    const leftTime = left.trainingDate ? left.trainingDate.getTime() : Number.POSITIVE_INFINITY;
+    const rightTime = right.trainingDate ? right.trainingDate.getTime() : Number.POSITIVE_INFINITY;
+    return leftTime - rightTime || left.row.rowNumber - right.row.rowNumber;
+  }
+
+  function buildCandidateMatches(project, candidate) {
+    return project.sheetInfo.rows
+      .filter((row) => samePerson(candidate, row, project.sheetInfo))
+      .map((row) => {
+        const trainingDate = getRowTrainingDate(row, project.sheetInfo);
+        return {
+          row,
+          trainingDate,
+          trainingDateText: Utils.formatDate(trainingDate),
+          infoEntered: isRecordedRow(row, project.sheetInfo),
+          coverage: RuleEngine.evaluatePlanCoverage(project.rule, trainingDate, candidate.expiry)
+        };
+      })
+      .sort(sortMatchedRows);
+  }
+
+  function buildCoveredReason(matches) {
+    const sortedMatches = [...matches].sort(sortMatchedRows);
+    const earliestMatch = sortedMatches[0];
+    const recordedCount = sortedMatches.filter((item) => item.infoEntered).length;
+    const baseReason = recordedCount
+      ? `项目 sheet 已找到 ${sortedMatches.length} 条可覆盖本轮到期的记录（最早安排：${earliestMatch.trainingDateText || "未填写日期"}），其中已录入 ${recordedCount} 条，姓名已标绿。`
+      : `项目 sheet 已找到 ${sortedMatches.length} 条可覆盖本轮到期的记录（最早安排：${earliestMatch.trainingDateText || "未填写日期"}），但未发现已录入信息，姓名已标绿。`;
+    return `${baseReason}${earliestMatch.coverage.reason ? ` ${earliestMatch.coverage.reason}` : ""}`;
+  }
+
+  function buildUncoveredReason(project, hasExpiryColumn, matches) {
+    const writeReason = buildInsertReason(project, hasExpiryColumn);
+    if (!matches.length) {
+      return writeReason;
+    }
+
+    const recordedCount = matches.filter((item) => item.infoEntered).length;
+    const coverageFailure = matches.find((item) => item.coverage && item.coverage.reason);
+    const matchReason = recordedCount
+      ? `项目 sheet 已找到 ${matches.length} 条同人记录，但都不能覆盖本轮到期。`
+      : `项目 sheet 已找到 ${matches.length} 条同人记录，但都不能覆盖本轮到期，且未发现已录入信息。`;
+    return `${matchReason}${coverageFailure ? ` ${coverageFailure.coverage.reason}` : ""} ${writeReason}`;
   }
 
   function appendMissingRow(project, candidate) {
@@ -163,24 +211,24 @@
   function buildProjectPlanCheck(workbook, analysis, project, monthKey) {
     const detailRows = [];
     const { candidates, skippedRows } = buildDueCandidates(analysis, project, monthKey);
-    const monthRows = buildMonthRows(project, monthKey);
     let coveredCount = 0;
     let insertedCount = 0;
 
     candidates.forEach((candidate) => {
-      const matchedRows = monthRows.filter((row) => samePerson(candidate, row, project.sheetInfo));
+      const matches = buildCandidateMatches(project, candidate);
+      const coveredMatches = matches.filter((item) => item.coverage.covered);
 
-      if (matchedRows.length) {
-        markCoveredRows(project, matchedRows);
+      if (coveredMatches.length) {
+        markCoveredRows(project, coveredMatches.map((item) => item.row));
         coveredCount += 1;
         detailRows.push({
           projectName: project.canonical,
           employeeId: candidate.employeeId,
           name: candidate.name,
           expiry: candidate.expiryText,
-          status: "当月已排",
+          status: "已排覆盖",
           result: "已标绿",
-          reason: `项目 sheet 在 ${monthKey} 已找到 ${matchedRows.length} 条记录，姓名已标绿。`
+          reason: buildCoveredReason(coveredMatches)
         });
         return;
       }
@@ -192,9 +240,9 @@
         employeeId: candidate.employeeId,
         name: candidate.name,
         expiry: candidate.expiryText,
-        status: "当月缺失",
+        status: "未覆盖",
         result: "已补加",
-        reason: `${buildInsertReason(project, inserted.hasExpiryColumn)}（新增行号：${inserted.rowNumber}）`
+        reason: `${buildUncoveredReason(project, inserted.hasExpiryColumn, matches)}（新增行号：${inserted.rowNumber}）`
       });
     });
 
