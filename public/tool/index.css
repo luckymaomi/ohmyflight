@@ -1,6 +1,7 @@
 :root {
-    --bg-light: #ffffff;
-    --bg-dark: #141414;
+    --page-bg-image: url("../assets/bg.webp");
+    --bg-light: rgba(255, 255, 255, 0);
+    --bg-dark: rgba(12, 12, 12, 0.74);
     --text-light: #111111;
     --text-dark: #f5f2eb;
     --muted-light: #6a6a6a;
@@ -39,13 +40,17 @@ body {
     margin: 0;
     min-height: 100vh;
     font-family: "Aptos", "Segoe UI Variable", sans-serif;
-    background: var(--bg-light);
+    background:
+        linear-gradient(var(--bg-light), var(--bg-light)),
+        var(--page-bg-image) center / cover fixed no-repeat;
     color: var(--text-light);
-    transition: none;
+    transition: background 0.24s ease, color 0.18s ease;
 }
 
 body.workflow-mode {
-    background: var(--bg-dark);
+    background:
+        linear-gradient(var(--bg-dark), var(--bg-dark)),
+        var(--page-bg-image) center / cover fixed no-repeat;
     color: var(--text-dark);
 }
 
@@ -256,15 +261,15 @@ body.workflow-mode .category-link.active {
     justify-content: space-between;
     text-decoration: none;
     color: inherit;
-    background: rgba(255, 255, 255, 0.14);
+    background: #ffffff;
     border: 1px solid var(--line-light);
-    backdrop-filter: blur(6px);
     box-shadow: var(--shadow-light);
 }
 
 body.workflow-mode .card {
     background: rgba(255, 255, 255, 0.02);
     border-color: var(--line-dark);
+    backdrop-filter: blur(6px);
     box-shadow: var(--shadow-dark);
 }
 

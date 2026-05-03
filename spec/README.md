@@ -13,7 +13,7 @@
 ## 目录说明
 
 - `spec/app/`
-  每个正式工具各有 1 份独立规范
+  每个正式工具各有独立规范；复杂工具可以在自己的目录下放多份业务文档
 - `spec/tool-index.md`
   工具入口页与工作流占位页的界面规范
 - `spec/app/README.md`
@@ -31,4 +31,4 @@
 
 1. 先看 `spec/app/README.md`
 2. 再按工具名打开对应文档
-3. 需要培训类工具时，优先看 `super-training-test.md` 和 `training-tools-suite.md`
+3. 需要培训类工具时，优先看 `super-training-test/README.md`、`super-training-test/training-rule-spec.md` 和 `training-tools-suite.md`

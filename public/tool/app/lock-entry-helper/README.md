@@ -41,7 +41,6 @@
 ```python
 LEAVE_TYPE_MAP = {
     "ALV_FD-飞行员公休（订座）": "ALV_FD",
-    "ALV-年假（公休假）": "ALV",
     "RECU_LVE-健康疗养": "RECU_LVE",
     "RECU_LVE_R-康复疗养": "RECU_LVE_R",
     "MAT_FA_LVE-陪产假": "MAT_FA_LVE",

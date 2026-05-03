@@ -30,7 +30,6 @@ def beep_error():
 # 锁班类型映射表 (显示名 -> 代码)
 LEAVE_TYPE_MAP = {
     # 假期类
-    "ALV-年假（公休假）": "ALV",
     "ALV_FD-飞行员公休（订座）": "ALV_FD",
     "RECU_LVE-健康疗养": "RECU_LVE",
     "RECU_LVE_R-康复疗养": "RECU_LVE_R",
@@ -86,6 +85,11 @@ LEAVE_TYPE_MAP = {
 
 # 代码到中文名的反向映射
 LEAVE_CODE_TO_NAME = {v: k for k, v in LEAVE_TYPE_MAP.items()}
+LEAVE_CODE_PATTERN = re.compile(
+    r'(?<![A-Z0-9_/])('
+    + '|'.join(re.escape(code) for code in sorted(LEAVE_CODE_TO_NAME, key=len, reverse=True))
+    + r')(?![A-Z0-9_/])'
+)
 
 
 def parse_leave_type(text: str) -> str:
@@ -99,8 +103,16 @@ def parse_leave_type(text: str) -> str:
     # 完整格式 "CODE-中文名"
     if text in LEAVE_TYPE_MAP:
         return LEAVE_TYPE_MAP[text]
+    # 从整行文本里提取代码，优先匹配更长的代码，避免 RECU_LVE 吞掉 RECU_LVE_R
+    code_match = LEAVE_CODE_PATTERN.search(text)
+    if code_match:
+        return code_match.group(1)
+    # 从整行文本里提取完整格式，优先匹配更长的名称
+    for key, code in sorted(LEAVE_TYPE_MAP.items(), key=lambda item: len(item[0]), reverse=True):
+        if key in text:
+            return code
     # 只有中文名，模糊匹配
-    for key, code in LEAVE_TYPE_MAP.items():
+    for key, code in sorted(LEAVE_TYPE_MAP.items(), key=lambda item: len(item[0]), reverse=True):
         name_part = key.split('-', 1)[1] if '-' in key else key
         if name_part in text or text in name_part:
             return code
@@ -220,11 +232,7 @@ def parse_single_record(text: str) -> dict:
     name = re.search(r'\d{6}\s*([\u4e00-\u9fa5]{2,4})', text)
     if name:
         result["姓名"] = name.group(1)
-    # 使用新的解析函数
-    for key, val in LEAVE_TYPE_MAP.items():
-        if key in text or val in text:
-            result["请假类型"] = val
-            break
+    result["请假类型"] = parse_leave_type(text)
     dates = re.findall(r'\d{4}[-/]\d{1,2}[-/]\d{1,2}', text)
     if dates:
         result["开始日期"] = normalize_date(dates[0])
