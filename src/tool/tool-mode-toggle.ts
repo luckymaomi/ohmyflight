@@ -1,9 +1,9 @@
-type ToggleMode = "tool" | "workflow";
+type ThemeMode = "light" | "dark";
 
 interface ToggleElements {
     host: HTMLElement;
-    toolLabel: HTMLElement;
-    workflowLabel: HTMLElement;
+    lightLabel: HTMLElement;
+    darkLabel: HTMLElement;
     skyLayer: HTMLElement;
     starBox: HTMLElement;
     cloudNear: HTMLElement;
@@ -17,8 +17,8 @@ interface ToggleElements {
 }
 
 interface ToggleOptions {
-    defaultMode?: ToggleMode;
-    onChange?: (mode: ToggleMode) => void;
+    defaultMode?: ThemeMode;
+    onChange?: (mode: ThemeMode) => void;
 }
 
 interface ToggleStar {
@@ -33,10 +33,10 @@ interface ToggleCloud {
     right: string;
 }
 
-class ToolModeToggle {
+class ThemeToggle {
     private readonly host: HTMLElement;
-    private readonly toolLabel: HTMLElement;
-    private readonly workflowLabel: HTMLElement;
+    private readonly lightLabel: HTMLElement;
+    private readonly darkLabel: HTMLElement;
     private readonly skyLayer: HTMLElement;
     private readonly starBox: HTMLElement;
     private readonly cloudNear: HTMLElement;
@@ -47,11 +47,11 @@ class ToolModeToggle {
     private readonly ball: HTMLElement;
     private readonly moon: HTMLElement;
     private readonly moonBody: HTMLElement;
-    private readonly onChange: (mode: ToggleMode) => void;
+    private readonly onChange: (mode: ThemeMode) => void;
 
-    private mode: ToggleMode;
+    private mode: ThemeMode;
     private motionTimer = 0;
-    private nightEffectTimer = 0;
+    private darkEffectTimer = 0;
     private twinkleTimer = 0;
     private activeTwinkles = [1, 4];
     private meteor: HTMLElement | null = null;
@@ -92,8 +92,8 @@ class ToolModeToggle {
 
     constructor(elements: ToggleElements, options: ToggleOptions = {}) {
         this.host = elements.host;
-        this.toolLabel = elements.toolLabel;
-        this.workflowLabel = elements.workflowLabel;
+        this.lightLabel = elements.lightLabel;
+        this.darkLabel = elements.darkLabel;
         this.skyLayer = elements.skyLayer;
         this.starBox = elements.starBox;
         this.cloudNear = elements.cloudNear;
@@ -104,12 +104,12 @@ class ToolModeToggle {
         this.ball = elements.ball;
         this.moon = elements.moon;
         this.moonBody = elements.moonBody;
-        this.mode = options.defaultMode || "tool";
+        this.mode = options.defaultMode || "light";
         this.onChange = options.onChange || (() => undefined);
 
         this.host.setAttribute("role", "button");
         this.host.setAttribute("tabindex", "0");
-        this.host.setAttribute("aria-label", "切换工具与工作流");
+        this.host.setAttribute("aria-label", "切换 light/dark 主题");
 
         this.buildStars();
         this.buildClouds(this.cloudNear, this.nearClouds, "--near-cloud-size");
@@ -118,11 +118,11 @@ class ToolModeToggle {
         this.applyMode(false);
     }
 
-    getMode(): ToggleMode {
+    getMode(): ThemeMode {
         return this.mode;
     }
 
-    setMode(mode: ToggleMode): void {
+    setMode(mode: ThemeMode): void {
         if (mode === this.mode) {
             return;
         }
@@ -132,12 +132,12 @@ class ToolModeToggle {
     }
 
     toggle(): void {
-        this.setMode(this.mode === "tool" ? "workflow" : "tool");
+        this.setMode(this.mode === "light" ? "dark" : "light");
     }
 
     destroy(): void {
         window.clearTimeout(this.motionTimer);
-        window.clearTimeout(this.nightEffectTimer);
+        window.clearTimeout(this.darkEffectTimer);
         window.clearInterval(this.twinkleTimer);
     }
 
@@ -153,6 +153,13 @@ class ToolModeToggle {
 
             event.preventDefault();
             this.toggle();
+        });
+
+        window.addEventListener("ohmyflight:themechange", (event) => {
+            const theme = (event as CustomEvent<{ theme?: ThemeMode }>).detail?.theme;
+            if (theme === "light" || theme === "dark") {
+                this.setMode(theme);
+            }
         });
     }
 
@@ -196,38 +203,38 @@ class ToolModeToggle {
     }
 
     private applyMode(shouldNotify = true): void {
-        const workflowMode = this.mode === "workflow";
+        const darkMode = this.mode === "dark";
 
-        document.body.classList.toggle("workflow-mode", workflowMode);
+        this.syncDocumentTheme();
         this.host.dataset.mode = this.mode;
-        this.host.dataset.motion = workflowMode ? "to-workflow" : "to-tool";
-        this.host.setAttribute("aria-pressed", String(workflowMode));
+        this.host.dataset.motion = darkMode ? "to-dark" : "to-light";
+        this.host.setAttribute("aria-pressed", String(darkMode));
 
-        this.toolLabel.classList.toggle("muted", workflowMode);
-        this.workflowLabel.classList.toggle("muted", !workflowMode);
+        this.lightLabel.classList.toggle("muted", darkMode);
+        this.darkLabel.classList.toggle("muted", !darkMode);
 
-        this.skyLayer.classList.toggle("night", workflowMode);
-        this.skyLayer.classList.toggle("day", !workflowMode);
-        this.starBox.classList.toggle("is-active", workflowMode);
-        this.cloudNear.classList.toggle("is-hidden", workflowMode);
-        this.cloudFar.classList.toggle("is-hidden", workflowMode);
-        this.ball.classList.toggle("to-right", workflowMode);
-        this.ball.classList.toggle("to-left", !workflowMode);
-        this.moon.classList.toggle("moon-cut-in", workflowMode);
+        this.skyLayer.classList.toggle("sky-dark", darkMode);
+        this.skyLayer.classList.toggle("sky-light", !darkMode);
+        this.starBox.classList.toggle("is-active", darkMode);
+        this.cloudNear.classList.toggle("is-hidden", darkMode);
+        this.cloudFar.classList.toggle("is-hidden", darkMode);
+        this.ball.classList.toggle("to-right", darkMode);
+        this.ball.classList.toggle("to-left", !darkMode);
+        this.moon.classList.toggle("moon-cut-in", darkMode);
 
-        this.syncHalo(this.haloInner, workflowMode);
-        this.syncHalo(this.haloMiddle, workflowMode);
-        this.syncHalo(this.haloOuter, workflowMode);
+        this.syncHalo(this.haloInner, darkMode);
+        this.syncHalo(this.haloMiddle, darkMode);
+        this.syncHalo(this.haloOuter, darkMode);
 
         window.clearTimeout(this.motionTimer);
         this.motionTimer = window.setTimeout(() => {
             this.host.dataset.motion = "steady";
         }, 1500);
 
-        if (workflowMode) {
-            this.startNightEffects();
+        if (darkMode) {
+            this.startDarkEffects();
         } else {
-            this.stopNightEffects();
+            this.stopDarkEffects();
         }
 
         if (shouldNotify) {
@@ -235,16 +242,27 @@ class ToolModeToggle {
         }
     }
 
-    private syncHalo(element: HTMLElement, workflowMode: boolean): void {
-        element.classList.toggle("halo-right", workflowMode);
-        element.classList.toggle("halo-left", !workflowMode);
+    private syncDocumentTheme(): void {
+        const themeApi = window.OhmyflightTheme;
+        if (themeApi) {
+            themeApi.setTheme(this.mode);
+            return;
+        }
+
+        document.documentElement.dataset.theme = this.mode;
+        document.documentElement.dataset.bsTheme = this.mode;
     }
 
-    private startNightEffects(): void {
-        this.stopNightEffects();
+    private syncHalo(element: HTMLElement, darkMode: boolean): void {
+        element.classList.toggle("halo-right", darkMode);
+        element.classList.toggle("halo-left", !darkMode);
+    }
 
-        this.nightEffectTimer = window.setTimeout(() => {
-            if (this.mode !== "workflow") {
+    private startDarkEffects(): void {
+        this.stopDarkEffects();
+
+        this.darkEffectTimer = window.setTimeout(() => {
+            if (this.mode !== "dark") {
                 return;
             }
 
@@ -259,8 +277,8 @@ class ToolModeToggle {
         }, 180);
     }
 
-    private stopNightEffects(): void {
-        window.clearTimeout(this.nightEffectTimer);
+    private stopDarkEffects(): void {
+        window.clearTimeout(this.darkEffectTimer);
         window.clearInterval(this.twinkleTimer);
         this.moonBody.classList.remove("moon-rotate");
         this.meteor?.classList.remove("meteor-fall");
@@ -271,9 +289,9 @@ class ToolModeToggle {
     private refreshTwinkles(): void {
         this.starBox.querySelectorAll<HTMLElement>(".star").forEach((star) => {
             const index = Number(star.dataset.index || "0");
-            star.classList.toggle("twinkle", this.mode === "workflow" && this.activeTwinkles.includes(index));
+            star.classList.toggle("twinkle", this.mode === "dark" && this.activeTwinkles.includes(index));
         });
     }
 }
 
-(window as Window & { ToolModeToggle?: typeof ToolModeToggle }).ToolModeToggle = ToolModeToggle;
+window.ThemeToggle = ThemeToggle;

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ohmyflight</title>
+    <script src="../theme.js"></script>
+    <link rel="stylesheet" href="../theme.css">
     <link rel="stylesheet" href="./index.css">
 </head>
 <body>
@@ -14,14 +16,13 @@
                 <input id="searchInput" class="search-input" type="search" placeholder="搜索工具" aria-label="搜索工具" autocomplete="off" spellcheck="false">
             </div>
             <div class="switch-row">
-                <div class="switch-label" id="toolLabel">
-                    <strong>工具</strong>
-                    <span>tools</span>
+                <div class="switch-label" id="lightLabel">
+                    <strong>light</strong>
                 </div>
-                <div class="button-box" id="toggleButton" data-mode="tool" data-motion="steady">
+                <div class="button-box" id="toggleButton" data-mode="light" data-motion="steady">
                     <div class="sky">
                         <div class="inner-shadow"></div>
-                        <div class="day" id="skyLayer"></div>
+                        <div class="sky-light" id="skyLayer"></div>
                     </div>
                     <div class="star-cloud-box">
                         <div class="star-box" id="starBox"></div>
@@ -51,9 +52,8 @@
                         </div>
                     </div>
                 </div>
-                <div class="switch-label muted" id="workflowLabel">
-                    <strong>工作流</strong>
-                    <span>workflow</span>
+                <div class="switch-label muted" id="darkLabel">
+                    <strong>dark</strong>
                 </div>
             </div>
         </header>
@@ -65,14 +65,10 @@
             </nav>
             <section class="cards" id="toolCards"></section>
         </section>
-        <section class="workflow-placeholder" id="workflowPlaceholder" aria-label="工作流面板" hidden>
-            <strong>尚未接入</strong>
-        </section>
     </main>
     <a class="source-download-link" href="../downloads/ohmyflight-source.zip" download>下载本站源码</a>
 
     <script src="./tools-data.js"></script>
-    <script src="./workflows-data.js"></script>
     <script src="./tool-mode-toggle.js"></script>
     <script src="./tools-render.js"></script>
 </body>

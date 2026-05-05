@@ -1,0 +1,292 @@
+:root {
+    --omf-page-bg: #f4f6f8;
+    --omf-page-bg-overlay: rgba(255, 255, 255, 0);
+    --omf-surface: #ffffff;
+    --omf-surface-soft: #f8f9fa;
+    --omf-surface-muted: #eef1f4;
+    --omf-text: #1f2328;
+    --omf-text-muted: #656d76;
+    --omf-border: #d0d7de;
+    --omf-border-strong: #8c959f;
+    --omf-link: #0d6efd;
+    --omf-focus: #1f6feb;
+    --omf-success-bg: #d1e7dd;
+    --omf-success-text: #0f5132;
+    --omf-warning-bg: #fff3cd;
+    --omf-warning-text: #664d03;
+    --omf-danger-bg: #f8d7da;
+    --omf-danger-text: #842029;
+    --omf-info-bg: #cff4fc;
+    --omf-info-text: #055160;
+}
+
+:root[data-theme="dark"] {
+    --omf-page-bg: #121416;
+    --omf-page-bg-overlay: rgba(12, 12, 12, 0.74);
+    --omf-surface: #1b1f23;
+    --omf-surface-soft: #24292f;
+    --omf-surface-muted: #2d333b;
+    --omf-text: #e6edf3;
+    --omf-text-muted: #a7b0ba;
+    --omf-border: #3b434c;
+    --omf-border-strong: #68727d;
+    --omf-link: #6ea8fe;
+    --omf-focus: #8bb9ff;
+    --omf-success-bg: #173b25;
+    --omf-success-text: #8fd19e;
+    --omf-warning-bg: #463a16;
+    --omf-warning-text: #ffda6a;
+    --omf-danger-bg: #4b1f24;
+    --omf-danger-text: #f1aeb5;
+    --omf-info-bg: #173642;
+    --omf-info-text: #9eeaf9;
+}
+
+html,
+body {
+    background: var(--omf-page-bg);
+    color: var(--omf-text);
+}
+
+body {
+    color: var(--omf-text);
+}
+
+a {
+    color: var(--omf-link);
+}
+
+.card,
+.modal-content,
+.dropdown-menu,
+.list-group-item,
+.accordion-item,
+.offcanvas,
+.toast,
+.hero,
+.section,
+.summary-box,
+.stat-card,
+.rule-card,
+.doc-card,
+.tool-card,
+.overview-item,
+.collapse-shell,
+.action-section,
+.preview-section,
+.table-header,
+.table-container,
+.table-scroll,
+.preview-wrapper,
+.result-preview,
+.output-area,
+.display-cols,
+.flight-tags,
+.sheet-checkbox,
+.field-item,
+.upload-box,
+.workspace-panel,
+.content-wrapper {
+    background: var(--omf-surface);
+    border-color: var(--omf-border);
+    color: var(--omf-text);
+    box-shadow: none;
+}
+
+.card-header,
+.card-footer,
+.modal-header,
+.modal-footer,
+.checkbox-panel,
+.checkbox-inline,
+.checkbox-chip,
+.checkbox-summary,
+.month-badges span,
+.table thead th,
+.preview-table th,
+.result-table th,
+.loop-table th,
+.bg-light,
+pre.bg-light,
+.sheet-checkbox:hover,
+.upload-box:hover {
+    background: var(--omf-surface-soft) !important;
+    border-color: var(--omf-border) !important;
+    color: var(--omf-text) !important;
+}
+
+.text-muted,
+.form-text,
+.small,
+.section-intro,
+.muted,
+.status-line,
+.field-help,
+.spec-list,
+.note-list,
+.hero-subtitle,
+.rule-card p,
+.doc-card p,
+.tool-card p,
+.tool-card ul,
+.overview-item span,
+.checkbox-summary,
+.checkbox-empty,
+.empty-block,
+.field-item .type,
+.upload-box p,
+.upload-box .status,
+.stat-item .label {
+    color: var(--omf-text-muted) !important;
+}
+
+.border,
+.border-top,
+.border-end,
+.border-bottom,
+.border-start,
+.table,
+.table th,
+.table td,
+.preview-table th,
+.preview-table td,
+.result-table th,
+.result-table td,
+.loop-table th,
+.loop-table td,
+.hero,
+.section,
+.summary-box,
+.stat-card,
+.rule-card,
+.doc-card,
+.tool-card,
+.overview-item,
+.collapse-shell,
+.checkbox-panel,
+.checkbox-inline,
+.checkbox-chip,
+.checkbox-empty,
+.month-badges span {
+    border-color: var(--omf-border) !important;
+}
+
+.form-control,
+.form-select,
+.form-check-input,
+.field input,
+.field select,
+.field textarea,
+input,
+select,
+textarea {
+    background-color: var(--omf-surface) !important;
+    border-color: var(--omf-border) !important;
+    color: var(--omf-text) !important;
+}
+
+.form-control::placeholder,
+textarea::placeholder,
+input::placeholder {
+    color: var(--omf-text-muted) !important;
+    opacity: 1;
+}
+
+.form-control:focus,
+.form-select:focus,
+.field input:focus,
+.field select:focus,
+.field textarea:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--omf-focus) !important;
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--omf-focus) 24%, transparent) !important;
+}
+
+.table,
+.preview-table,
+.result-table,
+.loop-table {
+    color: var(--omf-text);
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    --bs-table-bg-type: var(--omf-surface-soft);
+    color: var(--omf-text);
+}
+
+.table-hover > tbody > tr:hover > * {
+    --bs-table-bg-state: var(--omf-surface-muted);
+    color: var(--omf-text);
+}
+
+.field input[type="file"]::file-selector-button,
+.hero-link,
+.action-button,
+.btn-secondary,
+.tool-card-link {
+    background: var(--omf-surface) !important;
+    border-color: var(--omf-border) !important;
+    color: var(--omf-text) !important;
+}
+
+.hero-link:hover,
+.action-button:hover,
+.btn-secondary:hover,
+.tool-card-link:hover {
+    background: var(--omf-surface-soft) !important;
+    border-color: var(--omf-border-strong) !important;
+    color: var(--omf-text) !important;
+}
+
+.btn-primary,
+.action-button-primary {
+    background: var(--omf-focus) !important;
+    border-color: var(--omf-focus) !important;
+    color: #ffffff !important;
+}
+
+.sheet-checkbox.checked,
+.status-info,
+.badge.info {
+    background: var(--omf-info-bg) !important;
+    border-color: var(--omf-link) !important;
+    color: var(--omf-info-text) !important;
+}
+
+.status-success,
+.alert-success,
+.result-table tr.matched,
+.badge.ok {
+    background: var(--omf-success-bg) !important;
+    color: var(--omf-success-text) !important;
+}
+
+.status-error,
+.status-line.is-error,
+.alert-danger,
+.result-table tr.unmatched,
+.badge.danger {
+    background: var(--omf-danger-bg) !important;
+    color: var(--omf-danger-text) !important;
+}
+
+.alert-warning,
+.warning-list,
+.result-table tr.duplicate,
+.result-table .hotel-row,
+.result-table .hotel-row .name-col,
+.badge.warn {
+    background: var(--omf-warning-bg) !important;
+    color: var(--omf-warning-text) !important;
+}
+
+.btn-outline-secondary,
+.btn-outline-primary {
+    background: var(--omf-surface);
+}
+
+[data-theme="dark"] .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}

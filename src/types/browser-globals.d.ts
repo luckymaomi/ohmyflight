@@ -31,6 +31,38 @@ interface Window {
   XLSX: XlsxGlobal;
   TrainingTools: TrainingToolsNamespace;
   SuperTraining: SuperTrainingNamespace;
+  OhmyflightTheme?: {
+    getTheme(): "light" | "dark";
+    setTheme(theme: "light" | "dark"): "light" | "dark";
+    toggleTheme(): "light" | "dark";
+    storageKey: string;
+  };
+  ThemeToggle?: new (
+    elements: {
+      host: HTMLElement;
+      lightLabel: HTMLElement;
+      darkLabel: HTMLElement;
+      skyLayer: HTMLElement;
+      starBox: HTMLElement;
+      cloudNear: HTMLElement;
+      cloudFar: HTMLElement;
+      haloInner: HTMLElement;
+      haloMiddle: HTMLElement;
+      haloOuter: HTMLElement;
+      ball: HTMLElement;
+      moon: HTMLElement;
+      moonBody: HTMLElement;
+    },
+    options?: {
+      defaultMode?: "light" | "dark";
+      onChange?: (mode: "light" | "dark") => void;
+    }
+  ) => {
+    getMode(): "light" | "dark";
+    setMode(mode: "light" | "dark"): void;
+    toggle(): void;
+    destroy(): void;
+  };
 }
 
 declare var tools: ToolSection[] | undefined;

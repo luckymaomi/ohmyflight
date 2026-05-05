@@ -1,25 +1,10 @@
 :root {
-    --page-bg-image: url("../assets/bg.webp");
-    --bg-light: rgba(255, 255, 255, 0);
-    --bg-dark: rgba(12, 12, 12, 0.74);
-    --text-light: #111111;
-    --text-dark: #f5f2eb;
-    --muted-light: #6a6a6a;
-    --muted-dark: #a59a8f;
-    --line-light: rgba(17, 17, 17, 0.08);
-    --line-dark: rgba(255, 245, 233, 0.08);
-    --radius-xl: 28px;
-    --radius-lg: 20px;
-    --shadow-light: 0 24px 56px rgba(34, 24, 18, 0.08);
-    --shadow-dark: 0 28px 70px rgba(0, 0, 0, 0.35);
+    --tool-page-bg-image: url("../assets/bg.webp");
+    --radius-lg: 8px;
 }
 
 * {
     box-sizing: border-box;
-}
-
-[hidden] {
-    display: none !important;
 }
 
 html,
@@ -41,17 +26,11 @@ body {
     min-height: 100vh;
     font-family: "Aptos", "Segoe UI Variable", sans-serif;
     background:
-        linear-gradient(var(--bg-light), var(--bg-light)),
-        var(--page-bg-image) center / cover fixed no-repeat;
-    color: var(--text-light);
-    transition: background 0.24s ease, color 0.18s ease;
-}
-
-body.workflow-mode {
-    background:
-        linear-gradient(var(--bg-dark), var(--bg-dark)),
-        var(--page-bg-image) center / cover fixed no-repeat;
-    color: var(--text-dark);
+        linear-gradient(var(--omf-page-bg-overlay), var(--omf-page-bg-overlay)),
+        var(--tool-page-bg-image) center / cover fixed no-repeat,
+        var(--omf-page-bg);
+    color: var(--omf-text);
+    transition: background-color 0.18s ease, color 0.18s ease;
 }
 
 .app {
@@ -92,41 +71,29 @@ body.workflow-mode {
 
 .search-input {
     width: 100%;
-    padding: 0 0 6px;
+    padding: 10px 16px 14px;
     border: 0;
-    border-bottom: 1px solid var(--line-light);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.42);
     background: transparent;
     color: inherit;
     font: inherit;
     font-size: 29px;
     font-weight: 700;
-    letter-spacing: 0.03em;
-    line-height: 1;
+    letter-spacing: 0;
+    line-height: 1.18;
     outline: none;
     border-radius: 0;
     appearance: none;
 }
 
 .search-input::placeholder {
-    color: var(--muted-light);
+    color: rgba(255, 255, 255, 0.9);
     opacity: 1;
-    letter-spacing: 0.03em;
+    letter-spacing: 0;
 }
 
 .search-input:focus {
-    border-bottom-color: rgba(17, 17, 17, 0.3);
-}
-
-body.workflow-mode .search-input {
-    border-bottom-color: var(--line-dark);
-}
-
-body.workflow-mode .search-input::placeholder {
-    color: var(--muted-dark);
-}
-
-body.workflow-mode .search-input:focus {
-    border-bottom-color: rgba(255, 245, 233, 0.28);
+    border-bottom-color: rgba(255, 255, 255, 0.68);
 }
 
 .switch-row {
@@ -143,37 +110,36 @@ body.workflow-mode .search-input:focus {
 .switch-label {
     display: grid;
     gap: 5px;
-    min-width: 108px;
+    min-width: 88px;
     text-align: center;
-    transition: color 0.18s ease, opacity 0.18s ease, transform 0.18s ease;
+    transition: color 0.18s ease, opacity 0.18s ease;
 }
 
-#toolLabel {
+#lightLabel {
     text-align: right;
 }
 
-#workflowLabel {
+#darkLabel {
     text-align: left;
 }
 
 .switch-label strong {
     font-size: 31px;
     font-weight: 700;
-    letter-spacing: 0.03em;
+    letter-spacing: 0;
     line-height: 1;
 }
 
 .switch-label span {
     font-size: 13px;
-    letter-spacing: 0.18em;
+    letter-spacing: 0;
     text-transform: uppercase;
     color: inherit;
     line-height: 1;
 }
 
 .switch-label.muted {
-    opacity: 0.36;
-    transform: none;
+    opacity: 0.42;
 }
 
 .workspace {
@@ -182,31 +148,15 @@ body.workflow-mode .search-input:focus {
     gap: 14px;
 }
 
-.workflow-placeholder {
-    padding: 34px 0 0;
-    display: grid;
-    place-items: start;
-}
-
-.workflow-placeholder strong {
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-}
-
 .source-download-link {
     position: fixed;
     left: 18px;
     bottom: 14px;
     z-index: 20;
-    color: var(--muted-light);
+    color: var(--omf-text-muted);
     text-decoration: none;
     font-size: 12px;
     line-height: 1;
-}
-
-body.workflow-mode .source-download-link {
-    color: var(--muted-dark);
 }
 
 .subnav {
@@ -221,29 +171,21 @@ body.workflow-mode .source-download-link {
     padding: 0;
     border: 0;
     background: transparent;
-    color: var(--muted-light);
+    color: rgba(255, 255, 255, 0.78);
     font: inherit;
     font-size: 14px;
-    opacity: 0.72;
+    opacity: 0.76;
     cursor: pointer;
 }
 
 .category-link.active {
-    color: var(--text-light);
+    color: #ffffff;
     font-weight: 700;
     opacity: 1;
 }
 
 .category-link.is-passive {
     opacity: 0.34;
-}
-
-body.workflow-mode .category-link {
-    color: var(--muted-dark);
-}
-
-body.workflow-mode .category-link.active {
-    color: var(--text-dark);
 }
 
 .cards {
@@ -261,16 +203,9 @@ body.workflow-mode .category-link.active {
     justify-content: space-between;
     text-decoration: none;
     color: inherit;
-    background: #ffffff;
-    border: 1px solid var(--line-light);
-    box-shadow: var(--shadow-light);
-}
-
-body.workflow-mode .card {
-    background: rgba(255, 255, 255, 0.02);
-    border-color: var(--line-dark);
-    backdrop-filter: blur(6px);
-    box-shadow: var(--shadow-dark);
+    background: var(--omf-surface);
+    border: 1px solid var(--omf-border);
+    box-shadow: none;
 }
 
 .card h3 {
@@ -281,24 +216,16 @@ body.workflow-mode .card {
 
 .card p {
     margin: 0;
-    color: var(--muted-light);
+    color: var(--omf-text-muted);
     font-size: 13px;
     line-height: 1.6;
 }
 
-body.workflow-mode .card p {
-    color: var(--muted-dark);
-}
-
 .empty-state {
     padding: 34px 0 0;
-    color: var(--muted-light);
+    color: var(--omf-text-muted);
     font-size: 14px;
     line-height: 1.7;
-}
-
-body.workflow-mode .empty-state {
-    color: var(--muted-dark);
 }
 
 .button-box {
@@ -329,12 +256,8 @@ body.workflow-mode .empty-state {
 }
 
 .button-box:focus-visible {
-    outline: 2px solid rgba(25, 21, 18, 0.2);
+    outline: 2px solid var(--omf-focus);
     outline-offset: 4px;
-}
-
-body.workflow-mode .button-box:focus-visible {
-    outline-color: rgba(245, 242, 235, 0.28);
 }
 
 .sky {
@@ -351,18 +274,18 @@ body.workflow-mode .button-box:focus-visible {
     z-index: 5;
 }
 
-.day,
-.night {
+.sky-light,
+.sky-dark {
     height: var(--box-height);
     width: var(--box-width);
     transition: background-color var(--move-duration) ease;
 }
 
-.day {
+.sky-light {
     background-color: rgb(238, 238, 238);
 }
 
-.night {
+.sky-dark {
     background-color: rgb(29, 29, 29);
 }
 
@@ -388,11 +311,11 @@ body.workflow-mode .button-box:focus-visible {
     transform: translateY(0);
 }
 
-.button-box[data-motion="to-workflow"] .star-box {
+.button-box[data-motion="to-dark"] .star-box {
     transition-delay: 150ms, 150ms;
 }
 
-.button-box[data-motion="to-tool"] .star-box {
+.button-box[data-motion="to-light"] .star-box {
     transition-delay: 0ms, 0ms;
 }
 
@@ -456,8 +379,8 @@ body.workflow-mode .button-box:focus-visible {
         filter 0.62s ease;
 }
 
-.button-box[data-motion="to-tool"] .cloud-near,
-.button-box[data-motion="to-tool"] .cloud-far {
+.button-box[data-motion="to-light"] .cloud-near,
+.button-box[data-motion="to-light"] .cloud-far {
     transition-delay: 120ms, 120ms, 120ms;
 }
 
@@ -711,7 +634,7 @@ body.workflow-mode .button-box:focus-visible {
     }
 
     .switch-label {
-        min-width: 84px;
+        min-width: 74px;
         gap: 4px;
     }
 
@@ -721,7 +644,6 @@ body.workflow-mode .button-box:focus-visible {
 
     .switch-label span {
         font-size: 11px;
-        letter-spacing: 0.14em;
     }
 
     .button-box {
@@ -749,7 +671,7 @@ body.workflow-mode .button-box:focus-visible {
     }
 
     .switch-label {
-        min-width: 68px;
+        min-width: 56px;
     }
 
     .switch-label strong {
@@ -758,7 +680,6 @@ body.workflow-mode .button-box:focus-visible {
 
     .switch-label span {
         font-size: 10px;
-        letter-spacing: 0.12em;
     }
 
     .button-box {

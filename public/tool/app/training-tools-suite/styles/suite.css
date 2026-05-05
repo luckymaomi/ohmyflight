@@ -5,7 +5,7 @@
 body {
     margin: 0;
     background: transparent;
-    color: #1f2328;
+    color: var(--omf-text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei UI", sans-serif;
 }
 
@@ -21,10 +21,10 @@ a {
 
 .hero,
 .section {
-    background: #ffffff;
-    border: 1px solid #d0d7de;
+    background: var(--omf-surface);
+    border: 1px solid var(--omf-border);
     border-radius: 10px;
-    box-shadow: 0 1px 2px rgba(31, 35, 40, 0.04);
+    box-shadow: none;
 }
 
 .hero {
@@ -63,7 +63,7 @@ a {
     margin: 0;
     font-size: 24px;
     font-weight: 600;
-    color: #1f2328;
+    color: var(--omf-text);
 }
 
 .hero-links,
@@ -84,9 +84,9 @@ a {
     min-height: 38px;
     padding: 0 14px;
     border-radius: 6px;
-    border: 1px solid #d0d7de;
-    background: #ffffff;
-    color: #1f2328;
+    border: 1px solid var(--omf-border);
+    background: var(--omf-surface);
+    color: var(--omf-text);
     text-decoration: none;
     cursor: pointer;
     transition: background 0.16s ease, border-color 0.16s ease;
@@ -95,8 +95,8 @@ a {
 .hero-link:hover,
 .btn-secondary:hover,
 .tool-card-link:hover {
-    background: #f6f8fa;
-    border-color: #8c959f;
+    background: var(--omf-surface-soft);
+    border-color: var(--omf-border-strong);
 }
 
 .btn-primary {
@@ -135,7 +135,7 @@ a {
 .field-help,
 .spec-list,
 .note-list {
-    color: #656d76;
+    color: var(--omf-text-muted);
     font-size: 13px;
     line-height: 1.6;
 }
@@ -195,10 +195,10 @@ a {
     width: 100%;
     min-height: 40px;
     padding: 9px 12px;
-    border: 1px solid #d0d7de;
+    border: 1px solid var(--omf-border);
     border-radius: 6px;
-    background: #ffffff;
-    color: #1f2328;
+    background: var(--omf-surface);
+    color: var(--omf-text);
     font-size: 14px;
 }
 
@@ -218,10 +218,10 @@ a {
     min-height: 28px;
     margin-right: 10px;
     padding: 0 12px;
-    border: 1px solid #d0d7de;
+    border: 1px solid var(--omf-border);
     border-radius: 6px;
-    background: #f6f8fa;
-    color: #1f2328;
+    background: var(--omf-surface-soft);
+    color: var(--omf-text);
     cursor: pointer;
 }
 
@@ -238,9 +238,9 @@ a {
 .rule-card,
 .doc-card,
 .tool-card {
-    border: 1px solid #d0d7de;
+    border: 1px solid var(--omf-border);
     border-radius: 8px;
-    background: #ffffff;
+    background: var(--omf-surface);
     padding: 14px;
 }
 
@@ -262,7 +262,7 @@ a {
 .doc-card p,
 .tool-card p {
     margin: 0;
-    color: #656d76;
+    color: var(--omf-text-muted);
     font-size: 13px;
     line-height: 1.6;
 }
@@ -275,9 +275,9 @@ a {
 .table-shell {
     overflow-x: auto;
     overflow-y: hidden;
-    border: 1px solid #d0d7de;
+    border: 1px solid var(--omf-border);
     border-radius: 8px;
-    background: #ffffff;
+    background: var(--omf-surface);
 }
 
 .table {
@@ -290,8 +290,8 @@ a {
 }
 
 .table thead th {
-    background: #f6f8fa;
-    color: #1f2328;
+    background: var(--omf-surface-soft);
+    color: var(--omf-text);
     border-bottom-width: 1px;
     white-space: nowrap;
     vertical-align: middle;
@@ -450,7 +450,7 @@ a {
 .empty-block {
     padding: 28px 14px;
     text-align: center;
-    color: #656d76;
+    color: var(--omf-text-muted);
     font-size: 13px;
 }
 
