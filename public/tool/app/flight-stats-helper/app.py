@@ -76,6 +76,13 @@ def format_query_date(value) -> Optional[str]:
     return normalize_date(text) if text else None
 
 
+def same_query_date(left, right) -> bool:
+    """比较两个查询日期是否为同一天"""
+    left_date = parse_excel_date(left)
+    right_date = parse_excel_date(right)
+    return bool(left_date and right_date and left_date.date() == right_date.date())
+
+
 def write_excel_date_cell(ws, row_num: int, column_num: int, value) -> None:
     """把日期写成真正的 Excel 日期单元格"""
     excel_date = parse_excel_date(value)
@@ -320,7 +327,7 @@ def fill_date(page, date_str):
     page.wait_for_timeout(100)
     
     # 2. 选择年份
-    frame.get_by_role("cell", name=year).click()
+    frame.get_by_role("cell", name=year, exact=True).click()
     page.wait_for_timeout(100)
     
     # 3. 点击月份输入框
@@ -328,11 +335,11 @@ def fill_date(page, date_str):
     page.wait_for_timeout(100)
     
     # 4. 选择月份
-    frame.get_by_role("cell", name=month_cn).click()
+    frame.get_by_role("cell", name=month_cn, exact=True).click()
     page.wait_for_timeout(100)
     
-    # 5. 选择日期 - 使用first选择第一个匹配的日期（避免匹配到15、25等）
-    frame.get_by_role("cell", name=day_str).first.click()
+    # 5. 选择日期必须精确匹配；否则 9 会匹配到 29，导致页面日期被点到上个月。
+    frame.get_by_role("cell", name=day_str, exact=True).first.click()
     page.wait_for_timeout(100)
 
 
@@ -407,6 +414,22 @@ def extract_flight_data(page, exp_col_index: int, exp_label: str):
         return None
 
 
+def validate_page_query_dates(page, expected_start: str, expected_end: str) -> tuple:
+    """查询后校验页面实际日期，防止日期控件点错后继续批量查询"""
+    actual_start = page.locator("#flyTimeExperience_beginDate").input_value()
+    actual_end = page.locator("#flyTimeExperience_endDate").input_value()
+
+    start_ok = same_query_date(actual_start, expected_start)
+    end_ok = same_query_date(actual_end, expected_end)
+    if start_ok and end_ok:
+        return True, ""
+
+    return False, (
+        f"页面日期校验失败：期望 {expected_start}~{expected_end}，"
+        f"实际 {actual_start}~{actual_end}。已停止后续查询。"
+    )
+
+
 def create_output_file(records, exp_label: str) -> str:
     """为粘贴模式创建新的Excel输出文件"""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -426,6 +449,31 @@ def create_output_file(records, exp_label: str) -> str:
     wb.save(output_file)
     wb.close()
     return output_file
+
+
+def write_failed_records_log(failed_records: list, exp_label: str) -> None:
+    """把失败记录单独写成文本，便于复制后重跑"""
+    if not failed_records:
+        return
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{exp_label}查询失败记录_{timestamp}.txt"
+    try:
+        with open(filename, "w", encoding="utf-8") as file:
+            file.write(f"{exp_label}查询失败记录 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            file.write(f"共 {len(failed_records)} 条\n")
+            file.write("-" * 80 + "\n")
+            for record, reason in failed_records:
+                file.write(
+                    f"{record.get('员工号', '')}\t"
+                    f"{record.get('姓名', '')}\t"
+                    f"{record.get('开始日期', '')}\t"
+                    f"{record.get('结束日期', '')}\t"
+                    f"{reason}\n"
+                )
+        print(c_warn(f"失败记录已保存: {os.path.abspath(filename)}"))
+    except Exception as e:
+        print(c_warn(f"保存失败记录失败: {e}"))
 
 
 def collect_query_batch(exp_label: str, input_mode: str) -> tuple:
@@ -506,6 +554,7 @@ def run_batch_query(page, records, output_file: str, exp_label: str, exp_col_ind
     print(c_ok("开始批量查询"))
     success_count = 0
     fail_count = 0
+    failed_records = []
 
     for i, record in enumerate(records):
         name = record.get("姓名", "未知")
@@ -513,6 +562,22 @@ def run_batch_query(page, records, output_file: str, exp_label: str, exp_col_ind
 
         try:
             query_flight_record(page, record["员工号"], record["开始日期"], record["结束日期"], clear_first=(i > 0))
+            date_ok, date_reason = validate_page_query_dates(page, record["开始日期"], record["结束日期"])
+            if not date_ok:
+                print(c_err(date_reason))
+                write_to_excel(
+                    output_file,
+                    record["行号"],
+                    "日期校验失败",
+                    "日期校验失败",
+                    exp_label,
+                    record.get("开始日期值"),
+                    record.get("结束日期值"),
+                )
+                failed_records.append((record, date_reason))
+                fail_count += 1
+                break
+
             data = extract_flight_data(page, exp_col_index, exp_label)
 
             if data and data.get(exp_label) and data.get("起落总数"):
@@ -532,6 +597,7 @@ def run_batch_query(page, records, output_file: str, exp_label: str, exp_col_ind
                     success_count += 1
                 else:
                     print(c_err("✗ 查询成功但写入失败"))
+                    failed_records.append((record, "查询成功但写入Excel失败"))
                     fail_count += 1
             else:
                 print(c_warn("✗ 未查询到数据"))
@@ -544,6 +610,7 @@ def run_batch_query(page, records, output_file: str, exp_label: str, exp_col_ind
                     record.get("开始日期值"),
                     record.get("结束日期值"),
                 )
+                failed_records.append((record, "未查询到数据"))
                 fail_count += 1
 
         except Exception as e:
@@ -557,8 +624,10 @@ def run_batch_query(page, records, output_file: str, exp_label: str, exp_col_ind
                 record.get("开始日期值"),
                 record.get("结束日期值"),
             )
+            failed_records.append((record, str(e)))
             fail_count += 1
 
+    write_failed_records_log(failed_records, exp_label)
     return success_count, fail_count
 
 
@@ -597,6 +666,9 @@ def main():
             print(c_err(f"自动登录失败: {e}"))
             print(c_warn("请手动完成登录"))
             input(c_hint("登录完成后按回车继续..."))
+
+        open_flight_record_page(page)
+        print(c_ok("开始工作"))
         
         current_query = select_query_type()
         if current_query is None:
@@ -652,7 +724,6 @@ def main():
                     return
                 continue
 
-            open_flight_record_page(page)
             success_count, fail_count = run_batch_query(page, records, output_file, exp_label, exp_col_index)
 
             print(c_ok(f"\n批量查询完成！成功: {success_count}, 失败: {fail_count}"))

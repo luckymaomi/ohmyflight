@@ -54,9 +54,13 @@ interface SuperTrainingAppState {
   pendingExport: SuperTrainingWorkbook | null;
   pendingExportName: string;
   pendingExportLabel: string;
+  workbenchResult: any;
+  workbenchView: any;
+  workbenchSelection: any;
   updateSelectedProjects: string[];
   scheduleSelectedProjects: string[];
   planCheckSelectedProjects: string[];
+  expiryListSelectedProjects: string[];
 }
 
 interface SuperTrainingUpdatedRowEntry {
@@ -87,12 +91,38 @@ interface SuperTrainingAppElements {
   planCheckProjectSummary: HTMLElement;
   planCheckProjectList: HTMLElement;
   planCheckMonthInput: HTMLInputElement;
+  expiryListValiditySheetSelect: HTMLSelectElement;
+  expiryListProjectGroup: HTMLElement;
+  expiryListProjectSelectAll: HTMLInputElement;
+  expiryListProjectSummary: HTMLElement;
+  expiryListProjectList: HTMLElement;
+  expiryListStartMonthInput: HTMLInputElement;
+  expiryListEndMonthInput: HTMLInputElement;
+  workbenchProjectSelect: HTMLSelectElement;
+  workbenchStatusSelect: HTMLSelectElement;
+  workbenchMonthSelect: HTMLSelectElement;
+  workbenchSearchInput: HTMLInputElement;
+  workbenchStartDateInput: HTMLInputElement;
+  workbenchEndDateInput: HTMLInputElement;
+  workbenchStatusChart: HTMLElement;
+  workbenchProjectChart: HTMLElement;
+  workbenchMonthChart: HTMLElement;
+  exportWorkbenchSelectionButton: HTMLButtonElement;
+  exportWorkbenchViewButton: HTMLButtonElement;
   updateValidityButton: HTMLButtonElement;
   generateScheduleButton: HTMLButtonElement;
   planCheckButton: HTMLButtonElement;
+  expiryListButton: HTMLButtonElement;
+  workbenchButton: HTMLButtonElement;
   exportButton: HTMLButtonElement;
   resultSummary: HTMLElement;
   statsGrid: HTMLElement;
+  workbenchProjectSummaryBody: HTMLTableSectionElement;
+  workbenchSelectedPeopleTitle: HTMLElement;
+  workbenchSelectedPeopleIntro: HTMLElement;
+  workbenchSelectedPeople: HTMLElement;
+  detailDetails: HTMLDetailsElement;
+  detailSummaryLabel: HTMLElement;
   detailTableTitle: HTMLElement;
   detailTableHead: HTMLTableSectionElement;
   detailTableBody: HTMLTableSectionElement;
@@ -107,8 +137,18 @@ interface SuperTrainingAppRuntime {
   copy: SuperTrainingAppCopy;
   state: SuperTrainingAppState;
   elements: SuperTrainingAppElements;
+  renderers: any;
+  selection: any;
+  controls: any;
+  projects: any;
+  workbenchController: any;
+  actions: any;
+  charts: any;
+  resultTable: any;
+  summaryView: any;
 }
 
 interface Window {
   SuperTrainingApp: SuperTrainingAppRuntime;
+  echarts?: any;
 }

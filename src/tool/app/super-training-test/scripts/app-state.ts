@@ -9,8 +9,12 @@
     pendingExport: null,
     pendingExportName: "",
     pendingExportLabel: "",
+    workbenchResult: null,
+    workbenchView: null,
+    workbenchSelection: null,
     updateSelectedProjects: [],
     scheduleSelectedProjects: [],
-    planCheckSelectedProjects: []
+    planCheckSelectedProjects: [],
+    expiryListSelectedProjects: []
   };
 })();

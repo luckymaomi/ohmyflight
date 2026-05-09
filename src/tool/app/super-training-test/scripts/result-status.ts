@@ -39,6 +39,10 @@
   function badgeToneForSchedulePriority(value) {
     switch (value) {
       case "已过期":
+      case "必须排":
+        return "danger";
+      case "推荐排":
+        return "warn";
       case "30天内到期":
         return "danger";
       case "60天内到期":
@@ -55,7 +59,10 @@
   function badgeToneForScheduleStatus(value) {
     switch (value) {
       case "已过期":
+      case "必须排":
         return "danger";
+      case "推荐排":
+        return "warn";
       case "命中窗口":
       case "本阶段到期":
         return "warn";
@@ -108,6 +115,26 @@
     }
   }
 
+  function badgeToneForWorkbenchStatus(value) {
+    switch (value) {
+      case "已过期":
+      case "已过期已排补训":
+      case "异常":
+        return "danger";
+      case "必须排":
+      case "已排未覆盖":
+      case "推荐排":
+      case "已排未录入":
+      case "已录入待更新":
+        return "warn";
+      case "已排已录入":
+      case "正常":
+        return "ok";
+      default:
+        return "info";
+    }
+  }
+
   window.SuperTraining.ResultStatus = {
     makeBadgeCell,
     badgeToneForUpdateJudgement,
@@ -116,6 +143,7 @@
     badgeToneForScheduleStatus,
     badgeToneForSkippedStatus,
     badgeToneForPlanCheckStatus,
-    badgeToneForPlanCheckResult
+    badgeToneForPlanCheckResult,
+    badgeToneForWorkbenchStatus
   };
 })();

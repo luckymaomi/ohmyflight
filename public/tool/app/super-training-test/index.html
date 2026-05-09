@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>培训克星</title>
+    <title>超级培训</title>
     <script src="../../../theme.js"></script>
     <link rel="stylesheet" href="../../../libs/bootstrap.min.css">
     <link rel="stylesheet" href="./styles/main.css">
@@ -14,18 +14,21 @@
         <section class="hero">
             <div class="hero-bar">
                 <div class="hero-copy">
-                    <h1 class="hero-title">培训克星</h1>
-                    <p class="hero-subtitle">独立的超级培训测试工具，按新总表结构识别人员信息表和项目 sheet，并在同一项目 sheet 内拆分已录入/未录入记录，支持一键更新有效期、一键生成预排班，以及按月核对培训计划并直接在原项目 sheet 标绿/补红。</p>
+                    <h1 class="hero-title">超级培训</h1>
+                    <p class="hero-subtitle">导入总培训表后，先用排班总览发现已过期、必须排、推荐排和异常，再按需要查询到期清单、生成预排班、核对计划或更新有效期。</p>
                 </div>
-                <a class="hero-link" href="../../../index.html">返回首页</a>
+                <div class="hero-actions">
+                    <a class="hero-link" href="./rule-reference.html" target="_blank" rel="noopener noreferrer">规则速查</a>
+                    <a class="hero-link" href="../../../index.html">返回首页</a>
+                </div>
             </div>
         </section>
 
         <section class="section">
             <div class="section-head">
                 <div>
-                    <h2 class="section-title">导入文件</h2>
-                    <p class="section-intro">导入总培训表后，系统会自动识别人员信息表、项目 sheet、已录入月份和未录入月份。</p>
+                    <h2 class="section-title">排班总览</h2>
+                    <p class="section-intro">导入总培训表后按评估日期区间扫描所有人员和培训项目，默认只显示已过期、必须排、推荐排和异常；已排未录入、已录入待更新、正常可在状态下拉中查看。</p>
                 </div>
             </div>
             <div class="field">
@@ -37,6 +40,99 @@
                 <div class="empty-block">导入文件后，这里会显示识别到的主表、项目数量和月份范围。</div>
             </div>
             <div class="status-line" id="statusLine">请先导入总培训表文件。</div>
+            <div class="form-grid form-grid-4">
+                <div class="field">
+                    <label for="workbenchStartDateInput">评估开始日期</label>
+                    <input id="workbenchStartDateInput" type="date">
+                </div>
+                <div class="field">
+                    <label for="workbenchEndDateInput">评估结束日期</label>
+                    <input id="workbenchEndDateInput" type="date">
+                </div>
+                <div class="field">
+                    <label for="workbenchProjectSelect">项目</label>
+                    <select id="workbenchProjectSelect" disabled>
+                        <option value="">全部项目</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="workbenchStatusSelect">状态</label>
+                    <select id="workbenchStatusSelect" disabled>
+                        <option value="">全部状态</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="workbenchMonthSelect">到期月份</label>
+                    <select id="workbenchMonthSelect" disabled>
+                        <option value="">全部月份</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="workbenchSearchInput">搜索</label>
+                    <input id="workbenchSearchInput" type="search" placeholder="姓名 / 员工号 / 说明" disabled>
+                </div>
+            </div>
+            <div class="toolbar">
+                <button class="action-button action-button-primary" id="workbenchButton" type="button" disabled>刷新排班总览</button>
+                <button class="action-button" id="exportWorkbenchSelectionButton" type="button" disabled>导出右侧人员明细</button>
+                <button class="action-button" id="exportWorkbenchViewButton" type="button" disabled>导出当前筛选总览</button>
+            </div>
+            <div class="chart-grid">
+                <div class="chart-panel">
+                    <div class="chart-title">按状态统计</div>
+                    <div class="chart-box" id="workbenchStatusChart"></div>
+                </div>
+                <div class="chart-panel">
+                    <div class="chart-title">按项目统计</div>
+                    <div class="chart-box" id="workbenchProjectChart"></div>
+                </div>
+            </div>
+            <div class="risk-workspace">
+                <div class="risk-matrix-panel">
+                    <div class="section-head">
+                        <div>
+                            <h2 class="section-title">项目风险矩阵</h2>
+                            <p class="section-intro">点击数字后，在右侧查看对应项目和状态下的人员。</p>
+                        </div>
+                    </div>
+                    <div class="table-shell">
+                        <table class="table table-hover align-middle result-table summary-result-table">
+                            <thead>
+                                <tr>
+                                    <th>项目</th>
+                                    <th>已过期</th>
+                                    <th>过期已排</th>
+                                    <th>必须排</th>
+                                    <th>已排未覆盖</th>
+                                    <th>推荐排</th>
+                                    <th>异常</th>
+                                    <th>合计</th>
+                                </tr>
+                            </thead>
+                            <tbody id="workbenchProjectSummaryBody">
+                                <tr>
+                                    <td class="empty-block" colspan="8">生成排班总览后显示项目统计。</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="risk-detail-panel">
+                    <div class="section-head">
+                        <div>
+                            <h2 class="section-title" id="workbenchSelectedPeopleTitle">人员明细</h2>
+                            <p class="section-intro" id="workbenchSelectedPeopleIntro">点击左侧矩阵中的数字后显示具体人员。</p>
+                        </div>
+                    </div>
+                    <div class="summary-list" id="workbenchSelectedPeople">
+                        <div class="empty-block">请选择一个项目和状态。</div>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-panel month-pressure-panel">
+                <div class="chart-title">月份压力分析</div>
+                <div class="chart-box" id="workbenchMonthChart"></div>
+            </div>
         </section>
 
         <section class="section">
@@ -84,90 +180,6 @@
         <section class="section">
             <div class="section-head">
                 <div>
-                    <h2 class="section-title">预排班设置</h2>
-                    <p class="section-intro">先确认人员信息表，再多选培训类型和预排起止日期，点击“一键预排”生成预览。</p>
-                </div>
-            </div>
-            <div class="form-grid form-grid-3">
-                <div class="field">
-                    <label for="scheduleValiditySheetSelect">人员信息表</label>
-                    <select id="scheduleValiditySheetSelect" disabled>
-                        <option value="">请先导入文件</option>
-                    </select>
-                </div>
-                <div class="field">
-                    <label for="scheduleStartDateInput">预排开始日期</label>
-                    <input id="scheduleStartDateInput" type="date">
-                </div>
-                <div class="field">
-                    <label for="scheduleEndDateInput">预排结束日期</label>
-                    <input id="scheduleEndDateInput" type="date">
-                </div>
-                <div class="field field-project-picker">
-                    <label>培训类型</label>
-                    <div class="checkbox-panel is-disabled" id="scheduleProjectGroup">
-                        <div class="checkbox-toolbar">
-                            <label class="checkbox-inline" for="scheduleProjectSelectAll">
-                                <input id="scheduleProjectSelectAll" type="checkbox" data-role="select-all" disabled>
-                                <span class="checkbox-inline-box" aria-hidden="true"></span>
-                                <span class="checkbox-inline-text">全选</span>
-                            </label>
-                            <span class="checkbox-summary" id="scheduleProjectSummary">请先导入文件</span>
-                        </div>
-                        <div class="checkbox-list" id="scheduleProjectList">
-                            <div class="checkbox-empty">请先导入文件</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="toolbar">
-                <button class="action-button action-button-primary" id="generateScheduleButton" type="button" disabled>一键预排</button>
-            </div>
-        </section>
-
-        <section class="section">
-            <div class="section-head">
-                <div>
-                    <h2 class="section-title">培训计划核对</h2>
-                    <p class="section-intro">按月筛出当月到期人员，再核对原项目 sheet 里当月有没有这个人；已排标绿，缺失直接补加姓名和有效期并标红。</p>
-                </div>
-            </div>
-            <div class="form-grid form-grid-3">
-                <div class="field">
-                    <label for="planCheckValiditySheetSelect">人员信息表</label>
-                    <select id="planCheckValiditySheetSelect" disabled>
-                        <option value="">请先导入文件</option>
-                    </select>
-                </div>
-                <div class="field">
-                    <label for="planCheckMonthInput">核对月份</label>
-                    <input id="planCheckMonthInput" type="month">
-                </div>
-                <div class="field field-project-picker">
-                    <label>培训类型</label>
-                    <div class="checkbox-panel is-disabled" id="planCheckProjectGroup">
-                        <div class="checkbox-toolbar">
-                            <label class="checkbox-inline" for="planCheckProjectSelectAll">
-                                <input id="planCheckProjectSelectAll" type="checkbox" data-role="select-all" disabled>
-                                <span class="checkbox-inline-box" aria-hidden="true"></span>
-                                <span class="checkbox-inline-text">全选</span>
-                            </label>
-                            <span class="checkbox-summary" id="planCheckProjectSummary">请先导入文件</span>
-                        </div>
-                        <div class="checkbox-list" id="planCheckProjectList">
-                            <div class="checkbox-empty">请先导入文件</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="toolbar">
-                <button class="action-button action-button-primary" id="planCheckButton" type="button" disabled>核对培训计划</button>
-            </div>
-        </section>
-
-        <section class="section">
-            <div class="section-head">
-                <div>
                     <h2 class="section-title">导出</h2>
                     <p class="section-intro">先生成预览，确认无误后，再导出当前预览结果。</p>
                 </div>
@@ -193,24 +205,65 @@
         </section>
 
         <section class="section">
-            <div class="section-head">
-                <div>
-                    <h2 class="section-title" id="detailTableTitle">结果明细</h2>
+            <details class="collapse-shell" id="detailDetails">
+                <summary id="detailSummaryLabel">Excel 明细（默认折叠）</summary>
+                <div class="collapse-body">
+                    <div class="section-head">
+                        <div>
+                            <h2 class="section-title" id="detailTableTitle">结果明细</h2>
+                        </div>
+                    </div>
+                    <div class="table-shell">
+                        <table class="table table-hover align-middle result-table detail-result-table">
+                            <thead id="detailTableHead"></thead>
+                            <tbody id="detailTableBody">
+                                <tr>
+                                    <td class="empty-block" colspan="8">生成预览后显示结果明细。</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
-            <div class="table-shell">
-                <table class="table table-hover align-middle result-table detail-result-table">
-                    <thead id="detailTableHead"></thead>
-                    <tbody id="detailTableBody">
-                        <tr>
-                            <td class="empty-block" colspan="8">生成预览后显示结果明细。</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+            </details>
         </section>
 
+        <div class="legacy-control-host" hidden aria-hidden="true">
+            <select id="expiryListValiditySheetSelect"></select>
+            <input id="expiryListStartMonthInput" type="month">
+            <input id="expiryListEndMonthInput" type="month">
+            <div id="expiryListProjectGroup">
+                <input id="expiryListProjectSelectAll" type="checkbox" data-role="select-all">
+                <span id="expiryListProjectSummary"></span>
+                <div id="expiryListProjectList"></div>
+            </div>
+            <button id="expiryListButton" type="button"></button>
+
+            <select id="scheduleValiditySheetSelect"></select>
+            <input id="scheduleStartDateInput" type="date">
+            <input id="scheduleEndDateInput" type="date">
+            <div id="scheduleProjectGroup">
+                <input id="scheduleProjectSelectAll" type="checkbox" data-role="select-all">
+                <span id="scheduleProjectSummary"></span>
+                <div id="scheduleProjectList"></div>
+            </div>
+            <button id="generateScheduleButton" type="button"></button>
+
+            <select id="planCheckValiditySheetSelect"></select>
+            <input id="planCheckMonthInput" type="month">
+            <div id="planCheckProjectGroup">
+                <input id="planCheckProjectSelectAll" type="checkbox" data-role="select-all">
+                <span id="planCheckProjectSummary"></span>
+                <div id="planCheckProjectList"></div>
+            </div>
+            <button id="planCheckButton" type="button"></button>
+        </div>
+
         <section class="section">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">跳过 / 提示</h2>
+                </div>
+            </div>
             <details class="collapse-shell" id="skippedDetails">
                 <summary id="skippedSummaryLabel">跳过 / 提示（默认折叠）</summary>
                 <div class="table-shell collapse-body">
@@ -240,10 +293,18 @@
     </main>
 
     <script src="../../../libs/xlsx-js-style.min.js"></script>
+    <script src="../../../libs/echarts.min.js"></script>
     <script src="./scripts/config.js"></script>
     <script src="./scripts/utils.js"></script>
+    <script src="./scripts/training-ignore-list.js"></script>
+    <script src="./scripts/training-record-policy.js"></script>
     <script src="./scripts/scanner.js"></script>
     <script src="./scripts/rule-engine.js"></script>
+    <script src="./scripts/schedule-assessment.js"></script>
+    <script src="./scripts/workbench.js"></script>
+    <script src="./scripts/workbench-export.js"></script>
+    <script src="./scripts/expiry-list.js"></script>
+    <script src="./scripts/expiry-list-export.js"></script>
     <script src="./scripts/validity.js"></script>
     <script src="./scripts/schedule.js"></script>
     <script src="./scripts/plan-check.js"></script>
@@ -253,6 +314,15 @@
     <script src="./scripts/app-copy.js"></script>
     <script src="./scripts/app-state.js"></script>
     <script src="./scripts/app-elements.js"></script>
+    <script src="./scripts/app-charts.js"></script>
+    <script src="./scripts/app-result-table.js"></script>
+    <script src="./scripts/app-summary-view.js"></script>
+    <script src="./scripts/app-renderers.js"></script>
+    <script src="./scripts/app-selection.js"></script>
+    <script src="./scripts/app-controls.js"></script>
+    <script src="./scripts/app-projects.js"></script>
+    <script src="./scripts/app-workbench-controller.js"></script>
+    <script src="./scripts/app-actions.js"></script>
     <script src="./scripts/app.js"></script>
 </body>
 </html>

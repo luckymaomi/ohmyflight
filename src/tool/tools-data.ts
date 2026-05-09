@@ -11,7 +11,7 @@ const tools: ToolSection[] = [
             { name: '飞行经历/左座经历起落数按天统计（测试）', desc: 'Python脚本，自动化查询飞行门户飞行经历/左座经历起落数并按天统计', entry: 'flight-stats-helper' },
             { name: '酒店账单核对', desc: '对比酒店账单与入住登记表，核对用', entry: 'hotel-bill-check' },
             { name: '重点人员标注', desc: '根据重点人员表对审班表进行颜色标注，支持多类别标记', entry: 'focus-crew' },
-            { name: '培训克星', desc: '培训部沦陷！下令撤退！一键更新有效期、一键预排班', entry: 'super-training-test' }
+            { name: '超级培训', desc: '面向培训总表的一体化工具，支持排班总览、到期清单、有效期更新、预排班和计划核对', entry: 'super-training-test' }
         ]
     },
     {
@@ -22,7 +22,6 @@ const tools: ToolSection[] = [
             { name: '图片工具箱', desc: '图片格式转换、压缩、调整尺寸、裁剪、Base64互转，支持批量操作', entry: 'image-tool' },
             { name: '文件批量处理', desc: 'Python工具，批量重命名文件（添加前缀/后缀/删除/替换字符），创建同名文件夹，支持大量文件处理', entry: 'file-batch-tool' },
             { name: '历史航班统计', desc: '根据航班号和截止日期筛选任务记录，三色标记匹配航班、各航班最后一班、机长最后执飞', entry: 'flight-filter' },
-            { name: '培训工具合集', desc: '培训预排班、培训有效期更新、培训冲突核对和飞行部培训规则速查合集入口', entry: 'training-tools-suite' },
             { name: 'PDF加水印', desc: '手册工作使用，在PDF每页的相同位置添加图片，支持拖拽定位和精确数值调整', entry: 'pdf-stamp' },
             { name: '自动点OA助手（测试）', desc: 'Python脚本，自动打开 OA 待办页并自动点击“已阅”；自动点击百分之95以上oa，部分类型（如督办）需人工处理，自动点击失败时手动完成后等待刷新即可。', entry: 'oa-read-helper' },
             { name: 'Word模板填充器（测试）', desc: '通用文档模板填充工具，上传配置和模板，自动生成表单并导出，具体使用方法请仔细阅读文档！', entry: 'word-template-filler' },

@@ -1,7 +1,9 @@
 (function () {
   const Config = window.SuperTraining.Config;
   const Utils = window.SuperTraining.Utils;
-  const RuleEngine = window.SuperTraining.RuleEngine;
+  const ScheduleAssessment = window.SuperTraining.ScheduleAssessment;
+
+  const SCHEDULE_STATUSES = new Set(["已过期", "必须排", "推荐排"]);
 
   function normalizeProjectNames(projectNames) {
     const names = Array.isArray(projectNames) ? projectNames : [projectNames];
@@ -80,86 +82,71 @@
       });
   }
 
-  function buildProjectScheduleRecords(analysis, project, stageStart, stageEnd) {
+  function mapPriority(row) {
+    if (row.status === "已过期") {
+      return { label: "已过期", rank: 50 };
+    }
+    if (row.status === "必须排") {
+      return { label: "必须排", rank: 40 };
+    }
+    if (row.status === "推荐排") {
+      return { label: "推荐排", rank: 20 };
+    }
+    return { label: "", rank: 0 };
+  }
+
+  function buildProjectScheduleRecords(project, assessmentRows, stageStart, stageEnd) {
     const detailRows = [];
     const skippedRows = [];
     const candidateRecords = [];
-    let checkedCount = 0;
     let expiredCount = 0;
-    let windowHitCount = 0;
-    let stageDueCount = 0;
-    let priority30Count = 0;
-    let priority60Count = 0;
-    let priority90Count = 0;
+    let mustCount = 0;
+    let recommendedCount = 0;
     let ignoredCount = 0;
     let missingExpiryCount = 0;
 
-    analysis.peopleInfo.rows.forEach((row) => {
-      const employeeId = Utils.normalizeText(row.cells[analysis.peopleIndex.employeeColumnIndex]);
-      const name = Utils.normalizeText(row.cells[analysis.peopleIndex.nameColumnIndex]);
-      if (!employeeId && !name) return;
+    assessmentRows.forEach((row) => {
+      if (row.projectName !== project.canonical) return;
 
-      checkedCount += 1;
-
-      const rawExpiry = row.cells[project.peopleColumnIndex];
-      const oldExpiry = Utils.parseDate(rawExpiry);
-      if (!oldExpiry) {
-        if (Utils.normalizeText(rawExpiry) && !Utils.isNullLikeText(rawExpiry)) {
-          missingExpiryCount += 1;
-          skippedRows.push({
-            projectName: project.canonical,
-            name,
-            status: "缺少旧有效期",
-            reason: `当前有效期“${Utils.normalizeText(rawExpiry)}”无法解析为日期。`
-          });
-        }
-        return;
-      }
-
-      const oldExpiryText = Utils.formatDate(oldExpiry);
-      const classification = RuleEngine.classifyScheduleStageStatus(project.rule, stageStart, stageEnd, oldExpiry);
-
-      if (!classification.include) {
-        ignoredCount += 1;
+      if (row.status === "异常") {
+        missingExpiryCount += 1;
         skippedRows.push({
-          projectName: project.canonical,
-          name,
-          status: classification.status,
-          reason: classification.reason
+          projectName: row.projectName,
+          name: row.name,
+          status: "异常",
+          reason: row.reason
         });
         return;
       }
 
-      const urgency = RuleEngine.classifyScheduleUrgency(
-        project.rule,
-        stageStart,
-        stageEnd,
-        oldExpiry,
-        classification.status
-      );
-
-      if (urgency.label === "30天内到期") priority30Count += 1;
-      if (urgency.label === "60天内到期") priority60Count += 1;
-      if (urgency.label === "90天内到期") priority90Count += 1;
-
-      if (classification.status === "已过期") {
-        expiredCount += 1;
-      } else if (classification.status === "命中窗口") {
-        windowHitCount += 1;
-      } else if (classification.status === "本阶段到期") {
-        stageDueCount += 1;
+      if (!SCHEDULE_STATUSES.has(row.status)) {
+        ignoredCount += 1;
+        skippedRows.push({
+          projectName: row.projectName,
+          name: row.name,
+          status: row.status,
+          reason: row.reason
+        });
+        return;
       }
 
+      if (row.status === "已过期") {
+        expiredCount += 1;
+      }
+      if (row.status === "必须排") mustCount += 1;
+      if (row.status === "推荐排") recommendedCount += 1;
+
+      const priority = mapPriority(row);
+
       candidateRecords.push({
-        projectName: project.canonical,
-        employeeId,
-        name,
-        status: classification.status,
-        priorityLabel: urgency.label,
-        priorityRank: urgency.rank,
-        reason: classification.reason,
-        oldExpiry,
-        oldExpiryText
+        projectName: row.projectName,
+        employeeId: row.employeeId,
+        name: row.name,
+        status: row.status,
+        priorityLabel: priority.label,
+        priorityRank: priority.rank,
+        reason: row.reason,
+        oldExpiryText: row.expiry
       });
     });
 
@@ -189,13 +176,10 @@
       : null;
 
     return {
-      checkedCount,
+      checkedCount: assessmentRows.filter((row) => row.projectName === project.canonical).length,
       expiredCount,
-      windowHitCount,
-      stageDueCount,
-      priority30Count,
-      priority60Count,
-      priority90Count,
+      mustCount,
+      recommendedCount,
       ignoredCount,
       missingExpiryCount,
       detailRows,
@@ -206,28 +190,31 @@
 
   function buildSchedulePlan(analysis, projectNames, stageStart, stageEnd) {
     const selectedProjects = resolveSelectedProjects(analysis, projectNames);
+    const assessment = ScheduleAssessment.buildResult(analysis, {
+      today: stageStart,
+      stageEnd,
+      filters: {
+        projects: selectedProjects.map((project) => project.canonical),
+        statuses: ["已过期", "必须排", "推荐排", "已排未录入", "已录入待更新", "异常", "正常"]
+      }
+    });
+    const assessmentRows = assessment.detailRows;
     const detailRows = [];
     const skippedRows = [];
     const projectSheets = [];
     let checkedCount = 0;
     let expiredCount = 0;
-    let windowHitCount = 0;
-    let stageDueCount = 0;
-    let priority30Count = 0;
-    let priority60Count = 0;
-    let priority90Count = 0;
+    let mustCount = 0;
+    let recommendedCount = 0;
     let ignoredCount = 0;
     let missingExpiryCount = 0;
 
     selectedProjects.forEach((project) => {
-      const result = buildProjectScheduleRecords(analysis, project, stageStart, stageEnd);
+      const result = buildProjectScheduleRecords(project, assessmentRows, stageStart, stageEnd);
       checkedCount += result.checkedCount;
       expiredCount += result.expiredCount;
-      windowHitCount += result.windowHitCount;
-      stageDueCount += result.stageDueCount;
-      priority30Count += result.priority30Count;
-      priority60Count += result.priority60Count;
-      priority90Count += result.priority90Count;
+      mustCount += result.mustCount;
+      recommendedCount += result.recommendedCount;
       ignoredCount += result.ignoredCount;
       missingExpiryCount += result.missingExpiryCount;
       detailRows.push(...result.detailRows);
@@ -242,17 +229,14 @@
     const stageLabel = `${Utils.formatDate(stageStart)} 至 ${Utils.formatDate(stageEnd)}`;
 
     return {
-      summaryText: `已按预排区间 ${stageLabel} 生成预排班预览：覆盖 ${selectedProjectNames.length} 个培训类型（${selectedProjectLabel}），预排 ${detailRows.length} 人次，其中已过期 ${expiredCount} 人次，30天内 ${priority30Count} 人次，60天内 ${priority60Count} 人次，90天内 ${priority90Count} 人次。`,
+      summaryText: `已按预排区间 ${stageLabel} 生成预排班预览：覆盖 ${selectedProjectNames.length} 个培训类型（${selectedProjectLabel}），预排 ${detailRows.length} 人次，其中已过期 ${expiredCount} 人次，必须排 ${mustCount} 人次，推荐排 ${recommendedCount} 人次。`,
       statsCards: [
         { label: "培训类型", value: selectedProjectNames.length },
         { label: "检查记录", value: checkedCount },
         { label: "预排人次", value: detailRows.length },
         { label: "已过期", value: expiredCount },
-        { label: "30天内到期", value: priority30Count },
-        { label: "60天内到期", value: priority60Count },
-        { label: "90天内到期", value: priority90Count },
-        { label: "命中窗口", value: windowHitCount },
-        { label: "本阶段到期", value: stageDueCount },
+        { label: "必须排", value: mustCount },
+        { label: "推荐排", value: recommendedCount },
         { label: "缺少旧有效期", value: missingExpiryCount },
         { label: "未命中", value: ignoredCount }
       ],

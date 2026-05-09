@@ -26,6 +26,12 @@
       "source": "https://github.com/gitbrent/xlsx-js-style",
       "cdn": "https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/"
     },
+    "echarts": {
+      "version": "5.5.1",
+      "files": ["echarts.min.js"],
+      "source": "https://echarts.apache.org/",
+      "cdn": "https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/"
+    },
     "pdf-lib": {
       "version": "1.17.1",
       "files": ["pdf-lib.min.js"],

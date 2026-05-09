@@ -1,6 +1,7 @@
 (function () {
   const Config = window.SuperTraining.Config;
   const Utils = window.SuperTraining.Utils;
+  const TrainingRecordPolicy = window.SuperTraining.TrainingRecordPolicy;
 
   function readWorkbookFile(file) {
     if (!window.XLSX) {
@@ -151,11 +152,12 @@
     const pendingRows = [];
 
     sheetInfo.rows.forEach((row) => {
-      const infoEntered = Utils.normalizeText(
-        Utils.getValueByHeader(row, sheetInfo, "培训信息是否录入")
-      ) === "是";
-      if (infoEntered) {
+      const recordState = TrainingRecordPolicy.classify(row, sheetInfo);
+      if (recordState.recorded) {
         recordedRows.push(row);
+        return;
+      }
+      if (!recordState.active) {
         return;
       }
       pendingRows.push(row);

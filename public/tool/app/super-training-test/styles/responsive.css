@@ -1,0 +1,33 @@
+@media (max-width: 900px) {
+    .form-grid-3,
+    .form-grid-4,
+    .chart-grid,
+    .overview-grid,
+    .risk-workspace {
+        grid-template-columns: 1fr;
+    }
+
+    .section-head {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+@media (max-width: 720px) {
+    .page {
+        padding: 14px;
+    }
+
+    .hero,
+    .section {
+        padding: 14px;
+    }
+
+    .hero-title {
+        font-size: 24px;
+    }
+
+    .hero-subtitle {
+        font-size: 13px;
+    }
+}

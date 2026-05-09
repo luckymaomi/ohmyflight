@@ -1,0 +1,249 @@
+.summary-box,
+.stat-card,
+.tool-card,
+.overview-item {
+    border: 1px solid var(--omf-border);
+    border-radius: 8px;
+    background: var(--omf-surface);
+    padding: 14px;
+}
+
+.summary-box {
+    margin-top: 12px;
+}
+
+.overview-item span {
+    display: block;
+    color: var(--omf-text-muted);
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+
+.overview-item strong {
+    display: block;
+    font-size: 24px;
+    line-height: 1.1;
+}
+
+.chart-grid {
+    display: grid;
+    grid-template-columns: minmax(240px, 0.8fr) minmax(360px, 1.2fr);
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.chart-panel {
+    min-width: 0;
+    border: 1px solid var(--omf-border);
+    border-radius: 8px;
+    background: var(--omf-surface);
+    padding: 12px;
+}
+
+.chart-title {
+    margin-bottom: 8px;
+    color: var(--omf-text);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.chart-box {
+    width: 100%;
+    height: 260px;
+}
+
+.summary-list {
+    display: grid;
+    gap: 12px;
+}
+
+.month-pressure-panel,
+.risk-workspace {
+    margin-top: 12px;
+}
+
+.month-pressure-panel .chart-box {
+    height: 320px;
+}
+
+.risk-workspace {
+    display: grid;
+    grid-template-columns: minmax(420px, 1fr) minmax(360px, 0.9fr);
+    gap: 12px;
+    align-items: start;
+}
+
+.risk-matrix-panel,
+.risk-detail-panel {
+    min-width: 0;
+}
+
+.summary-result-table {
+    min-width: 720px;
+}
+
+.summary-result-table :is(th, td) {
+    padding: 10px 8px;
+    font-size: 13px;
+    line-height: 1.25;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.summary-result-table :is(th, td):first-child {
+    width: 112px;
+    text-align: left;
+}
+
+.summary-result-table th {
+    white-space: normal;
+    word-break: keep-all;
+}
+
+.summary-result-table td:first-child {
+    font-weight: 600;
+}
+
+.risk-count-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    min-height: 28px;
+    padding: 0 8px;
+    border: 1px solid var(--omf-border);
+    border-radius: 6px;
+    background: var(--omf-surface);
+    color: var(--omf-text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.risk-count-button:hover,
+.risk-count-button.is-selected {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+}
+
+.risk-count-button:disabled {
+    cursor: default;
+    opacity: 0.45;
+}
+
+.selected-person-shell {
+    max-width: 100%;
+}
+
+.selected-person-table {
+    min-width: 760px;
+}
+
+.selected-person-table :is(th, td) {
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.selected-person-table :is(th, td):nth-child(1) {
+    width: 90px;
+    white-space: nowrap;
+}
+
+.selected-person-table :is(th, td):nth-child(2) {
+    width: 86px;
+    white-space: nowrap;
+}
+
+.selected-person-table :is(th, td):nth-child(3),
+.selected-person-table :is(th, td):nth-child(4) {
+    width: 120px;
+    white-space: nowrap;
+}
+
+.selected-person-table :is(th, td):nth-child(5) {
+    width: 344px;
+}
+
+.summary-panel {
+    border: 1px solid var(--omf-border);
+    border-radius: 8px;
+    background: var(--omf-surface);
+    padding: 12px;
+}
+
+.summary-panel-head,
+.person-line {
+    display: grid;
+    gap: 10px;
+    align-items: start;
+}
+
+.summary-panel-head {
+    grid-template-columns: minmax(120px, 1fr) auto;
+    margin-bottom: 10px;
+}
+
+.summary-meta {
+    margin-bottom: 8px;
+    color: var(--omf-text-muted);
+    font-size: 13px;
+}
+
+.person-list {
+    display: grid;
+    gap: 8px;
+}
+
+.person-line {
+    grid-template-columns: 120px 120px minmax(0, 1fr);
+    padding: 8px 0;
+    border-top: 1px solid var(--omf-border);
+    color: var(--omf-text-muted);
+    font-size: 13px;
+}
+
+.person-name {
+    color: var(--omf-text);
+    font-weight: 600;
+}
+
+.tool-card h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.tool-card ul {
+    margin: 12px 0 0;
+    padding-left: 18px;
+    color: var(--omf-text-muted);
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.month-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.month-badges span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid var(--omf-border);
+    background: var(--omf-surface-soft);
+    color: var(--omf-text-muted);
+    font-size: 12px;
+}
+
+.stat-card strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 28px;
+    line-height: 1;
+}

@@ -15,9 +15,7 @@
 - `super-training-test/README.md`
   面向新总表结构的培训更新与预排主工具
 - `super-training-test/training-rule-spec.md`
-  培训克星采用的培训规则口径
-- `training-tools-suite.md`
-  培训预排、有效期更新、冲突核对和规则速查合集
+  超级培训采用的培训规则口径
 
 ## 浏览器本地工具
 

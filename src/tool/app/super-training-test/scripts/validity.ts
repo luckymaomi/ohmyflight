@@ -1,6 +1,7 @@
 (function () {
   const Utils = window.SuperTraining.Utils;
   const RuleEngine = window.SuperTraining.RuleEngine;
+  const TrainingRecordPolicy = window.SuperTraining.TrainingRecordPolicy;
 
   function resolvePeopleRow(recordedRow, recordedInfo, peopleInfo, peopleIndex) {
     const name = Utils.normalizeText(Utils.getValueByHeader(recordedRow, recordedInfo, "姓名"));
@@ -145,11 +146,15 @@
         const row = item.row;
         const employeeId = Utils.normalizeText(Utils.getValueByHeader(row, project.recordedInfo, "员工号"));
         const name = Utils.normalizeText(Utils.getValueByHeader(row, project.recordedInfo, "姓名"));
-        const infoEntered = Utils.normalizeText(
-          Utils.getValueByHeader(row, project.recordedInfo, "培训信息是否录入")
-        ) === "是";
+        const recordState = TrainingRecordPolicy.classify(row, project.recordedInfo);
 
-        if (!infoEntered) {
+        if (recordState.abnormal) {
+          skippedRows.push(buildSkippedRow(project.canonical, name, "记录异常", recordState.reason));
+          skippedCount += 1;
+          return;
+        }
+
+        if (!recordState.recorded) {
           skippedRows.push(buildSkippedRow(project.canonical, name, "培训未录入", "培训信息是否录入不是“是”，本次跳过。"));
           skippedCount += 1;
           return;

@@ -1,6 +1,8 @@
 (function () {
   const Utils = window.SuperTraining.Utils;
   const RuleEngine = window.SuperTraining.RuleEngine;
+  const TrainingRecordPolicy = window.SuperTraining.TrainingRecordPolicy;
+  const TrainingIgnoreList = window.SuperTraining.TrainingIgnoreList;
 
   const COVERED_NAME_STYLE = {
     font: { bold: true, color: { rgb: "1F6F43" } },
@@ -56,10 +58,6 @@
       || Utils.parseDate(Utils.getValueByHeader(row, sheetInfo, "培训结束日期"));
   }
 
-  function isRecordedRow(row, sheetInfo) {
-    return Utils.normalizeText(Utils.getValueByHeader(row, sheetInfo, "培训信息是否录入")) === "是";
-  }
-
   function samePerson(candidate, row, sheetInfo) {
     const rowEmployeeId = Utils.normalizeText(Utils.getValueByHeader(row, sheetInfo, "员工号"));
     const rowName = Utils.normalizeText(Utils.getValueByHeader(row, sheetInfo, "姓名"));
@@ -83,6 +81,7 @@
       const employeeId = Utils.normalizeText(row.cells[analysis.peopleIndex.employeeColumnIndex]);
       const name = Utils.normalizeText(row.cells[analysis.peopleIndex.nameColumnIndex]);
       if (!employeeId && !name) return;
+      if (TrainingIgnoreList.shouldIgnore({ employeeId, name }, project.canonical)) return;
 
       const rawExpiry = row.cells[project.peopleColumnIndex];
       const expiry = Utils.parseDate(rawExpiry);
@@ -133,12 +132,19 @@
       .filter((row) => samePerson(candidate, row, project.sheetInfo))
       .map((row) => {
         const trainingDate = getRowTrainingDate(row, project.sheetInfo);
+        const recordState = TrainingRecordPolicy.classify(row, project.sheetInfo);
         return {
           row,
           trainingDate,
           trainingDateText: Utils.formatDate(trainingDate),
-          infoEntered: isRecordedRow(row, project.sheetInfo),
-          coverage: RuleEngine.evaluatePlanCoverage(project.rule, trainingDate, candidate.expiry)
+          infoEntered: recordState.recorded,
+          recordState,
+          coverage: recordState.active
+            ? RuleEngine.evaluatePlanCoverage(project.rule, trainingDate, candidate.expiry)
+            : {
+              covered: false,
+              reason: recordState.reason
+            }
         };
       })
       .sort(sortMatchedRows);
@@ -161,11 +167,13 @@
     }
 
     const recordedCount = matches.filter((item) => item.infoEntered).length;
+    const cancelledCount = matches.filter((item) => item.recordState && item.recordState.cancelled).length;
     const coverageFailure = matches.find((item) => item.coverage && item.coverage.reason);
     const matchReason = recordedCount
       ? `项目 sheet 已找到 ${matches.length} 条同人记录，但都不能覆盖本轮到期。`
       : `项目 sheet 已找到 ${matches.length} 条同人记录，但都不能覆盖本轮到期，且未发现已录入信息。`;
-    return `${matchReason}${coverageFailure ? ` ${coverageFailure.coverage.reason}` : ""} ${writeReason}`;
+    const cancelReason = cancelledCount ? `其中 ${cancelledCount} 条备注包含“取消”，已按无效计划忽略。` : "";
+    return `${matchReason}${cancelReason ? ` ${cancelReason}` : ""}${coverageFailure ? ` ${coverageFailure.coverage.reason}` : ""} ${writeReason}`;
   }
 
   function appendMissingRow(project, candidate) {
@@ -216,7 +224,17 @@
 
     candidates.forEach((candidate) => {
       const matches = buildCandidateMatches(project, candidate);
+      const abnormalMatches = matches.filter((item) => item.recordState && item.recordState.abnormal);
       const coveredMatches = matches.filter((item) => item.coverage.covered);
+
+      abnormalMatches.forEach((item) => {
+        skippedRows.push({
+          projectName: project.canonical,
+          name: candidate.name,
+          status: "记录异常",
+          reason: `${item.recordState.reason}（项目 sheet 第${item.row.rowNumber}行）`
+        });
+      });
 
       if (coveredMatches.length) {
         markCoveredRows(project, coveredMatches.map((item) => item.row));
