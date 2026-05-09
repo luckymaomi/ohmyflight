@@ -22,21 +22,6 @@
     );
   }
 
-  function getScheduleProjects() {
-    if (!state.analysis) return [];
-    return state.analysis.projects.filter((project) => project.peopleColumnIndex >= 0);
-  }
-
-  function getPlanCheckProjects() {
-    if (!state.analysis) return [];
-    return state.analysis.projects.filter((project) => project.peopleColumnIndex >= 0);
-  }
-
-  function getExpiryListProjects() {
-    if (!state.analysis) return [];
-    return state.analysis.projects.filter((project) => project.peopleColumnIndex >= 0);
-  }
-
   function getCheckedProjectValues(listElement) {
     return Array.from(listElement.querySelectorAll('input[data-role="project"]:checked'))
       .map((input) => Utils.normalizeText((input as HTMLInputElement).value))
@@ -81,9 +66,6 @@
   runtime.selection = {
     normalizeSelectedProjects,
     getUpdateProjects,
-    getScheduleProjects,
-    getPlanCheckProjects,
-    getExpiryListProjects,
     getCheckedProjectValues,
     getCommonRecordedMonths,
     getWorkbenchFilters,

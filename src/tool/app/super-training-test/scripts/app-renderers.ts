@@ -50,13 +50,7 @@
       : ['<option value="">请先导入文件</option>'];
 
     elements.updateValiditySheetSelect.innerHTML = options.join("");
-    elements.scheduleValiditySheetSelect.innerHTML = options.join("");
-    elements.planCheckValiditySheetSelect.innerHTML = options.join("");
-    elements.expiryListValiditySheetSelect.innerHTML = options.join("");
     elements.updateValiditySheetSelect.disabled = !state.analysis;
-    elements.scheduleValiditySheetSelect.disabled = !state.analysis;
-    elements.planCheckValiditySheetSelect.disabled = !state.analysis;
-    elements.expiryListValiditySheetSelect.disabled = !state.analysis;
   }
 
   function renderProjectCheckboxGroup(kind, projects, selectedNames) {
@@ -114,28 +108,7 @@
         listElement: elements.updateProjectList
       };
     }
-    if (kind === "schedule") {
-      return {
-        groupElement: elements.scheduleProjectGroup,
-        selectAllElement: elements.scheduleProjectSelectAll,
-        summaryElement: elements.scheduleProjectSummary,
-        listElement: elements.scheduleProjectList
-      };
-    }
-    if (kind === "expiryList") {
-      return {
-        groupElement: elements.expiryListProjectGroup,
-        selectAllElement: elements.expiryListProjectSelectAll,
-        summaryElement: elements.expiryListProjectSummary,
-        listElement: elements.expiryListProjectList
-      };
-    }
-    return {
-      groupElement: elements.planCheckProjectGroup,
-      selectAllElement: elements.planCheckProjectSelectAll,
-      summaryElement: elements.planCheckProjectSummary,
-      listElement: elements.planCheckProjectList
-    };
+    throw new Error(`未知培训类型选择区域：${kind}`);
   }
 
   function renderSelectOptions(selectElement, values, emptyLabel) {
@@ -257,26 +230,7 @@
       return;
     }
 
-    if (kind === "planCheck") {
-      elements.detailTableTitle.textContent = "核对明细";
-      resultTable.renderTable(elements.detailTableHead, elements.detailTableBody, result.detailColumns, resultTable.toPlanCheckDetailRows(result.detailRows), "本次没有命中需要核对的到期人员。");
-      resultTable.renderTable(elements.skippedTableHead, elements.skippedTableBody, result.skippedColumns, resultTable.toPlanCheckSkippedRows(result.skippedRows), "本次没有额外提示。");
-      resultTable.renderSkippedSummary(result.skippedRows.length);
-      return;
-    }
-
-    if (kind === "expiryList") {
-      elements.detailTableTitle.textContent = "到期清单";
-      resultTable.renderTable(elements.detailTableHead, elements.detailTableBody, result.detailColumns, resultTable.toExpiryListDetailRows(result.detailRows), "当前月份范围内没有到期人员。");
-      resultTable.renderTable(elements.skippedTableHead, elements.skippedTableBody, result.skippedColumns, resultTable.toExpiryListSkippedRows(result.skippedRows), "本次没有有效期异常记录。");
-      resultTable.renderSkippedSummary(result.skippedRows.length);
-      return;
-    }
-
-    elements.detailTableTitle.textContent = "预排明细";
-    resultTable.renderTable(elements.detailTableHead, elements.detailTableBody, result.detailColumns, resultTable.toScheduleDetailRowsWithPriority(result.detailRows), "本次没有命中需要预排的人员。");
-    resultTable.renderTable(elements.skippedTableHead, elements.skippedTableBody, result.skippedColumns, resultTable.toScheduleSkippedRows(result.skippedRows), "本次没有额外提示。");
-    resultTable.renderSkippedSummary(result.skippedRows.length);
+    throw new Error(`未知结果类型：${kind}`);
   }
 
   runtime.renderers = {

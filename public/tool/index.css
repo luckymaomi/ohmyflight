@@ -148,15 +148,34 @@ body {
     gap: 14px;
 }
 
-.source-download-link {
+.source-links {
     position: fixed;
-    left: 18px;
+    right: 18px;
     bottom: 14px;
     z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.source-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     color: var(--omf-text-muted);
     text-decoration: none;
     font-size: 12px;
     line-height: 1;
+}
+
+.source-link:hover {
+    color: var(--omf-text);
+}
+
+.source-link-icon {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
 }
 
 .subnav {

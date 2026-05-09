@@ -9,19 +9,10 @@
 
   function renderProjectGroups() {
     const updateProjects = selection.getUpdateProjects();
-    const scheduleProjects = selection.getScheduleProjects();
-    const planCheckProjects = selection.getPlanCheckProjects();
-    const expiryListProjects = selection.getExpiryListProjects();
 
     state.updateSelectedProjects = selection.normalizeSelectedProjects(state.updateSelectedProjects, updateProjects);
-    state.scheduleSelectedProjects = selection.normalizeSelectedProjects(state.scheduleSelectedProjects, scheduleProjects);
-    state.planCheckSelectedProjects = selection.normalizeSelectedProjects(state.planCheckSelectedProjects, planCheckProjects);
-    state.expiryListSelectedProjects = selection.normalizeSelectedProjects(state.expiryListSelectedProjects, expiryListProjects);
 
     renderers.renderProjectCheckboxGroup("update", updateProjects, state.updateSelectedProjects);
-    renderers.renderProjectCheckboxGroup("schedule", scheduleProjects, state.scheduleSelectedProjects);
-    renderers.renderProjectCheckboxGroup("planCheck", planCheckProjects, state.planCheckSelectedProjects);
-    renderers.renderProjectCheckboxGroup("expiryList", expiryListProjects, state.expiryListSelectedProjects);
   }
 
   function renderMonthSelect() {
@@ -57,9 +48,6 @@
 
   function renderEmptyState() {
     state.updateSelectedProjects = [];
-    state.scheduleSelectedProjects = [];
-    state.planCheckSelectedProjects = [];
-    state.expiryListSelectedProjects = [];
     state.workbenchResult = null;
     state.workbenchView = null;
     state.workbenchSelection = null;
@@ -95,70 +83,10 @@
     controls.invalidateExportPreview();
   }
 
-  function handleScheduleProjectGroupChange(event) {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement)) return;
-
-    const scheduleProjects = selection.getScheduleProjects();
-    if (target.dataset.role === "select-all") {
-      state.scheduleSelectedProjects = target.checked
-        ? scheduleProjects.map((project) => project.canonical)
-        : [];
-    } else if (target.dataset.role === "project") {
-      state.scheduleSelectedProjects = selection.getCheckedProjectValues(elements.scheduleProjectList);
-    } else {
-      return;
-    }
-
-    renderers.renderProjectCheckboxGroup("schedule", scheduleProjects, state.scheduleSelectedProjects);
-    controls.invalidateExportPreview();
-  }
-
-  function handlePlanCheckProjectGroupChange(event) {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement)) return;
-
-    const planCheckProjects = selection.getPlanCheckProjects();
-    if (target.dataset.role === "select-all") {
-      state.planCheckSelectedProjects = target.checked
-        ? planCheckProjects.map((project) => project.canonical)
-        : [];
-    } else if (target.dataset.role === "project") {
-      state.planCheckSelectedProjects = selection.getCheckedProjectValues(elements.planCheckProjectList);
-    } else {
-      return;
-    }
-
-    renderers.renderProjectCheckboxGroup("planCheck", planCheckProjects, state.planCheckSelectedProjects);
-    controls.invalidateExportPreview();
-  }
-
-  function handleExpiryListProjectGroupChange(event) {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement)) return;
-
-    const expiryListProjects = selection.getExpiryListProjects();
-    if (target.dataset.role === "select-all") {
-      state.expiryListSelectedProjects = target.checked
-        ? expiryListProjects.map((project) => project.canonical)
-        : [];
-    } else if (target.dataset.role === "project") {
-      state.expiryListSelectedProjects = selection.getCheckedProjectValues(elements.expiryListProjectList);
-    } else {
-      return;
-    }
-
-    renderers.renderProjectCheckboxGroup("expiryList", expiryListProjects, state.expiryListSelectedProjects);
-    controls.invalidateExportPreview();
-  }
-
   runtime.projects = {
     renderProjectGroups,
     renderMonthSelect,
     renderEmptyState,
-    handleUpdateProjectGroupChange,
-    handleScheduleProjectGroupChange,
-    handlePlanCheckProjectGroupChange,
-    handleExpiryListProjectGroupChange
+    handleUpdateProjectGroupChange
   };
 })();

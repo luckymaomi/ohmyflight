@@ -15,7 +15,7 @@
             <div class="hero-bar">
                 <div class="hero-copy">
                     <h1 class="hero-title">超级培训</h1>
-                    <p class="hero-subtitle">导入总培训表后，先用排班总览发现已过期、必须排、推荐排和异常，再按需要查询到期清单、生成预排班、核对计划或更新有效期。</p>
+                    <p class="hero-subtitle">导入总培训表后，先用排班总览发现已过期、必须排、推荐排和异常；需要落表时，再使用有效期更新生成导出副本。</p>
                 </div>
                 <div class="hero-actions">
                     <a class="hero-link" href="./rule-reference.html" target="_blank" rel="noopener noreferrer">规则速查</a>
@@ -227,37 +227,6 @@
             </details>
         </section>
 
-        <div class="legacy-control-host" hidden aria-hidden="true">
-            <select id="expiryListValiditySheetSelect"></select>
-            <input id="expiryListStartMonthInput" type="month">
-            <input id="expiryListEndMonthInput" type="month">
-            <div id="expiryListProjectGroup">
-                <input id="expiryListProjectSelectAll" type="checkbox" data-role="select-all">
-                <span id="expiryListProjectSummary"></span>
-                <div id="expiryListProjectList"></div>
-            </div>
-            <button id="expiryListButton" type="button"></button>
-
-            <select id="scheduleValiditySheetSelect"></select>
-            <input id="scheduleStartDateInput" type="date">
-            <input id="scheduleEndDateInput" type="date">
-            <div id="scheduleProjectGroup">
-                <input id="scheduleProjectSelectAll" type="checkbox" data-role="select-all">
-                <span id="scheduleProjectSummary"></span>
-                <div id="scheduleProjectList"></div>
-            </div>
-            <button id="generateScheduleButton" type="button"></button>
-
-            <select id="planCheckValiditySheetSelect"></select>
-            <input id="planCheckMonthInput" type="month">
-            <div id="planCheckProjectGroup">
-                <input id="planCheckProjectSelectAll" type="checkbox" data-role="select-all">
-                <span id="planCheckProjectSummary"></span>
-                <div id="planCheckProjectList"></div>
-            </div>
-            <button id="planCheckButton" type="button"></button>
-        </div>
-
         <section class="section">
             <div class="section-head">
                 <div>
@@ -303,13 +272,8 @@
     <script src="./scripts/schedule-assessment.js"></script>
     <script src="./scripts/workbench.js"></script>
     <script src="./scripts/workbench-export.js"></script>
-    <script src="./scripts/expiry-list.js"></script>
-    <script src="./scripts/expiry-list-export.js"></script>
     <script src="./scripts/validity.js"></script>
-    <script src="./scripts/schedule.js"></script>
-    <script src="./scripts/plan-check.js"></script>
     <script src="./scripts/report-sheet.js"></script>
-    <script src="./scripts/generated-sheet.js"></script>
     <script src="./scripts/result-status.js"></script>
     <script src="./scripts/app-copy.js"></script>
     <script src="./scripts/app-state.js"></script>

@@ -58,9 +58,6 @@ interface SuperTrainingAppState {
   workbenchView: any;
   workbenchSelection: any;
   updateSelectedProjects: string[];
-  scheduleSelectedProjects: string[];
-  planCheckSelectedProjects: string[];
-  expiryListSelectedProjects: string[];
 }
 
 interface SuperTrainingUpdatedRowEntry {
@@ -78,26 +75,6 @@ interface SuperTrainingAppElements {
   updateProjectSummary: HTMLElement;
   updateProjectList: HTMLElement;
   updateMonthSelect: HTMLSelectElement;
-  scheduleValiditySheetSelect: HTMLSelectElement;
-  scheduleProjectGroup: HTMLElement;
-  scheduleProjectSelectAll: HTMLInputElement;
-  scheduleProjectSummary: HTMLElement;
-  scheduleProjectList: HTMLElement;
-  scheduleStartDateInput: HTMLInputElement;
-  scheduleEndDateInput: HTMLInputElement;
-  planCheckValiditySheetSelect: HTMLSelectElement;
-  planCheckProjectGroup: HTMLElement;
-  planCheckProjectSelectAll: HTMLInputElement;
-  planCheckProjectSummary: HTMLElement;
-  planCheckProjectList: HTMLElement;
-  planCheckMonthInput: HTMLInputElement;
-  expiryListValiditySheetSelect: HTMLSelectElement;
-  expiryListProjectGroup: HTMLElement;
-  expiryListProjectSelectAll: HTMLInputElement;
-  expiryListProjectSummary: HTMLElement;
-  expiryListProjectList: HTMLElement;
-  expiryListStartMonthInput: HTMLInputElement;
-  expiryListEndMonthInput: HTMLInputElement;
   workbenchProjectSelect: HTMLSelectElement;
   workbenchStatusSelect: HTMLSelectElement;
   workbenchMonthSelect: HTMLSelectElement;
@@ -110,9 +87,6 @@ interface SuperTrainingAppElements {
   exportWorkbenchSelectionButton: HTMLButtonElement;
   exportWorkbenchViewButton: HTMLButtonElement;
   updateValidityButton: HTMLButtonElement;
-  generateScheduleButton: HTMLButtonElement;
-  planCheckButton: HTMLButtonElement;
-  expiryListButton: HTMLButtonElement;
   workbenchButton: HTMLButtonElement;
   exportButton: HTMLButtonElement;
   resultSummary: HTMLElement;

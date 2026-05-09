@@ -12,9 +12,6 @@
     workbenchResult: null,
     workbenchView: null,
     workbenchSelection: null,
-    updateSelectedProjects: [],
-    scheduleSelectedProjects: [],
-    planCheckSelectedProjects: [],
-    expiryListSelectedProjects: []
+    updateSelectedProjects: []
   };
 })();

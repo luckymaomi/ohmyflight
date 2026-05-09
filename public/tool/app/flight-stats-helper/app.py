@@ -2,15 +2,22 @@
 
 import re
 import os
+import shutil
 from datetime import datetime, date
 from typing import Optional
 from colorama import init, Fore, Style
 from playwright.sync_api import sync_playwright
 from openpyxl import Workbook, load_workbook
+from openpyxl.worksheet.datavalidation import DataValidation
 
 init()
 
 EXCEL_DATE_FORMAT = 'yyyy"年"m"月"d"日"'
+DATE_PICKER_FRAME = "iframe >> nth=2"
+SHORT_WAIT_MS = 80
+MEDIUM_WAIT_MS = 150
+QUERY_WAIT_MS = 1000
+QUERY_REFRESH_TIMEOUT_MS = 8000
 QUERY_TYPE_OPTIONS = {
     "1": ("飞行经历", 8),
     "2": ("左座经历", 11),
@@ -19,6 +26,25 @@ INPUT_MODE_OPTIONS = {
     "1": "读取Excel文件",
     "2": "直接粘贴数据",
 }
+EXPERIENCE_LABELS = {"飞行经历", "左座经历"}
+
+
+def patch_openpyxl_wps_data_validation():
+    """兼容 WPS/金山表格写入的 dataValidation id 属性。"""
+    if getattr(DataValidation.__init__, "_ohmyflight_patched", False):
+        return
+
+    original_init = DataValidation.__init__
+
+    def patched_init(self, *args, **kwargs):
+        kwargs.pop("id", None)
+        return original_init(self, *args, **kwargs)
+
+    patched_init._ohmyflight_patched = True
+    DataValidation.__init__ = patched_init
+
+
+patch_openpyxl_wps_data_validation()
 
 
 def c_info(text):
@@ -81,6 +107,12 @@ def same_query_date(left, right) -> bool:
     left_date = parse_excel_date(left)
     right_date = parse_excel_date(right)
     return bool(left_date and right_date and left_date.date() == right_date.date())
+
+
+def is_today(value) -> bool:
+    """判断日期是否为今天。"""
+    value_date = parse_excel_date(value)
+    return bool(value_date and value_date.date() == date.today())
 
 
 def write_excel_date_cell(ws, row_num: int, column_num: int, value) -> None:
@@ -298,6 +330,89 @@ def write_to_excel(
         return False
 
 
+def strip_experience_minutes(value):
+    """把 380:13 / 380：13 转成 380。"""
+    if not isinstance(value, str):
+        return value
+    return value.split("：", 1)[0].split(":", 1)[0].strip()
+
+
+def build_minutes_stripped_output_path(filepath: str) -> str:
+    """生成去分钟版 Excel 路径，保留原版文件。"""
+    base, ext = os.path.splitext(filepath)
+    return f"{base}_去分钟版{ext or '.xlsx'}"
+
+
+def export_minutes_stripped_excel(filepath: str) -> Optional[str]:
+    """额外导出一份去掉经历分钟数的 Excel。"""
+    try:
+        output_path = build_minutes_stripped_output_path(filepath)
+        shutil.copy2(filepath, output_path)
+
+        wb = load_workbook(output_path)
+        ws = wb.active
+        target_columns = [
+            index + 1
+            for index, cell in enumerate(ws[1])
+            if cell.value in EXPERIENCE_LABELS
+        ]
+
+        if not target_columns:
+            wb.close()
+            return None
+
+        for column in target_columns:
+            for row_num in range(2, ws.max_row + 1):
+                cell = ws.cell(row=row_num, column=column)
+                cell.value = strip_experience_minutes(cell.value)
+
+        wb.save(output_path)
+        wb.close()
+        return output_path
+    except Exception as e:
+        print(c_warn(f"导出去分钟版Excel失败: {e}"))
+        return None
+
+
+def click_current_month_day(frame, day_str: str) -> None:
+    """日期面板会显示上月/下月同日，必须跳过灰色跨月日期。"""
+    day_cells = frame.get_by_role("cell", name=day_str, exact=True)
+    cell_count = day_cells.count()
+    if cell_count == 0:
+        raise RuntimeError(f"日期面板没有找到日期：{day_str}")
+
+    disabled_keywords = ("old", "new", "off", "other", "disabled", "muted", "prev", "next")
+    fallback = None
+    for index in range(cell_count):
+        cell = day_cells.nth(index)
+        class_name = (cell.get_attribute("class") or "").lower()
+        aria_disabled = (cell.get_attribute("aria-disabled") or "").lower()
+        if fallback is None:
+            fallback = cell
+        if aria_disabled == "true":
+            continue
+        if any(keyword in class_name for keyword in disabled_keywords):
+            continue
+        cell.click()
+        return
+
+    fallback.click()
+
+
+def describe_day_candidates(frame, day_str: str) -> str:
+    """输出日期候选单元格结构，便于定位日期面板变化。"""
+    cells = frame.get_by_role("cell", name=day_str, exact=True)
+    details = []
+    for index in range(cells.count()):
+        cell = cells.nth(index)
+        details.append(
+            f"#{index + 1} text={cell.inner_text().strip()!r} "
+            f"class={(cell.get_attribute('class') or '')!r} "
+            f"aria-disabled={(cell.get_attribute('aria-disabled') or '')!r}"
+        )
+    return "; ".join(details) or "无候选日期单元格"
+
+
 def fill_date(page, date_str):
     """填写日期到日期选择器 - 统信浏览器版本"""
     parts = date_str.split('/')
@@ -317,88 +432,189 @@ def fill_date(page, date_str):
     day_str = str(int(day))  # 去掉前导0
     
     # 等待iframe加载
-    page.wait_for_timeout(300)
+    page.wait_for_timeout(MEDIUM_WAIT_MS)
     
     # 使用frame_locator代替locator().content_frame
-    frame = page.frame_locator("iframe >> nth=2")
+    frame = page.frame_locator(DATE_PICKER_FRAME)
     
     # 1. 点击年份输入框
     frame.get_by_role("textbox").nth(1).click()
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(SHORT_WAIT_MS)
     
     # 2. 选择年份
     frame.get_by_role("cell", name=year, exact=True).click()
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(SHORT_WAIT_MS)
     
     # 3. 点击月份输入框
     frame.get_by_role("textbox").first.click()
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(SHORT_WAIT_MS)
     
     # 4. 选择月份
     frame.get_by_role("cell", name=month_cn, exact=True).click()
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(SHORT_WAIT_MS)
     
-    # 5. 选择日期必须精确匹配；否则 9 会匹配到 29，导致页面日期被点到上个月。
-    frame.get_by_role("cell", name=day_str, exact=True).first.click()
-    page.wait_for_timeout(100)
+    # 5. 选择日期必须避开上月/下月灰色日期。
+    try:
+        click_current_month_day(frame, day_str)
+    except Exception as e:
+        print(c_warn(f"日期候选调试：{describe_day_candidates(frame, day_str)}"))
+        raise e
+    page.wait_for_timeout(SHORT_WAIT_MS)
 
 
-def query_flight_record(page, emp_id, start_date, end_date, clear_first=False):
+def get_result_table_snapshot(page) -> str:
+    """读取当前结果表文本，用来判断查询结果是否刷新。"""
+    try:
+        tbody = page.locator("tbody.list")
+        if tbody.count() == 0:
+            return ""
+        return tbody.inner_text(timeout=1000).strip()
+    except Exception:
+        return ""
+
+
+def result_matches_employee(snapshot: str, emp_id: str, name: str = "") -> bool:
+    """判断当前结果是否属于本次查询员工。"""
+    name = (name or "").strip()
+    return bool(snapshot and (emp_id in snapshot or (name and name in snapshot)))
+
+
+def wait_for_query_result_refresh(page, previous_snapshot: str, emp_id: str, name: str = "") -> None:
+    """点击查询后等待结果区刷新，避免读取上一条员工的旧结果。"""
+    deadline = datetime.now().timestamp() + QUERY_REFRESH_TIMEOUT_MS / 1000
+    latest_snapshot = previous_snapshot
+
+    while datetime.now().timestamp() < deadline:
+        latest_snapshot = get_result_table_snapshot(page)
+        if result_matches_employee(latest_snapshot, emp_id, name):
+            return
+        if latest_snapshot != previous_snapshot:
+            page.wait_for_timeout(MEDIUM_WAIT_MS)
+            return
+        page.wait_for_timeout(MEDIUM_WAIT_MS)
+
+    print(c_warn(f"结果区等待刷新超时，将继续做员工匹配校验。当前首屏结果: {latest_snapshot[:120]}"))
+
+
+def ensure_daily_query_mode(page) -> None:
+    """确保查询模式为按天查询。"""
+    try:
+        selected = page.evaluate(
+            """
+            () => {
+              const labels = Array.from(document.querySelectorAll('label'));
+              const target = labels.find((label) => label.innerText && label.innerText.includes('按天查询'));
+              if (!target) return false;
+              const radio = target.querySelector('input[type="radio"]');
+              if (radio) {
+                radio.click();
+                return radio.checked;
+              }
+              target.click();
+              return true;
+            }
+            """
+        )
+        if selected:
+            page.wait_for_timeout(SHORT_WAIT_MS)
+            return
+    except Exception:
+        pass
+
+    try:
+        page.get_by_role("radio").nth(2).check()
+        page.wait_for_timeout(SHORT_WAIT_MS)
+    except Exception as e:
+        print(c_warn(f"未能确认按天查询模式，请人工确认页面查询模式：{e}"))
+
+
+def query_flight_record(page, emp_id, start_date, end_date, name="", clear_first=False):
     """执行查询操作"""
+    ensure_daily_query_mode(page)
+    previous_snapshot = get_result_table_snapshot(page)
+
     # 填写员工号
     emp_input = page.get_by_placeholder("员工号或姓名")
     emp_input.click()
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(SHORT_WAIT_MS)
     
-    if clear_first:
-        # 统信浏览器：先清空再输入
-        emp_input.fill("")
-        page.wait_for_timeout(100)
+    # 每条都先清空，避免页面残留导致查到上一人。
+    emp_input.fill("")
+    page.wait_for_timeout(SHORT_WAIT_MS)
     
     # 用type模拟逐字输入
-    emp_input.type(str(emp_id), delay=50)
-    page.wait_for_timeout(300)
+    emp_input.type(str(emp_id), delay=20)
+    page.wait_for_timeout(MEDIUM_WAIT_MS)
     
     # 填写开始日期 - 多次点击确保触发日期选择器
     page.locator("#flyTimeExperience_beginDate").click()
-    page.wait_for_timeout(200)
+    page.wait_for_timeout(MEDIUM_WAIT_MS)
     if clear_first:
         # 第二次及以后需要多点几次
         page.locator("#flyTimeExperience_beginDate").click()
-        page.wait_for_timeout(200)
+        page.wait_for_timeout(MEDIUM_WAIT_MS)
     fill_date(page, start_date)
     
-    # 填写结束日期 - 多次点击确保触发日期选择器
-    page.locator("#flyTimeExperience_endDate").click()
-    page.wait_for_timeout(200)
-    if clear_first:
-        # 第二次及以后需要多点几次
+    if is_today(end_date):
+        print(c_info("结束日期为今天，沿用页面默认截止日期。"))
+    else:
+        # 填写结束日期 - 多次点击确保触发日期选择器
         page.locator("#flyTimeExperience_endDate").click()
-        page.wait_for_timeout(200)
-    fill_date(page, end_date)
+        page.wait_for_timeout(MEDIUM_WAIT_MS)
+        if clear_first:
+            # 第二次及以后需要多点几次
+            page.locator("#flyTimeExperience_endDate").click()
+            page.wait_for_timeout(MEDIUM_WAIT_MS)
+        fill_date(page, end_date)
     
     # 点击查询
-    page.wait_for_timeout(300)
+    page.wait_for_timeout(MEDIUM_WAIT_MS)
     page.get_by_role("button", name="查询").click()
-    page.wait_for_timeout(1500)
+    page.wait_for_timeout(QUERY_WAIT_MS)
+    wait_for_query_result_refresh(page, previous_snapshot, str(emp_id), name)
 
 
-def extract_flight_data(page, exp_col_index: int, exp_label: str):
-    """提取经历数据"""
+def row_matches_employee(row_text: str, emp_id: str, name: str = "") -> bool:
+    """判断结果行是否属于当前员工。"""
+    name = (name or "").strip()
+    return emp_id in row_text or bool(name and name in row_text)
+
+
+def extract_flight_data(page, exp_col_index: int, exp_label: str, expected_emp_id: str, expected_name: str = ""):
+    """提取当前员工匹配行的经历数据"""
     try:
         # 等待表格加载
         page.wait_for_timeout(1000)
         
         # 查找表格tbody
         tbody = page.locator("tbody.list")
-        
-        # 获取第一行数据
-        first_row = tbody.locator("tr").first
-        
-        # 提取所有td单元格
-        cells = first_row.locator("td")
+
+        rows = tbody.locator("tr")
+        row_count = rows.count()
+        if row_count == 0:
+            return None
+
+        matched_row = None
+        first_row_text = ""
+        for index in range(row_count):
+            row = rows.nth(index)
+            row_text = row.inner_text().strip()
+            if index == 0:
+                first_row_text = row_text
+            if row_matches_employee(row_text, expected_emp_id, expected_name):
+                matched_row = row
+                break
+
+        if matched_row is None:
+            return {
+                "错误": (
+                    f"未找到当前员工结果行：期望 {expected_emp_id} {expected_name or ''}，"
+                    f"首行 {first_row_text[:120]}"
+                )
+            }
+
+        cells = matched_row.locator("td")
         cell_count = cells.count()
-        
         if cell_count == 0:
             return None
         
@@ -540,7 +756,7 @@ def open_flight_record_page(page):
         page.get_by_role("link", name="飞行经历").click()
         page.wait_for_load_state("networkidle")
         page.wait_for_timeout(500)
-        page.get_by_role("radio").nth(2).check()
+        ensure_daily_query_mode(page)
         page.wait_for_timeout(300)
         print(c_ok("已进入飞行经历查询页面"))
     except Exception as e:
@@ -561,7 +777,7 @@ def run_batch_query(page, records, output_file: str, exp_label: str, exp_col_ind
         print(f"{c_info(f'[{i+1}/{len(records)}]')} 查询: {record['员工号']} {name} {record['开始日期']}~{record['结束日期']}")
 
         try:
-            query_flight_record(page, record["员工号"], record["开始日期"], record["结束日期"], clear_first=(i > 0))
+            query_flight_record(page, record["员工号"], record["开始日期"], record["结束日期"], name, clear_first=(i > 0))
             date_ok, date_reason = validate_page_query_dates(page, record["开始日期"], record["结束日期"])
             if not date_ok:
                 print(c_err(date_reason))
@@ -578,7 +794,23 @@ def run_batch_query(page, records, output_file: str, exp_label: str, exp_col_ind
                 fail_count += 1
                 break
 
-            data = extract_flight_data(page, exp_col_index, exp_label)
+            data = extract_flight_data(page, exp_col_index, exp_label, record["员工号"], name)
+
+            if data and data.get("错误"):
+                reason = data["错误"]
+                print(c_err(reason))
+                write_to_excel(
+                    output_file,
+                    record["行号"],
+                    "员工不匹配",
+                    "员工不匹配",
+                    exp_label,
+                    record.get("开始日期值"),
+                    record.get("结束日期值"),
+                )
+                failed_records.append((record, reason))
+                fail_count += 1
+                continue
 
             if data and data.get(exp_label) and data.get("起落总数"):
                 exp_value = data[exp_label]
@@ -593,14 +825,14 @@ def run_batch_query(page, records, output_file: str, exp_label: str, exp_col_ind
                     record.get("开始日期值"),
                     record.get("结束日期值"),
                 ):
-                    print(c_ok(f"✓ {exp_label}: {exp_value} | 起落总数: {landing_count} | 已写入Excel"))
+                    print(c_ok(f"OK {exp_label}: {exp_value} | 起落总数: {landing_count} | 已写入Excel"))
                     success_count += 1
                 else:
-                    print(c_err("✗ 查询成功但写入失败"))
+                    print(c_err("ERROR 查询成功但写入失败"))
                     failed_records.append((record, "查询成功但写入Excel失败"))
                     fail_count += 1
             else:
-                print(c_warn("✗ 未查询到数据"))
+                print(c_warn("WARN 未查询到数据"))
                 write_to_excel(
                     output_file,
                     record["行号"],
@@ -614,7 +846,7 @@ def run_batch_query(page, records, output_file: str, exp_label: str, exp_col_ind
                 fail_count += 1
 
         except Exception as e:
-            print(c_err(f"✗ 失败: {e}"))
+            print(c_err(f"ERROR 失败: {e}"))
             write_to_excel(
                 output_file,
                 record["行号"],
@@ -728,6 +960,9 @@ def main():
 
             print(c_ok(f"\n批量查询完成！成功: {success_count}, 失败: {fail_count}"))
             print(c_ok(f"结果已保存到: {os.path.abspath(output_file)}"))
+            stripped_output_file = export_minutes_stripped_excel(output_file)
+            if stripped_output_file:
+                print(c_ok(f"去分钟版已保存到: {os.path.abspath(stripped_output_file)}"))
             print(c_info("\n浏览器保持打开状态，可以手动查看结果"))
 
             action = ask_next_action("按回车继续当前输入方式查询下一批，输入m切换输入方式，输入t切换查询类型，输入q退出程序: ")
