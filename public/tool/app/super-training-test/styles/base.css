@@ -10,13 +10,13 @@
     --st-info-soft: #eff6ff;
     --st-info-border: rgba(37, 99, 235, 0.26);
     --st-success: #116329;
-    --st-success-soft: #dafbe1;
+    --st-success-soft: #b7efc5;
     --st-success-border: rgba(17, 99, 41, 0.26);
     --st-warning: #9a6700;
     --st-warning-soft: #fff8c5;
     --st-warning-border: rgba(180, 83, 9, 0.32);
     --st-danger: #cf222e;
-    --st-danger-soft: #ffebe9;
+    --st-danger-soft: #ffc9c7;
     --st-danger-border: rgba(185, 28, 28, 0.32);
     --st-shadow-soft: rgba(15, 23, 42, 0.06);
     --st-status-ok-bg: var(--st-success-soft);

@@ -29,9 +29,9 @@
 
   function getChartColors() {
     return {
-      info: getCssColor("--st-status-info-bg", "#eff6ff"),
-      ok: getCssColor("--st-status-ok-bg", "#dafbe1"),
-      danger: getCssColor("--st-status-danger-bg", "#ffebe9")
+      info: getCssColor("--st-info-soft", "#eff6ff"),
+      ok: getCssColor("--st-success-soft", "#b7efc5"),
+      danger: getCssColor("--st-danger-soft", "#ffc9c7")
     };
   }
 
