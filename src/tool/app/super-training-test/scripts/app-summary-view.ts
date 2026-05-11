@@ -1,17 +1,14 @@
 (function () {
   const Utils = window.SuperTraining.Utils;
   const ResultStatus = window.SuperTraining.ResultStatus;
+  const WorkbenchStatus = window.SuperTraining.WorkbenchStatus;
   const runtime = window.SuperTrainingApp;
   const elements = runtime.elements;
 
-  const STATUS_KEYS = [
-    { field: "expired", label: "已过期" },
-    { field: "expiredScheduled", label: "已过期已排补训" },
-    { field: "must", label: "必须排" },
-    { field: "uncoveredScheduled", label: "已排未覆盖" },
-    { field: "recommended", label: "推荐排" },
-    { field: "abnormal", label: "异常" }
-  ];
+  const STATUS_KEYS = WorkbenchStatus.VISIBLE_STATUS_FIELDS.map((item) => ({
+    field: item.field,
+    label: item.status
+  }));
 
   let currentSummaryRows = [];
   let selectedProject = "";
@@ -70,9 +67,10 @@
             <tr>
               <th>姓名</th>
               <th>员工号</th>
-              <th>有效期截止日期</th>
+              <th>当前有效期</th>
+              <th>最晚完成日期</th>
               <th>已排日期</th>
-              <th>说明</th>
+              <th>判断说明</th>
             </tr>
           </thead>
           <tbody>
@@ -80,7 +78,8 @@
               <tr>
                 <td class="person-name">${Utils.escapeHtml(row.name || "-")}</td>
                 <td>${Utils.escapeHtml(row.employeeId || "-")}</td>
-                <td>${Utils.escapeHtml(row.dueDate || row.expiry || "-")}</td>
+                <td>${Utils.escapeHtml(row.expiry || "-")}</td>
+                <td>${Utils.escapeHtml(row.dueDate || "-")}</td>
                 <td>${Utils.escapeHtml(row.scheduledDate || "-")}</td>
                 <td>${Utils.escapeHtml(row.reason || "-")}</td>
               </tr>

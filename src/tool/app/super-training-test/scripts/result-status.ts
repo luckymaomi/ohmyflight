@@ -1,4 +1,6 @@
 (function () {
+  const WorkbenchStatus = window.SuperTraining.WorkbenchStatus;
+
   function makeBadgeCell(text, tone) {
     return {
       type: "badge",
@@ -36,45 +38,6 @@
     }
   }
 
-  function badgeToneForSchedulePriority(value) {
-    switch (value) {
-      case "已过期":
-      case "必须排":
-        return "danger";
-      case "推荐排":
-        return "warn";
-      case "30天内到期":
-        return "danger";
-      case "60天内到期":
-      case "命中窗口":
-        return "warn";
-      case "90天内到期":
-      case "本阶段到期":
-        return "info";
-      default:
-        return "ok";
-    }
-  }
-
-  function badgeToneForScheduleStatus(value) {
-    switch (value) {
-      case "已过期":
-      case "必须排":
-        return "danger";
-      case "推荐排":
-        return "warn";
-      case "命中窗口":
-      case "本阶段到期":
-        return "warn";
-      case "有效未到窗口":
-      case "阶段外未到期":
-        return "ok";
-      case "缺少旧有效期":
-      default:
-        return "info";
-    }
-  }
-
   function badgeToneForSkippedStatus(value) {
     switch (value) {
       case "日期异常":
@@ -93,57 +56,15 @@
     }
   }
 
-  function badgeToneForPlanCheckStatus(value) {
-    switch (value) {
-      case "已排覆盖":
-        return "ok";
-      case "未覆盖":
-        return "warn";
-      default:
-        return "info";
-    }
-  }
-
-  function badgeToneForPlanCheckResult(value) {
-    switch (value) {
-      case "已标绿":
-        return "ok";
-      case "已补加":
-        return "danger";
-      default:
-        return "info";
-    }
-  }
-
   function badgeToneForWorkbenchStatus(value) {
-    switch (value) {
-      case "已过期":
-      case "已过期已排补训":
-      case "异常":
-        return "danger";
-      case "必须排":
-      case "已排未覆盖":
-      case "推荐排":
-      case "已排未录入":
-      case "已录入待更新":
-        return "warn";
-      case "已排已录入":
-      case "正常":
-        return "ok";
-      default:
-        return "info";
-    }
+    return WorkbenchStatus.badgeToneForWorkbenchStatus(value);
   }
 
   window.SuperTraining.ResultStatus = {
     makeBadgeCell,
     badgeToneForUpdateJudgement,
     badgeToneForUpdateResult,
-    badgeToneForSchedulePriority,
-    badgeToneForScheduleStatus,
     badgeToneForSkippedStatus,
-    badgeToneForPlanCheckStatus,
-    badgeToneForPlanCheckResult,
     badgeToneForWorkbenchStatus
   };
 })();

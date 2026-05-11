@@ -6,12 +6,6 @@
 
   function getTableVariant(columns) {
     const signature = columns.join("|");
-    if (signature === "项目|员工号|姓名|原有效期|状态|开始日期|结束日期|说明") {
-      return "result-table-schedule";
-    }
-    if (signature === "项目|员工号|姓名|有效期|状态|处理结果|说明") {
-      return "result-table-plan-check";
-    }
     if (signature === "项目|项目 sheet|项目行号|员工号|姓名|旧有效期|新有效期|判断|处理结果|说明") {
       return "result-table-validity";
     }
@@ -26,14 +20,8 @@
     if (signature === "状态|项目|姓名|当前有效期|已排日期|说明") {
       return "result-table-workbench";
     }
-    if (signature === "状态|项目|员工号|姓名|当前有效期|到期月份|最晚完成日期|已排日期|是否录入|来源|说明") {
+    if (signature === "状态|项目|员工号|姓名|当前有效期|到期月份|最晚完成日期|已排日期|来源|说明") {
       return "result-table-workbench";
-    }
-    if (signature === "项目|员工号|姓名|原有效期|轻重缓急|状态|开始日期|结束日期|说明") {
-      return "result-table-schedule";
-    }
-    if (signature === "项目|员工号|姓名|有效期|状态|处理结果|说明") {
-      return "result-table-plan-check";
     }
     if (signature === "项目|项目 sheet|项目行号|员工号|姓名|旧有效期|新有效期|判断|处理结果|说明") {
       return "result-table-validity";
@@ -48,9 +36,7 @@
     const tableElement = headElement.closest("table");
     if (tableElement) {
       tableElement.classList.remove(
-        "result-table-schedule",
         "result-table-validity",
-        "result-table-plan-check",
         "result-table-workbench",
         "result-table-skipped"
       );
@@ -116,72 +102,6 @@
     ]);
   }
 
-  function toScheduleDetailRowsWithPriority(rows) {
-    return rows.map((row) => [
-      row.projectName,
-      row.employeeId,
-      row.name,
-      row.oldExpiry,
-      ResultStatus.makeBadgeCell(row.priorityLabel, ResultStatus.badgeToneForSchedulePriority(row.priorityLabel)),
-      ResultStatus.makeBadgeCell(row.status, ResultStatus.badgeToneForScheduleStatus(row.status)),
-      row.startDate,
-      row.endDate,
-      row.reason
-    ]);
-  }
-
-  function toScheduleSkippedRows(rows) {
-    return rows.map((row) => [
-      row.projectName,
-      row.name,
-      ResultStatus.makeBadgeCell(row.status, ResultStatus.badgeToneForSkippedStatus(row.status)),
-      row.reason
-    ]);
-  }
-
-  function toPlanCheckDetailRows(rows) {
-    return rows.map((row) => [
-      row.projectName,
-      row.employeeId,
-      row.name,
-      row.expiry,
-      ResultStatus.makeBadgeCell(row.status, ResultStatus.badgeToneForPlanCheckStatus(row.status)),
-      ResultStatus.makeBadgeCell(row.result, ResultStatus.badgeToneForPlanCheckResult(row.result)),
-      row.reason
-    ]);
-  }
-
-  function toPlanCheckSkippedRows(rows) {
-    return rows.map((row) => [
-      row.projectName,
-      row.name,
-      ResultStatus.makeBadgeCell(row.status, ResultStatus.badgeToneForSkippedStatus(row.status)),
-      row.reason
-    ]);
-  }
-
-  function toExpiryListDetailRows(rows) {
-    return rows.map((row) => [
-      row.projectName,
-      row.employeeId,
-      row.name,
-      row.expiry,
-      row.dueMonth,
-      row.source
-    ]);
-  }
-
-  function toExpiryListSkippedRows(rows) {
-    return rows.map((row) => [
-      row.projectName,
-      row.employeeId,
-      row.name,
-      ResultStatus.makeBadgeCell(row.status, ResultStatus.badgeToneForSkippedStatus(row.status)),
-      row.source,
-      row.reason
-    ]);
-  }
-
   function toWorkbenchDetailRows(rows) {
     return rows.map((row) => [
       ResultStatus.makeBadgeCell(row.status, ResultStatus.badgeToneForWorkbenchStatus(row.status)),
@@ -198,12 +118,6 @@
     renderSkippedSummary,
     toValidityDetailRows,
     toValiditySkippedRows,
-    toScheduleDetailRowsWithPriority,
-    toScheduleSkippedRows,
-    toPlanCheckDetailRows,
-    toPlanCheckSkippedRows,
-    toExpiryListDetailRows,
-    toExpiryListSkippedRows,
     toWorkbenchDetailRows
   };
 })();

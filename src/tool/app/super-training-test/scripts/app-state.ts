@@ -12,6 +12,8 @@
     workbenchResult: null,
     workbenchView: null,
     workbenchSelection: null,
+    scheduledDistribution: null,
+    crmAnnualResult: null,
     updateSelectedProjects: []
   };
 })();

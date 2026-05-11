@@ -3,6 +3,7 @@
   const Scanner = window.SuperTraining.Scanner;
   const Validity = window.SuperTraining.Validity;
   const WorkbenchExport = window.SuperTraining.WorkbenchExport;
+  const CrmExport = window.SuperTraining.CrmExport;
   const ReportSheet = window.SuperTraining.ReportSheet;
   const runtime = window.SuperTrainingApp;
   const COPY = runtime.copy;
@@ -43,6 +44,7 @@
       state.workbenchResult = null;
       state.workbenchView = null;
       state.workbenchSelection = null;
+      state.crmAnnualResult = null;
       elements.workbenchSearchInput.value = "";
 
       renderers.renderWorkbookOverview();
@@ -52,6 +54,8 @@
       renderers.renderWorkbenchFilterOptions(null);
       renderers.renderProjectCards();
       renderers.renderResultPlaceholders();
+      renderers.renderScheduledDistribution();
+      renderers.renderCrmAnnual();
       controls.clearPendingExport();
       controls.refreshButtons();
 
@@ -65,6 +69,7 @@
       state.analysis = null;
       state.workbenchView = null;
       state.workbenchSelection = null;
+      state.crmAnnualResult = null;
       projects.renderEmptyState();
       controls.setStatus(error.message || "工作簿读取失败。", true);
     } finally {
@@ -207,12 +212,30 @@
     }
   }
 
+  function handleExportCrmMissing() {
+    if (!state.crmAnnualResult || !state.crmAnnualResult.missingPeople || !state.crmAnnualResult.missingPeople.length) {
+      controls.setStatus("当前年份没有可导出的 CRM 未参加人员。", true);
+      return;
+    }
+
+    try {
+      writeWorkbook(
+        CrmExport.buildMissingWorkbook(state.crmAnnualResult),
+        Utils.buildOutputFileName(state.sourceFileName, `CRM_${state.crmAnnualResult.year}_未参加人员`),
+        "CRM未参加人员"
+      );
+    } catch (error) {
+      controls.setStatus(error.message || "导出 CRM 未参加人员失败。", true);
+    }
+  }
+
   runtime.actions = {
     handleWorkbookChange,
     handleUpdatePreview,
     handleWorkbenchPreview,
     handleExport,
     handleExportWorkbenchView,
-    handleExportWorkbenchSelection
+    handleExportWorkbenchSelection,
+    handleExportCrmMissing
   };
 })();

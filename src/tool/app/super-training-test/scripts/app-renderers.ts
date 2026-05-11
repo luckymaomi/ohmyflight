@@ -7,6 +7,9 @@
   const charts = runtime.charts;
   const resultTable = runtime.resultTable;
   const summaryView = runtime.summaryView;
+  const ScheduledDistribution = window.SuperTraining.ScheduledDistribution;
+  const CrmAnnual = window.SuperTraining.CrmAnnual;
+  const Scanner = window.SuperTraining.Scanner;
 
   function renderWorkbookOverview() {
     if (!state.analysis) {
@@ -131,6 +134,15 @@
     renderSelectOptions(elements.workbenchMonthSelect, options.months, "全部月份");
   }
 
+  function renderScheduledDistributionOptions(distribution) {
+    const projectOptions = distribution && distribution.filterOptions ? distribution.filterOptions.projects : [];
+    const monthOptions = distribution && distribution.filterOptions ? distribution.filterOptions.months : [];
+    renderSelectOptions(elements.scheduledDistributionProjectSelect, projectOptions, "全部培训类型");
+    renderSelectOptions(elements.scheduledDistributionMonthSelect, monthOptions, "全部月份");
+    elements.scheduledDistributionProjectSelect.disabled = !state.analysis || !projectOptions.length;
+    elements.scheduledDistributionMonthSelect.disabled = !state.analysis || !monthOptions.length;
+  }
+
   function renderProjectCards() {
     if (!state.analysis || !state.analysis.projects.length) {
       elements.projectCards.innerHTML = `<div class="empty-block">${COPY.defaultProjectCards}</div>`;
@@ -173,10 +185,108 @@
     }
 
     elements.statsGrid.innerHTML = cards.map((card) => `
-      <article class="stat-card">
+      <article class="stat-card${card.tone ? ` stat-card-${Utils.escapeHtml(card.tone)}` : ""}">
+        <span class="muted">${Utils.escapeHtml(card.label)}</span>
+        <strong>${Utils.escapeHtml(card.value)}</strong>
+        ${card.hint ? `<small>${Utils.escapeHtml(card.hint)}</small>` : ""}
+      </article>
+    `).join("");
+  }
+
+  function renderScheduledDistribution() {
+    if (!state.analysis) {
+      state.scheduledDistribution = null;
+      renderScheduledDistributionOptions(null);
+      charts.renderScheduledDistributionCharts(null);
+      elements.scheduledDistributionSummary.textContent = "导入总表后显示已排培训分布。";
+      return;
+    }
+
+    const distribution = ScheduledDistribution.buildDistribution(state.analysis, {
+      projectName: elements.scheduledDistributionProjectSelect.value,
+      monthKey: elements.scheduledDistributionMonthSelect.value
+    });
+    state.scheduledDistribution = distribution;
+    renderScheduledDistributionOptions(distribution);
+    charts.renderScheduledDistributionCharts(distribution.summary);
+    elements.scheduledDistributionSummary.textContent = `当前筛选已排培训 ${distribution.summary.total} 人次。`;
+  }
+
+  function renderCrmStats(result) {
+    if (!result) {
+      elements.crmStatsGrid.innerHTML = `
+        <article class="stat-card">
+          <span class="muted">等待核对</span>
+          <strong>-</strong>
+        </article>
+      `;
+      return;
+    }
+
+    const cards = [
+      { label: "应参加", value: result.stats.required, tone: "info" },
+      { label: "已参加", value: result.stats.attended, tone: "ok" },
+      { label: "未参加", value: result.stats.missing, tone: "danger" },
+      { label: "CRM教员", value: result.stats.instructors, tone: "muted" }
+    ];
+
+    elements.crmStatsGrid.innerHTML = cards.map((card) => `
+      <article class="stat-card${card.tone ? ` stat-card-${Utils.escapeHtml(card.tone)}` : ""}">
         <span class="muted">${Utils.escapeHtml(card.label)}</span>
         <strong>${Utils.escapeHtml(card.value)}</strong>
       </article>
+    `).join("");
+  }
+
+  function renderCrmAnnual() {
+    if (!state.workbook || !state.analysis) {
+      state.crmAnnualResult = null;
+      elements.crmYearInput.disabled = true;
+      elements.crmYearInput.value = String(new Date().getFullYear());
+      elements.crmSummary.textContent = "导入总表后显示 CRM 年度核对结果。";
+      elements.crmMissingBody.innerHTML = `<tr><td class="empty-block" colspan="4">导入总表后显示未参加 CRM 人员。</td></tr>`;
+      renderCrmStats(null);
+      charts.renderCrmCharts(null);
+      return;
+    }
+
+    elements.crmYearInput.disabled = false;
+    if (!elements.crmYearInput.value) {
+      elements.crmYearInput.value = String(new Date().getFullYear());
+    }
+
+    const result = CrmAnnual.buildAnnualCheck(
+      state.workbook,
+      state.analysis,
+      Scanner,
+      elements.crmYearInput.value
+    );
+
+    state.crmAnnualResult = result;
+    renderCrmStats(result);
+    charts.renderCrmCharts(result);
+    elements.crmSummary.textContent = result.hasCrmSheet
+      ? `${result.year} 年 CRM：应参加 ${result.stats.required} 人，已参加 ${result.stats.attended} 人，未参加 ${result.stats.missing} 人。`
+      : "未找到精确名为 CRM 的工作表，无法核对 CRM 年度参加情况。";
+    runtime.controls.refreshButtons();
+
+    if (!result.hasCrmSheet) {
+      elements.crmMissingBody.innerHTML = `<tr><td class="empty-block" colspan="4">未找到精确名为 CRM 的工作表。</td></tr>`;
+      return;
+    }
+
+    if (!result.missingPeople.length) {
+      elements.crmMissingBody.innerHTML = `<tr><td class="empty-block" colspan="4">当前年份没有未参加 CRM 人员。</td></tr>`;
+      return;
+    }
+
+    elements.crmMissingBody.innerHTML = result.missingPeople.map((person) => `
+      <tr>
+        <td class="person-name">${Utils.escapeHtml(person.name || "-")}</td>
+        <td>${Utils.escapeHtml(person.employeeId || "-")}</td>
+        <td>${Utils.escapeHtml(person.department || "-")}</td>
+        <td>${Utils.escapeHtml(person.techInfo || "-")}</td>
+      </tr>
     `).join("");
   }
 
@@ -184,6 +294,8 @@
     renderStats(null);
     charts.renderWorkbenchCharts(null);
     summaryView.renderWorkbenchSummary(null);
+    renderScheduledDistribution();
+    renderCrmAnnual();
     resultTable.renderTable(elements.detailTableHead, elements.detailTableBody, [], [], COPY.defaultDetailTable);
     resultTable.renderTable(elements.skippedTableHead, elements.skippedTableBody, [], [], COPY.defaultSkippedTable);
     resultTable.renderSkippedSummary(0);
@@ -239,6 +351,8 @@
     renderProjectCheckboxGroup,
     renderWorkbenchFilterOptions,
     renderProjectCards,
+    renderScheduledDistribution,
+    renderCrmAnnual,
     renderResultPlaceholders,
     renderActionResult
   };

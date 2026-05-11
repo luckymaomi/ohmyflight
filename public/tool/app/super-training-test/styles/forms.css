@@ -43,6 +43,12 @@
     font-weight: 600;
 }
 
+.field-hint {
+    color: var(--omf-text-muted);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
 .field input,
 .field select {
     width: 100%;

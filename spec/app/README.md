@@ -2,8 +2,6 @@
 
 ## 培训与业务
 
-- `bill-gantt.md`
-  酒店账单和飞行任务的时间轴对照工具
 - `crew-flight-stats.md`
   按航线统计个人班次并输出结果
 - `flight-filter.md`
@@ -34,8 +32,6 @@
 
 ## Python 工具
 
-- `file-batch-tool.md`
-  批量重命名和整理本地文件
 - `flight-stats-helper.md`
   批量查询飞行经历或左座经历并输出 Excel
 - `lock-entry-helper.md`

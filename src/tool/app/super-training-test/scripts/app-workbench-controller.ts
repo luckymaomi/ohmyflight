@@ -55,9 +55,22 @@
     controls.setStatus("排班总览筛选已更新。");
   }
 
+  function refreshWorkbenchResult(statusMessage = "") {
+    if (!state.analysis) {
+      controls.refreshButtons();
+      return null;
+    }
+
+    state.workbenchResult = buildCurrentWorkbenchResult(state.analysis);
+    const view = renderWorkbenchView();
+    if (statusMessage) controls.setStatus(statusMessage);
+    return view;
+  }
+
   runtime.workbenchController = {
     buildCurrentWorkbenchResult,
     renderWorkbenchView,
+    refreshWorkbenchResult,
     handleWorkbenchRangeChange,
     handleWorkbenchFilterChange
   };

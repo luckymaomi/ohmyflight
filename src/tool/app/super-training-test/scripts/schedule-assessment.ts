@@ -3,48 +3,10 @@
   const RuleEngine = window.SuperTraining.RuleEngine;
   const TrainingRecordPolicy = window.SuperTraining.TrainingRecordPolicy;
   const TrainingIgnoreList = window.SuperTraining.TrainingIgnoreList;
-
-  const STATUSES = {
-    expired: "已过期",
-    expiredScheduled: "已过期已排补训",
-    must: "必须排",
-    recommended: "推荐排",
-    uncoveredScheduled: "已排未覆盖",
-    scheduledPending: "已排未录入",
-    recordedPendingUpdate: "已录入待更新",
-    normal: "正常",
-    abnormal: "异常"
-  };
-
-  const DEFAULT_VISIBLE_STATUSES = new Set([
-    STATUSES.expired,
-    STATUSES.expiredScheduled,
-    STATUSES.must,
-    STATUSES.recommended,
-    STATUSES.uncoveredScheduled,
-    STATUSES.abnormal
-  ]);
-
-  const STATUS_ORDER = new Map([
-    [STATUSES.expired, 0],
-    [STATUSES.expiredScheduled, 1],
-    [STATUSES.must, 2],
-    [STATUSES.uncoveredScheduled, 3],
-    [STATUSES.recommended, 4],
-    [STATUSES.abnormal, 5],
-    [STATUSES.scheduledPending, 6],
-    [STATUSES.recordedPendingUpdate, 7],
-    [STATUSES.normal, 8]
-  ]);
-
-  const VISIBLE_STATUS_FIELDS = [
-    { status: STATUSES.expired, field: "expired" },
-    { status: STATUSES.expiredScheduled, field: "expiredScheduled" },
-    { status: STATUSES.must, field: "must" },
-    { status: STATUSES.uncoveredScheduled, field: "uncoveredScheduled" },
-    { status: STATUSES.recommended, field: "recommended" },
-    { status: STATUSES.abnormal, field: "abnormal" }
-  ];
+  const WorkbenchStatus = window.SuperTraining.WorkbenchStatus;
+  const STATUSES = WorkbenchStatus.STATUSES;
+  const DEFAULT_VISIBLE_STATUSES = WorkbenchStatus.DEFAULT_VISIBLE_STATUSES;
+  const VISIBLE_STATUS_FIELDS = WorkbenchStatus.VISIBLE_STATUS_FIELDS;
 
   type AssessmentFilters = {
     projects?: string[];
@@ -94,7 +56,7 @@
   }
 
   function getDefaultStageEnd(today) {
-    return monthEnd(today);
+    return monthEnd(addMonths(today, 1));
   }
 
   function buildCandidateMatches(project, candidate) {
@@ -131,7 +93,7 @@
   }
 
   function getNoWindowRecommendationStart(expiry) {
-    return firstDayOfMonth(addMonths(expiry, -1));
+    return firstDayOfMonth(addMonths(expiry, -2));
   }
 
   function classifySchedulingNeed(rule, stageStart, stageEnd, expiry) {
@@ -214,12 +176,11 @@
             employeeId,
             name,
             expiry: expiryText,
-            dueMonth: "",
-            dueDate: "",
-            scheduledDate: "",
-            recorded: "",
-            source,
-            reason: `当前有效期“${Utils.normalizeText(rawExpiry)}”无法解析为日期。`
+          dueMonth: "",
+          dueDate: "",
+          scheduledDate: "",
+          source,
+          reason: `当前有效期“${Utils.normalizeText(rawExpiry)}”无法解析为日期。`
           });
         }
         return;
@@ -230,10 +191,8 @@
       const abnormalMatches = matches.filter((item) => item.recordState && item.recordState.abnormal);
       const activeMatches = matches.filter((item) => item.recordState && item.recordState.active);
       const coveredMatches = matches.filter((item) => item.covered);
-      const recordedCovered = coveredMatches.filter((item) => item.recorded);
       const earliestActive = activeMatches[0];
       const earliestCovered = coveredMatches[0];
-      const earliestRecordedCovered = recordedCovered[0];
       const scheduleNeed = classifySchedulingNeed(project.rule, stageStart, stageEnd, expiry);
 
       let status = scheduleNeed.status;
@@ -244,13 +203,9 @@
         status = STATUSES.abnormal;
         reason = `${abnormalMatches[0].recordState.reason}（项目 sheet 第${abnormalMatches[0].rowNumber}行）`;
         rowSource = abnormalMatches[0].source;
-      } else if (earliestRecordedCovered) {
-        status = STATUSES.recordedPendingUpdate;
-        reason = "已找到可覆盖本轮到期的已录入记录，人员信息表仍是旧有效期，建议执行有效期更新。";
-        rowSource = earliestRecordedCovered.source;
       } else if (coveredMatches.length) {
-        status = STATUSES.scheduledPending;
-        reason = "已找到可覆盖本轮到期的安排，但未发现已录入信息，排班层面不用重复排。";
+        status = STATUSES.normal;
+        reason = "已找到可覆盖本轮到期的有效安排，排班层面不用重复排。";
         rowSource = earliestCovered.source;
       } else if (activeMatches.length && scheduleNeed.status === STATUSES.expired) {
         status = STATUSES.expiredScheduled;
@@ -279,7 +234,6 @@
         dueMonth: scheduleNeed.dueMonth,
         dueDate: Utils.formatDate(scheduleNeed.dueDate),
         scheduledDate: earliestCovered ? earliestCovered.trainingDateText : (earliestActive ? earliestActive.trainingDateText : ""),
-        recorded: earliestCovered || earliestActive ? (recordedCovered.length ? "是" : "否") : "",
         source: rowSource,
         reason
       });
@@ -290,8 +244,8 @@
 
   function sortRows(rows) {
     rows.sort((left, right) => {
-      const leftRank = STATUS_ORDER.has(left.status) ? STATUS_ORDER.get(left.status) : 99;
-      const rightRank = STATUS_ORDER.has(right.status) ? STATUS_ORDER.get(right.status) : 99;
+      const leftRank = WorkbenchStatus.rankOfStatus(left.status);
+      const rightRank = WorkbenchStatus.rankOfStatus(right.status);
       return leftRank - rightRank
         || left.dueDate.localeCompare(right.dueDate)
         || left.projectName.localeCompare(right.projectName)
@@ -350,7 +304,7 @@
     return rows.filter((row) => {
       if (projectSet.size && !projectSet.has(row.projectName)) return false;
       if (hasExplicitStatusFilter && !statusSet.has(row.status)) return false;
-      if (!hasExplicitStatusFilter && !DEFAULT_VISIBLE_STATUSES.has(row.status)) return false;
+      if (!hasExplicitStatusFilter && !WorkbenchStatus.isDefaultVisible(row.status)) return false;
       if (monthSet.size && !monthSet.has(row.dueMonth)) return false;
       return includesSearch(row, filters.searchText);
     });
@@ -366,14 +320,42 @@
   function buildStatsCards(rows) {
     const counts = countRows(rows);
     return [
-      { label: STATUSES.expired, value: counts[STATUSES.expired] || 0 },
-      { label: STATUSES.expiredScheduled, value: counts[STATUSES.expiredScheduled] || 0 },
-      { label: STATUSES.must, value: counts[STATUSES.must] || 0 },
-      { label: STATUSES.uncoveredScheduled, value: counts[STATUSES.uncoveredScheduled] || 0 },
-      { label: STATUSES.recommended, value: counts[STATUSES.recommended] || 0 },
-      { label: STATUSES.scheduledPending, value: counts[STATUSES.scheduledPending] || 0 },
-      { label: "待更新", value: counts[STATUSES.recordedPendingUpdate] || 0 },
-      { label: STATUSES.abnormal, value: counts[STATUSES.abnormal] || 0 }
+      {
+        label: STATUSES.expired,
+        value: counts[STATUSES.expired] || 0,
+        tone: "danger",
+        hint: "有效期已经早于评估开始日期，必须立即处理。"
+      },
+      {
+        label: STATUSES.must,
+        value: counts[STATUSES.must] || 0,
+        tone: "warning",
+        hint: "最晚完成日期落在当前评估区间内。"
+      },
+      {
+        label: STATUSES.recommended,
+        value: counts[STATUSES.recommended] || 0,
+        tone: "info",
+        hint: "已经进入窗口期或管理提前期，适合提前排班。"
+      },
+      {
+        label: STATUSES.uncoveredScheduled,
+        value: counts[STATUSES.uncoveredScheduled] || 0,
+        tone: "danger",
+        hint: "项目 sheet 里有安排，但按规则不能覆盖本轮到期。"
+      },
+      {
+        label: STATUSES.abnormal,
+        value: counts[STATUSES.abnormal] || 0,
+        tone: "danger",
+        hint: "日期或取消备注存在矛盾，需要人工确认。"
+      },
+      {
+        label: STATUSES.expiredScheduled,
+        value: counts[STATUSES.expiredScheduled] || 0,
+        tone: "ok",
+        hint: "人员信息表已过期，但项目 sheet 里已有补训安排。"
+      }
     ];
   }
 
@@ -401,21 +383,14 @@
   function buildProjectChartRows(rows) {
     const projectMap = new Map();
     rows.forEach((row) => {
-      if (!DEFAULT_VISIBLE_STATUSES.has(row.status)) return;
+      if (!WorkbenchStatus.isDefaultVisible(row.status)) return;
       if (!projectMap.has(row.projectName)) {
-        projectMap.set(row.projectName, {
+        projectMap.set(row.projectName, WorkbenchStatus.createVisibleStatusBucket({
           projectName: row.projectName,
-          expired: 0,
-          expiredScheduled: 0,
-          must: 0,
-          uncoveredScheduled: 0,
-          recommended: 0,
-          abnormal: 0
-        });
+        }));
       }
       const item = projectMap.get(row.projectName);
-      const statusField = VISIBLE_STATUS_FIELDS.find((entry) => entry.status === row.status);
-      if (statusField) item[statusField.field] += 1;
+      WorkbenchStatus.incrementVisibleStatusBucket(item, row.status);
     });
     return [...projectMap.values()].sort((left, right) => {
       const leftTotal = VISIBLE_STATUS_FIELDS.reduce((total, item) => total + left[item.field], 0);
@@ -427,24 +402,18 @@
   function createStatusBucket(label) {
     return {
       label,
-      expired: 0,
-      expiredScheduled: 0,
-      must: 0,
-      uncoveredScheduled: 0,
-      recommended: 0,
-      abnormal: 0
+      ...WorkbenchStatus.createVisibleStatusBucket()
     };
   }
 
   function incrementStatusBucket(item, status) {
-    const statusField = VISIBLE_STATUS_FIELDS.find((entry) => entry.status === status);
-    if (statusField) item[statusField.field] += 1;
+    WorkbenchStatus.incrementVisibleStatusBucket(item, status);
   }
 
   function buildMonthChartRows(rows) {
     const monthMap = new Map();
     rows.forEach((row) => {
-      if (!DEFAULT_VISIBLE_STATUSES.has(row.status)) return;
+      if (!WorkbenchStatus.isDefaultVisible(row.status)) return;
       const monthKey = row.dueMonth || "无月份";
       if (!monthMap.has(monthKey)) {
         monthMap.set(monthKey, createStatusBucket(monthKey));
@@ -457,12 +426,7 @@
   function createProjectSummaryItem(projectName) {
     return {
       projectName,
-      expired: 0,
-      expiredScheduled: 0,
-      must: 0,
-      uncoveredScheduled: 0,
-      recommended: 0,
-      abnormal: 0,
+      ...WorkbenchStatus.createVisibleStatusBucket(),
       total: 0,
       rowsByStatus: {
         [STATUSES.expired]: [],
@@ -477,8 +441,7 @@
 
   function incrementProjectSummary(item, row) {
     const status = row.status;
-    const statusField = VISIBLE_STATUS_FIELDS.find((entry) => entry.status === status);
-    if (statusField) item[statusField.field] += 1;
+    WorkbenchStatus.incrementVisibleStatusBucket(item, status);
     if (item.rowsByStatus[status]) item.rowsByStatus[status].push(row);
     item.total += 1;
   }
@@ -486,7 +449,7 @@
   function buildProjectSummaryRows(rows) {
     const projectMap = new Map();
     rows.forEach((row) => {
-      if (!DEFAULT_VISIBLE_STATUSES.has(row.status)) return;
+      if (!WorkbenchStatus.isDefaultVisible(row.status)) return;
       if (!projectMap.has(row.projectName)) {
         projectMap.set(row.projectName, createProjectSummaryItem(row.projectName));
       }
@@ -506,7 +469,7 @@
   function buildProjectGroups(rows) {
     const groupMap = new Map();
     rows.forEach((row) => {
-      if (!DEFAULT_VISIBLE_STATUSES.has(row.status)) return;
+      if (!WorkbenchStatus.isDefaultVisible(row.status)) return;
       const key = `${row.projectName}@@${row.status}`;
       if (!groupMap.has(key)) {
         groupMap.set(key, {
@@ -524,8 +487,8 @@
         rows: group.rows.slice(0, 80)
       }))
       .sort((left, right) => {
-        const leftRank = STATUS_ORDER.has(left.status) ? STATUS_ORDER.get(left.status) : 99;
-        const rightRank = STATUS_ORDER.has(right.status) ? STATUS_ORDER.get(right.status) : 99;
+        const leftRank = WorkbenchStatus.rankOfStatus(left.status);
+        const rightRank = WorkbenchStatus.rankOfStatus(right.status);
         return left.projectName.localeCompare(right.projectName)
           || leftRank - rightRank;
       });
@@ -538,27 +501,21 @@
   function buildPersonRiskRows(rows) {
     const personMap = new Map();
     rows.forEach((row) => {
-      if (!DEFAULT_VISIBLE_STATUSES.has(row.status)) return;
+      if (!WorkbenchStatus.isDefaultVisible(row.status)) return;
       const key = row.employeeId || row.name;
       if (!key) return;
       if (!personMap.has(key)) {
         personMap.set(key, {
           employeeId: row.employeeId,
           name: row.name,
-          expired: 0,
-          expiredScheduled: 0,
-          must: 0,
-          uncoveredScheduled: 0,
-          recommended: 0,
-          abnormal: 0,
+          ...WorkbenchStatus.createVisibleStatusBucket(),
           total: 0,
           nearestDueDate: "",
           items: []
         });
       }
       const item = personMap.get(key);
-      const statusField = VISIBLE_STATUS_FIELDS.find((entry) => entry.status === row.status);
-      if (statusField) item[statusField.field] += 1;
+      WorkbenchStatus.incrementVisibleStatusBucket(item, row.status);
       item.total += 1;
       item.items.push({
         status: row.status,
@@ -620,7 +577,7 @@
       chartData: buildChartData(detailRows),
       summaryData: buildSummaryData(detailRows),
       displayColumns: ["状态", "项目", "姓名", "当前有效期", "已排日期", "说明"],
-      detailColumns: ["状态", "项目", "员工号", "姓名", "当前有效期", "到期月份", "最晚完成日期", "已排日期", "是否录入", "来源", "说明"],
+      detailColumns: ["状态", "项目", "员工号", "姓名", "当前有效期", "到期月份", "最晚完成日期", "已排日期", "来源", "说明"],
       allDetailRows: allRows,
       detailRows,
       skippedColumns: [],

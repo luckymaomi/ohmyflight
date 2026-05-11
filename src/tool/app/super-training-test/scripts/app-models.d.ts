@@ -12,6 +12,7 @@ interface SuperTrainingRecordedInfo {
 interface SuperTrainingProjectAnalysis {
   canonical: string;
   peopleColumnIndex: number;
+  sheetInfo?: any;
   recordedInfo?: SuperTrainingRecordedInfo | null;
   recordedMonths: string[];
   pendingMonths: string[];
@@ -57,6 +58,8 @@ interface SuperTrainingAppState {
   workbenchResult: any;
   workbenchView: any;
   workbenchSelection: any;
+  scheduledDistribution: any;
+  crmAnnualResult: any;
   updateSelectedProjects: string[];
 }
 
@@ -84,6 +87,17 @@ interface SuperTrainingAppElements {
   workbenchStatusChart: HTMLElement;
   workbenchProjectChart: HTMLElement;
   workbenchMonthChart: HTMLElement;
+  scheduledDistributionProjectSelect: HTMLSelectElement;
+  scheduledDistributionMonthSelect: HTMLSelectElement;
+  scheduledDistributionSummary: HTMLElement;
+  scheduledDistributionDateChart: HTMLElement;
+  crmYearInput: HTMLInputElement;
+  crmSummary: HTMLElement;
+  crmStatsGrid: HTMLElement;
+  crmParticipationChart: HTMLElement;
+  crmMonthlyChart: HTMLElement;
+  crmMissingBody: HTMLTableSectionElement;
+  exportCrmMissingButton: HTMLButtonElement;
   exportWorkbenchSelectionButton: HTMLButtonElement;
   exportWorkbenchViewButton: HTMLButtonElement;
   updateValidityButton: HTMLButtonElement;

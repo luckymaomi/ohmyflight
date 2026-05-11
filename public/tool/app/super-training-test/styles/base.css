@@ -1,10 +1,42 @@
 :root {
-    --accent: #dd2c2f;
-    --accent-strong: #b61f22;
-    --accent-deep: #8f1417;
-    --accent-soft: #fff1f2;
-    --accent-soft-strong: #ffd9dd;
-    --accent-ring: rgba(221, 44, 47, 0.16);
+    --st-primary: #dd2c2f;
+    --st-primary-strong: #b61f22;
+    --st-primary-deep: #8f1417;
+    --st-primary-soft: #fff1f2;
+    --st-primary-soft-strong: #ffd9dd;
+    --st-primary-ring: rgba(221, 44, 47, 0.16);
+    --st-on-primary: #ffffff;
+    --st-info: #2563eb;
+    --st-info-soft: #eff6ff;
+    --st-info-border: rgba(37, 99, 235, 0.26);
+    --st-success: #116329;
+    --st-success-soft: #dafbe1;
+    --st-success-border: rgba(17, 99, 41, 0.26);
+    --st-warning: #9a6700;
+    --st-warning-soft: #fff8c5;
+    --st-warning-border: rgba(180, 83, 9, 0.32);
+    --st-danger: #cf222e;
+    --st-danger-soft: #ffebe9;
+    --st-danger-border: rgba(185, 28, 28, 0.32);
+    --st-shadow-soft: rgba(15, 23, 42, 0.06);
+    --st-status-ok-bg: var(--st-success-soft);
+    --st-status-ok-text: var(--st-success);
+    --st-status-ok-border: var(--st-success-border);
+    --st-status-warn-bg: var(--st-warning-soft);
+    --st-status-warn-text: var(--st-warning);
+    --st-status-warn-border: var(--st-warning-border);
+    --st-status-danger-bg: var(--st-danger-soft);
+    --st-status-danger-text: var(--st-danger);
+    --st-status-danger-border: var(--st-danger-border);
+    --st-status-info-bg: var(--st-info-soft);
+    --st-status-info-text: var(--st-info);
+    --st-status-info-border: var(--st-info-border);
+    --accent: var(--st-primary);
+    --accent-strong: var(--st-primary-strong);
+    --accent-deep: var(--st-primary-deep);
+    --accent-soft: var(--st-primary-soft);
+    --accent-soft-strong: var(--st-primary-soft-strong);
+    --accent-ring: var(--st-primary-ring);
 }
 
 * {
@@ -118,17 +150,17 @@ select {
     min-height: 46px;
     padding: 0 24px;
     border-color: var(--accent);
-    background: linear-gradient(180deg, #ff595d 0%, var(--accent) 100%);
-    color: #ffffff;
+    background: var(--accent);
+    color: var(--st-on-primary);
     font-size: 15px;
     font-weight: 600;
-    box-shadow: 0 14px 30px rgba(221, 44, 47, 0.22);
+    box-shadow: none;
 }
 
 .action-button-primary:hover {
-    background: linear-gradient(180deg, #f4474d 0%, var(--accent-strong) 100%);
+    background: var(--accent-strong);
     border-color: var(--accent-strong);
-    color: #ffffff;
+    color: var(--st-on-primary);
 }
 
 .section {
@@ -173,8 +205,8 @@ select {
 }
 
 .status-line.is-error {
-    background: #ffebe9;
-    color: #cf222e;
+    background: var(--st-danger-soft);
+    color: var(--st-danger);
 }
 
 .empty-block {

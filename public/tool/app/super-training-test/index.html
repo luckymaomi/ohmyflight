@@ -15,7 +15,7 @@
             <div class="hero-bar">
                 <div class="hero-copy">
                     <h1 class="hero-title">超级培训</h1>
-                    <p class="hero-subtitle">导入总培训表后，先用排班总览发现已过期、必须排、推荐排和异常；需要落表时，再使用有效期更新生成导出副本。</p>
+                    <p class="hero-subtitle">导入总培训表后，用“当前有效期 + 项目记录 + 培训规则 + 取消备注”判断每日排班风险；需要落表时，再使用有效期更新生成导出副本。</p>
                 </div>
                 <div class="hero-actions">
                     <a class="hero-link" href="./rule-reference.html" target="_blank" rel="noopener noreferrer">规则速查</a>
@@ -28,7 +28,7 @@
             <div class="section-head">
                 <div>
                     <h2 class="section-title">排班总览</h2>
-                    <p class="section-intro">导入总培训表后按评估日期区间扫描所有人员和培训项目，默认只显示已过期、必须排、推荐排和异常；已排未录入、已录入待更新、正常可在状态下拉中查看。</p>
+                    <p class="section-intro">默认评估今天到下月底，先看已过期、必须排、推荐排、已排未覆盖和异常；已排未录入、已录入待更新、正常可在状态下拉中查看。</p>
                 </div>
             </div>
             <div class="field">
@@ -77,6 +77,20 @@
                 <button class="action-button" id="exportWorkbenchSelectionButton" type="button" disabled>导出右侧人员明细</button>
                 <button class="action-button" id="exportWorkbenchViewButton" type="button" disabled>导出当前筛选总览</button>
             </div>
+            <section class="section daily-monitor-section" aria-labelledby="dailyMonitorTitle">
+                <div class="section-head">
+                    <div>
+                        <h2 class="section-title" id="dailyMonitorTitle">每日监控</h2>
+                        <p class="section-intro">这些数字是每天打开后最先看的风险入口：红色先处理，推荐排用于提前安排本月和下月培训。</p>
+                    </div>
+                </div>
+                <div class="stats-grid" id="statsGrid">
+                    <article class="stat-card">
+                        <span class="muted">等待扫描</span>
+                        <strong>-</strong>
+                    </article>
+                </div>
+            </section>
             <div class="chart-grid">
                 <div class="chart-panel">
                     <div class="chart-title">按状态统计</div>
@@ -133,6 +147,90 @@
                 <div class="chart-title">月份压力分析</div>
                 <div class="chart-box" id="workbenchMonthChart"></div>
             </div>
+            <section class="scheduled-distribution-panel" aria-labelledby="scheduledDistributionTitle">
+                <div class="section-head">
+                    <div>
+                        <h2 class="section-title" id="scheduledDistributionTitle">已排培训分布</h2>
+                        <p class="section-intro">只统计项目 sheet 中已排且未取消的培训，用于查看培训安排是否集中。</p>
+                    </div>
+                </div>
+                <div class="form-grid form-grid-3">
+                    <div class="field">
+                        <label for="scheduledDistributionProjectSelect">培训类型</label>
+                        <select id="scheduledDistributionProjectSelect" disabled>
+                            <option value="">全部培训类型</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="scheduledDistributionMonthSelect">培训月份</label>
+                        <select id="scheduledDistributionMonthSelect" disabled>
+                            <option value="">全部月份</option>
+                        </select>
+                    </div>
+                </div>
+                <p class="summary-meta" id="scheduledDistributionSummary">导入总表后显示已排培训分布。</p>
+                <div class="chart-panel scheduled-distribution-chart-panel">
+                    <div class="chart-title">按培训日期分布</div>
+                    <div class="chart-box" id="scheduledDistributionDateChart"></div>
+                </div>
+            </section>
+            <section class="crm-annual-panel" aria-labelledby="crmAnnualTitle">
+                <div class="section-head">
+                    <div>
+                        <h2 class="section-title" id="crmAnnualTitle">CRM年度核对</h2>
+                        <p class="section-intro">只读取精确名为 CRM 的工作表，按自然年判断参加/未参加；CRM教员不进入未参加名单。</p>
+                    </div>
+                </div>
+                <div class="form-grid form-grid-3">
+                    <div class="field">
+                        <label for="crmYearInput">核对年份</label>
+                        <input id="crmYearInput" type="number" min="2000" max="2100" step="1" disabled>
+                    </div>
+                </div>
+                <p class="summary-meta" id="crmSummary">导入总表后显示 CRM 年度核对结果。</p>
+                <div class="stats-grid crm-stats-grid" id="crmStatsGrid">
+                    <article class="stat-card">
+                        <span class="muted">等待核对</span>
+                        <strong>-</strong>
+                    </article>
+                </div>
+                <div class="chart-grid crm-chart-grid">
+                    <div class="chart-panel">
+                        <div class="chart-title">参加状态比例</div>
+                        <div class="chart-box" id="crmParticipationChart"></div>
+                    </div>
+                    <div class="chart-panel">
+                        <div class="chart-title">月度参加与未参加</div>
+                        <div class="chart-box" id="crmMonthlyChart"></div>
+                    </div>
+                </div>
+                <div class="crm-missing-panel">
+                    <div class="section-head">
+                        <div>
+                            <h2 class="section-title">未参加人员</h2>
+                            <p class="section-intro">只展示当前年份没有有效 CRM 记录的人。</p>
+                        </div>
+                        <button class="action-button" id="exportCrmMissingButton" type="button" disabled>导出未参加人员</button>
+                    </div>
+                    <div class="table-shell table-responsive overflow-auto crm-missing-shell">
+                        <table class="table table-hover align-middle result-table crm-missing-table">
+                            <thead>
+                                <tr>
+                                    <th>姓名</th>
+                                    <th>员工号</th>
+                                    <th>分部</th>
+                                    <th>技术信息</th>
+                                </tr>
+                            </thead>
+                            <tbody id="crmMissingBody">
+                                <tr>
+                                    <td class="empty-block" colspan="4">导入总表后显示未参加 CRM 人员。</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         </section>
 
         <section class="section">
@@ -195,12 +293,6 @@
                     <h2 class="section-title">执行结果</h2>
                     <p id="resultSummary" class="section-intro">尚未执行任何操作。</p>
                 </div>
-            </div>
-            <div class="stats-grid" id="statsGrid">
-                <article class="stat-card">
-                    <span class="muted">等待执行</span>
-                    <strong>-</strong>
-                </article>
             </div>
         </section>
 
@@ -265,11 +357,16 @@
     <script src="../../../libs/echarts.min.js"></script>
     <script src="./scripts/config.js"></script>
     <script src="./scripts/utils.js"></script>
+    <script src="./scripts/crm-instructors.js"></script>
     <script src="./scripts/training-ignore-list.js"></script>
     <script src="./scripts/training-record-policy.js"></script>
     <script src="./scripts/scanner.js"></script>
     <script src="./scripts/rule-engine.js"></script>
+    <script src="./scripts/workbench-status.js"></script>
     <script src="./scripts/schedule-assessment.js"></script>
+    <script src="./scripts/scheduled-distribution.js"></script>
+    <script src="./scripts/crm-annual.js"></script>
+    <script src="./scripts/crm-export.js"></script>
     <script src="./scripts/workbench.js"></script>
     <script src="./scripts/workbench-export.js"></script>
     <script src="./scripts/validity.js"></script>

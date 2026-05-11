@@ -13,7 +13,6 @@
         row.dueMonth,
         row.dueDate,
         row.scheduledDate,
-        row.recorded,
         row.source,
         row.reason
       ])
@@ -23,7 +22,7 @@
   function buildSelectionRows(selection) {
     const rows = selection && selection.rows ? selection.rows : [];
     return [
-      ["项目", "状态", "姓名", "员工号", "有效期截止日期", "最晚完成日期", "已排日期", "是否录入", "说明", "来源"],
+      ["项目", "状态", "姓名", "员工号", "有效期截止日期", "最晚完成日期", "已排日期", "说明", "来源"],
       ...rows.map((row) => [
         row.projectName,
         row.status,
@@ -32,7 +31,6 @@
         row.expiry,
         row.dueDate,
         row.scheduledDate,
-        row.recorded,
         row.reason,
         row.source
       ])

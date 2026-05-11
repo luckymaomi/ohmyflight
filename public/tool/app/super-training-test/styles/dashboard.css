@@ -32,6 +32,17 @@
     margin-top: 16px;
 }
 
+.daily-monitor-section {
+    margin-top: 16px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.daily-monitor-section .section-head {
+    margin-bottom: 10px;
+}
+
 .chart-panel {
     min-width: 0;
     border: 1px solid var(--omf-border);
@@ -58,13 +69,78 @@
 }
 
 .month-pressure-panel,
-.risk-workspace {
+.risk-workspace,
+.scheduled-distribution-panel,
+.crm-annual-panel {
     margin-top: 12px;
+}
+
+.compact-search-field {
+    width: min(260px, 100%);
+}
+
+.toolbar-tight {
+    gap: 8px;
 }
 
 .month-pressure-panel .chart-box {
     height: 320px;
 }
+
+.scheduled-distribution-panel,
+.crm-annual-panel {
+    border: 1px solid var(--omf-border);
+    border-radius: 8px;
+    background: var(--omf-surface);
+    padding: 12px;
+}
+
+.scheduled-distribution-chart-panel {
+    margin-top: 12px;
+}
+
+.scheduled-distribution-chart-panel .chart-box {
+    height: 340px;
+}
+
+.crm-stats-grid {
+    margin-top: 12px;
+}
+
+.crm-chart-grid {
+    grid-template-columns: minmax(280px, 0.72fr) minmax(460px, 1.28fr);
+}
+
+.crm-chart-grid .chart-box {
+    height: 300px;
+}
+
+.crm-missing-panel {
+    min-width: 0;
+    margin-top: 12px;
+}
+
+.crm-missing-table {
+    min-width: 680px;
+}
+
+.crm-missing-table :is(th, td) {
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.crm-missing-table :is(th, td):nth-child(1),
+.crm-missing-table :is(th, td):nth-child(2),
+.crm-missing-table :is(th, td):nth-child(3) {
+    white-space: nowrap;
+}
+
+.crm-missing-shell {
+    max-height: 420px;
+    overflow: auto;
+}
+
 
 .risk-workspace {
     display: grid;
@@ -137,7 +213,7 @@
 }
 
 .selected-person-table {
-    min-width: 760px;
+    min-width: 960px;
 }
 
 .selected-person-table :is(th, td) {
@@ -147,23 +223,30 @@
 }
 
 .selected-person-table :is(th, td):nth-child(1) {
-    width: 90px;
+    width: 58px;
+    text-align: center;
     white-space: nowrap;
 }
 
 .selected-person-table :is(th, td):nth-child(2) {
+    width: 90px;
+    white-space: nowrap;
+}
+
+.selected-person-table :is(th, td):nth-child(3) {
     width: 86px;
     white-space: nowrap;
 }
 
-.selected-person-table :is(th, td):nth-child(3),
-.selected-person-table :is(th, td):nth-child(4) {
+.selected-person-table :is(th, td):nth-child(4),
+.selected-person-table :is(th, td):nth-child(5),
+.selected-person-table :is(th, td):nth-child(6) {
     width: 120px;
     white-space: nowrap;
 }
 
-.selected-person-table :is(th, td):nth-child(5) {
-    width: 344px;
+.selected-person-table :is(th, td):nth-child(7) {
+    width: 360px;
 }
 
 .summary-panel {
@@ -246,4 +329,36 @@
     margin-top: 8px;
     font-size: 28px;
     line-height: 1;
+}
+
+.stat-card small {
+    display: block;
+    margin-top: 8px;
+    color: var(--omf-text-muted);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.stat-card-danger {
+    border-color: var(--st-status-danger-border);
+    background: var(--st-status-danger-bg);
+}
+
+.stat-card-warning {
+    border-color: var(--st-status-warn-border);
+    background: var(--st-status-warn-bg);
+}
+
+.stat-card-info {
+    border-color: var(--st-status-info-border);
+    background: var(--st-status-info-bg);
+}
+
+.stat-card-ok {
+    border-color: var(--st-status-ok-border);
+    background: var(--st-status-ok-bg);
+}
+
+.stat-card-muted {
+    background: var(--omf-surface-soft);
 }

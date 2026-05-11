@@ -35,11 +35,18 @@
     const canWorkbench = Boolean(state.analysis) && !state.busy;
     const canExportWorkbenchView = Boolean(state.workbenchView && state.workbenchView.detailRows && state.workbenchView.detailRows.length) && !state.busy;
     const canExportWorkbenchSelection = Boolean(state.workbenchSelection && state.workbenchSelection.rows && state.workbenchSelection.rows.length) && !state.busy;
+    const canExportCrmMissing = Boolean(
+      state.crmAnnualResult
+      && state.crmAnnualResult.hasCrmSheet
+      && state.crmAnnualResult.missingPeople
+      && state.crmAnnualResult.missingPeople.length
+    ) && !state.busy;
 
     elements.updateValidityButton.disabled = !canUpdate;
     elements.workbenchButton.disabled = !canWorkbench;
     elements.exportWorkbenchViewButton.disabled = !canExportWorkbenchView;
     elements.exportWorkbenchSelectionButton.disabled = !canExportWorkbenchSelection;
+    elements.exportCrmMissingButton.disabled = !canExportCrmMissing;
     elements.workbenchProjectSelect.disabled = !state.workbenchResult || state.busy;
     elements.workbenchStatusSelect.disabled = !state.workbenchResult || state.busy;
     elements.workbenchMonthSelect.disabled = !state.workbenchResult || state.busy;

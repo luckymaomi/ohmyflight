@@ -31,14 +31,6 @@
     word-break: break-word;
 }
 
-.detail-result-table.result-table-schedule {
-    min-width: 1180px;
-}
-
-.detail-result-table.result-table-plan-check {
-    min-width: 980px;
-}
-
 .detail-result-table.result-table-workbench {
     min-width: 900px;
 }
@@ -70,72 +62,6 @@
 
 .detail-result-table.result-table-workbench :is(th, td):nth-child(6) {
     width: 40%;
-}
-
-.detail-result-table.result-table-plan-check :is(th, td):nth-child(1) {
-    width: 16%;
-    white-space: nowrap;
-}
-
-.detail-result-table.result-table-plan-check :is(th, td):nth-child(2) {
-    width: 11%;
-    white-space: nowrap;
-}
-
-.detail-result-table.result-table-plan-check :is(th, td):nth-child(3) {
-    width: 12%;
-    white-space: nowrap;
-}
-
-.detail-result-table.result-table-plan-check :is(th, td):nth-child(4) {
-    width: 12%;
-    white-space: nowrap;
-}
-
-.detail-result-table.result-table-plan-check :is(th, td):nth-child(5),
-.detail-result-table.result-table-plan-check :is(th, td):nth-child(6) {
-    width: 11%;
-    white-space: nowrap;
-}
-
-.detail-result-table.result-table-plan-check :is(th, td):nth-child(7) {
-    width: 28%;
-}
-
-.detail-result-table.result-table-schedule :is(th, td):nth-child(1) {
-    width: 14%;
-    white-space: nowrap;
-}
-
-.detail-result-table.result-table-schedule :is(th, td):nth-child(2) {
-    width: 10%;
-    white-space: nowrap;
-}
-
-.detail-result-table.result-table-schedule :is(th, td):nth-child(3) {
-    width: 10%;
-    white-space: nowrap;
-}
-
-.detail-result-table.result-table-schedule :is(th, td):nth-child(4),
-.detail-result-table.result-table-schedule :is(th, td):nth-child(7),
-.detail-result-table.result-table-schedule :is(th, td):nth-child(8) {
-    width: 10%;
-    white-space: nowrap;
-}
-
-.detail-result-table.result-table-schedule :is(th, td):nth-child(5) {
-    width: 10%;
-    white-space: nowrap;
-}
-
-.detail-result-table.result-table-schedule :is(th, td):nth-child(6) {
-    width: 9%;
-    white-space: nowrap;
-}
-
-.detail-result-table.result-table-schedule :is(th, td):nth-child(9) {
-    width: 17%;
 }
 
 .detail-result-table.result-table-validity {
@@ -217,23 +143,23 @@
 }
 
 .badge.ok {
-    background: #dafbe1;
-    color: #116329;
+    background: var(--st-status-ok-bg);
+    color: var(--st-status-ok-text);
 }
 
 .badge.warn {
-    background: #fff8c5;
-    color: #9a6700;
+    background: var(--st-status-warn-bg);
+    color: var(--st-status-warn-text);
 }
 
 .badge.danger {
-    background: #ffebe9;
-    color: #cf222e;
+    background: var(--st-status-danger-bg);
+    color: var(--st-status-danger-text);
 }
 
 .badge.info {
-    background: #ddf4ff;
-    color: #0969da;
+    background: var(--st-status-info-bg);
+    color: var(--st-status-info-text);
 }
 
 .collapse-shell {

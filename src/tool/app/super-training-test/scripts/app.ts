@@ -18,11 +18,15 @@
     elements.workbenchStatusSelect.addEventListener("change", workbenchController.handleWorkbenchFilterChange);
     elements.workbenchMonthSelect.addEventListener("change", workbenchController.handleWorkbenchFilterChange);
     elements.workbenchSearchInput.addEventListener("input", workbenchController.handleWorkbenchFilterChange);
+    elements.scheduledDistributionProjectSelect.addEventListener("change", runtime.renderers.renderScheduledDistribution);
+    elements.scheduledDistributionMonthSelect.addEventListener("change", runtime.renderers.renderScheduledDistribution);
+    elements.crmYearInput.addEventListener("change", runtime.renderers.renderCrmAnnual);
     elements.updateProjectGroup.addEventListener("change", projects.handleUpdateProjectGroupChange);
     elements.updateValidityButton.addEventListener("click", actions.handleUpdatePreview);
     elements.workbenchButton.addEventListener("click", actions.handleWorkbenchPreview);
     elements.exportWorkbenchSelectionButton.addEventListener("click", actions.handleExportWorkbenchSelection);
     elements.exportWorkbenchViewButton.addEventListener("click", actions.handleExportWorkbenchView);
+    elements.exportCrmMissingButton.addEventListener("click", actions.handleExportCrmMissing);
     elements.exportButton.addEventListener("click", actions.handleExport);
 
     controls.initializeDefaultDates();

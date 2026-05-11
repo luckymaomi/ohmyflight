@@ -44,8 +44,8 @@
 
 .checkbox-inline:hover,
 .checkbox-chip:hover {
-    border-color: #9fb5d1;
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    border-color: var(--omf-border-strong);
+    box-shadow: 0 10px 24px var(--st-shadow-soft);
 }
 
 .checkbox-inline input,
@@ -61,7 +61,7 @@
     flex: 0 0 20px;
     width: 20px;
     height: 20px;
-    border: 1.5px solid #9aa7b4;
+    border: 1.5px solid var(--omf-border-strong);
     border-radius: 6px;
     background: var(--omf-surface);
     transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
@@ -75,8 +75,8 @@
     top: 2px;
     width: 6px;
     height: 11px;
-    border-right: 2px solid #ffffff;
-    border-bottom: 2px solid #ffffff;
+    border-right: 2px solid var(--st-on-primary);
+    border-bottom: 2px solid var(--st-on-primary);
     transform: rotate(45deg) scale(0.9);
     opacity: 0;
     transition: opacity 0.16s ease;
@@ -85,8 +85,8 @@
 .checkbox-inline input:checked + .checkbox-inline-box,
 .checkbox-chip.is-checked .checkbox-chip-box {
     border-color: var(--accent);
-    background: linear-gradient(180deg, #ff6b70 0%, var(--accent) 100%);
-    box-shadow: 0 0 0 4px rgba(221, 44, 47, 0.14);
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-ring);
 }
 
 .checkbox-inline input:checked + .checkbox-inline-box::after,
@@ -97,7 +97,7 @@
 .checkbox-inline input:focus-visible + .checkbox-inline-box,
 .checkbox-chip input:focus-visible + .checkbox-chip-box {
     outline: none;
-    box-shadow: 0 0 0 4px rgba(221, 44, 47, 0.18);
+    box-shadow: 0 0 0 4px var(--accent-ring);
 }
 
 .checkbox-inline-text,
@@ -144,9 +144,9 @@
 
 .checkbox-chip.is-checked {
     border-color: var(--accent);
-    background: linear-gradient(180deg, var(--accent-soft) 0%, var(--accent-soft-strong) 100%);
+    background: var(--accent-soft);
     color: var(--accent-deep);
-    box-shadow: 0 12px 28px rgba(221, 44, 47, 0.14);
+    box-shadow: none;
 }
 
 .checkbox-chip.is-checked:hover {
