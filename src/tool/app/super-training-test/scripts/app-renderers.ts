@@ -47,6 +47,42 @@
     `;
   }
 
+  function renderWorkbookHealth() {
+    const health = state.workbookHealth;
+    if (!health) {
+      elements.workbookHealthPanel.innerHTML = `<div class="empty-block">导入文件后，这里会显示 Excel 健康检查结果。</div>`;
+      return;
+    }
+
+    const summary = health.summary || { error: 0, warning: 0, info: 0 };
+    const items = health.items || [];
+    const visibleItems = [
+      ...items.filter((item) => item.level === "error"),
+      ...items.filter((item) => item.level === "warning"),
+      ...items.filter((item) => item.level === "info")
+    ].slice(0, 80);
+
+    elements.workbookHealthPanel.innerHTML = `
+      <div class="health-summary">
+        <span class="health-pill health-pill-danger">严重 ${Utils.escapeHtml(summary.error || 0)}</span>
+        <span class="health-pill health-pill-warning">警告 ${Utils.escapeHtml(summary.warning || 0)}</span>
+        <span class="health-pill health-pill-info">提示 ${Utils.escapeHtml(summary.info || 0)}</span>
+      </div>
+      <div class="health-list">
+        ${visibleItems.length ? visibleItems.map((item) => `
+          <div class="health-item">
+            <span class="badge ${item.level === "error" ? "danger" : item.level === "warning" ? "warn" : "info"}">${Utils.escapeHtml(item.levelLabel)}</span>
+            <span class="health-area">${Utils.escapeHtml(item.area)}</span>
+            <span>
+              <span class="health-message">${Utils.escapeHtml(item.message)}</span>
+              ${item.detail ? `<span class="health-detail">${Utils.escapeHtml(item.detail)}</span>` : ""}
+            </span>
+          </div>
+        `).join("") : '<div class="empty-block">当前没有健康检查提示。</div>'}
+      </div>
+    `;
+  }
+
   function renderValiditySheetOptions() {
     const options = state.analysis
       ? [`<option value="${Utils.escapeHtml(state.analysis.peopleInfo.name)}">${Utils.escapeHtml(state.analysis.peopleInfo.name)}</option>`]
@@ -347,6 +383,7 @@
 
   runtime.renderers = {
     renderWorkbookOverview,
+    renderWorkbookHealth,
     renderValiditySheetOptions,
     renderProjectCheckboxGroup,
     renderWorkbenchFilterOptions,

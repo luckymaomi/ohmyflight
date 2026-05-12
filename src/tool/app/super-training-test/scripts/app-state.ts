@@ -5,6 +5,7 @@
     sourceFileName: "",
     workbook: null,
     analysis: null,
+    workbookHealth: null,
     busy: false,
     pendingExport: null,
     pendingExportName: "",

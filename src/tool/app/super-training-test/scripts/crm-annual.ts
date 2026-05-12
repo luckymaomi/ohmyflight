@@ -4,6 +4,7 @@
   const CrmInstructors = window.SuperTraining.CrmInstructors;
 
   const CRM_SHEET_NAME = "CRM";
+  const ROLE_ORDER = ["教员", "机长", "副驾驶", "未识别"];
 
   function normalizeYear(value) {
     const text = Utils.normalizeText(value);
@@ -28,6 +29,14 @@
 
   function isOperatingPerson(person) {
     return person.operation !== "否";
+  }
+
+  function classifyRole(techInfo) {
+    const text = Utils.normalizeText(techInfo);
+    if (text.includes("飞行教员") || text.includes("教员")) return "教员";
+    if (text.includes("机长")) return "机长";
+    if (text.includes("副驾驶")) return "副驾驶";
+    return "未识别";
   }
 
   function buildInstructorSet() {
@@ -124,6 +133,37 @@
     ];
   }
 
+  function buildRoleRows(requiredPeople, attendedPeople, missingPeople) {
+    const attendedKeys = new Set(attendedPeople.flatMap((person) => collectPersonKeys(person)));
+    const missingKeys = new Set(missingPeople.flatMap((person) => collectPersonKeys(person)));
+    const roleMap = new Map(ROLE_ORDER.map((role) => [role, {
+      role,
+      required: 0,
+      attended: 0,
+      missing: 0,
+      attendedRate: 0
+    }]));
+
+    requiredPeople.forEach((person) => {
+      const role = classifyRole(person.techInfo);
+      const item = roleMap.get(role) || roleMap.get("未识别");
+      const keys = collectPersonKeys(person);
+      item.required += 1;
+      if (keys.some((key) => attendedKeys.has(key))) {
+        item.attended += 1;
+      } else if (keys.some((key) => missingKeys.has(key))) {
+        item.missing += 1;
+      }
+    });
+
+    roleMap.forEach((item) => {
+      item.missing = item.required - item.attended;
+      item.attendedRate = item.required ? item.attended / item.required : 0;
+    });
+
+    return ROLE_ORDER.map((role) => roleMap.get(role));
+  }
+
   function buildAnnualCheck(workbook, analysis, scanner, yearValue) {
     const year = normalizeYear(yearValue || getCurrentYear());
     const crmSheet = getCrmSheetInfo(workbook, scanner);
@@ -135,6 +175,7 @@
     const missingPeople = requiredPeople.filter((person) => !hasAttended(person));
     const participationRows = buildParticipationRows(attendedPeople.length, missingPeople.length);
     const monthlyRows = buildMonthlyRows(records, missingPeople.length, attendedPeople);
+    const roleRows = buildRoleRows(requiredPeople, attendedPeople, missingPeople);
 
     return {
       year,
@@ -145,6 +186,7 @@
       records,
       participationRows,
       monthlyRows,
+      roleRows,
       stats: {
         required: requiredPeople.length,
         attended: attendedPeople.length,
@@ -157,10 +199,12 @@
   window.SuperTraining.CrmAnnual = {
     CRM_SHEET_NAME,
     normalizeYear,
+    classifyRole,
     buildRequiredPeople,
     buildValidRecords,
     buildParticipationRows,
     buildMonthlyRows,
+    buildRoleRows,
     buildAnnualCheck
   };
 })();

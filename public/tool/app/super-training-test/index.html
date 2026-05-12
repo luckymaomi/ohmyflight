@@ -39,6 +39,9 @@
             <div class="summary-box" id="workbookOverview">
                 <div class="empty-block">导入文件后，这里会显示识别到的主表、项目数量和月份范围。</div>
             </div>
+            <div class="summary-box workbook-health-panel" id="workbookHealthPanel">
+                <div class="empty-block">导入文件后，这里会显示 Excel 健康检查结果。</div>
+            </div>
             <div class="status-line" id="statusLine">请先导入总培训表文件。</div>
             <div class="form-grid form-grid-4">
                 <div class="field">
@@ -204,6 +207,10 @@
                         <div class="chart-box" id="crmMonthlyChart"></div>
                     </div>
                 </div>
+                <div class="chart-panel crm-role-chart-panel">
+                    <div class="chart-title">按技术等级参加比例</div>
+                    <div class="chart-box" id="crmRoleChart"></div>
+                </div>
                 <div class="crm-missing-panel">
                     <div class="section-head">
                         <div>
@@ -366,6 +373,7 @@
     <script src="./scripts/schedule-assessment.js"></script>
     <script src="./scripts/scheduled-distribution.js"></script>
     <script src="./scripts/crm-annual.js"></script>
+    <script src="./scripts/workbook-health.js"></script>
     <script src="./scripts/crm-export.js"></script>
     <script src="./scripts/workbench.js"></script>
     <script src="./scripts/workbench-export.js"></script>

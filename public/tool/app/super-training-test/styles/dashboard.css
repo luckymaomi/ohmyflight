@@ -12,6 +12,78 @@
     margin-top: 12px;
 }
 
+.workbook-health-panel {
+    display: grid;
+    gap: 12px;
+}
+
+.health-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.health-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: var(--omf-surface-soft);
+    color: var(--omf-text-muted);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.health-pill-danger {
+    background: var(--st-status-danger-bg);
+    color: var(--st-status-danger-text);
+}
+
+.health-pill-warning {
+    background: var(--st-status-warn-bg);
+    color: var(--st-status-warn-text);
+}
+
+.health-pill-info {
+    background: var(--st-status-info-bg);
+    color: var(--st-status-info-text);
+}
+
+.health-list {
+    display: grid;
+    gap: 8px;
+    max-height: 260px;
+    overflow: auto;
+}
+
+.health-item {
+    display: grid;
+    grid-template-columns: 52px minmax(90px, 130px) minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    padding: 10px 12px;
+    border: 1px solid var(--omf-border);
+    border-radius: 8px;
+    background: var(--omf-surface);
+    font-size: 13px;
+}
+
+.health-area {
+    color: var(--omf-text-muted);
+    font-weight: 600;
+}
+
+.health-message {
+    color: var(--omf-text);
+}
+
+.health-detail {
+    margin-top: 4px;
+    color: var(--omf-text-muted);
+    line-height: 1.45;
+}
+
 .overview-item span {
     display: block;
     color: var(--omf-text-muted);
@@ -113,6 +185,14 @@
 
 .crm-chart-grid .chart-box {
     height: 300px;
+}
+
+.crm-role-chart-panel {
+    margin-top: 12px;
+}
+
+.crm-role-chart-panel .chart-box {
+    height: 280px;
 }
 
 .crm-missing-panel {

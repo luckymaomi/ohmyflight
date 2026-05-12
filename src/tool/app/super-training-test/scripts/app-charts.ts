@@ -9,6 +9,7 @@
   let scheduledDistributionDateChart = null;
   let crmParticipationChart = null;
   let crmMonthlyChart = null;
+  let crmRoleChart = null;
 
   function getEcharts() {
     return window.echarts || null;
@@ -170,14 +171,17 @@
     if (!echarts) {
       renderChartEmpty(elements.crmParticipationChart, "图表库未加载。");
       renderChartEmpty(elements.crmMonthlyChart, "图表库未加载。");
+      renderChartEmpty(elements.crmRoleChart, "图表库未加载。");
       return;
     }
 
     const participationRows = result && result.participationRows ? result.participationRows : [];
     const monthlyRows = result && result.monthlyRows ? result.monthlyRows : [];
+    const roleRows = result && result.roleRows ? result.roleRows : [];
 
     crmParticipationChart = getOrCreateChart(elements.crmParticipationChart, crmParticipationChart);
     crmMonthlyChart = getOrCreateChart(elements.crmMonthlyChart, crmMonthlyChart);
+    crmRoleChart = getOrCreateChart(elements.crmRoleChart, crmRoleChart);
     const chartColors = getChartColors();
     const colorForCrmKind = (kind) => (kind === "missing" ? chartColors.danger : chartColors.ok);
 
@@ -232,8 +236,58 @@
       }]
     });
 
+    crmRoleChart.setOption({
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        valueFormatter(value) {
+          return `${value}人`;
+        }
+      },
+      legend: { top: 0 },
+      grid: { top: 42, right: 48, bottom: 18, left: 70, containLabel: true },
+      xAxis: {
+        type: "value",
+        minInterval: 1
+      },
+      yAxis: {
+        type: "category",
+        data: roleRows.map((row) => row.role),
+        axisLabel: { interval: 0, fontSize: 12 }
+      },
+      series: [
+        {
+          name: "已参加",
+          type: "bar",
+          stack: "total",
+          itemStyle: { color: colorForCrmKind("attended") },
+          label: {
+            show: true,
+            formatter(params) {
+              return params.value ? `${params.value}` : "";
+            }
+          },
+          data: roleRows.map((row) => row.attended)
+        },
+        {
+          name: "未参加",
+          type: "bar",
+          stack: "total",
+          itemStyle: { color: colorForCrmKind("missing") },
+          label: {
+            show: true,
+            formatter(params) {
+              return params.value ? `${params.value}` : "";
+            }
+          },
+          data: roleRows.map((row) => row.missing)
+        }
+      ]
+    });
+
     crmParticipationChart.resize();
     crmMonthlyChart.resize();
+    crmRoleChart.resize();
   }
 
   runtime.charts = {

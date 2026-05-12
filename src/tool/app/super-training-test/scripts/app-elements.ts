@@ -12,6 +12,7 @@
   runtime.elements = {
     workbookFile: requireElement("workbookFile", HTMLInputElement),
     workbookOverview: requireElement("workbookOverview", HTMLElement),
+    workbookHealthPanel: requireElement("workbookHealthPanel", HTMLElement),
     statusLine: requireElement("statusLine", HTMLElement),
     updateValiditySheetSelect: requireElement("updateValiditySheetSelect", HTMLSelectElement),
     updateProjectGroup: requireElement("updateProjectGroup", HTMLElement),
@@ -37,6 +38,7 @@
     crmStatsGrid: requireElement("crmStatsGrid", HTMLElement),
     crmParticipationChart: requireElement("crmParticipationChart", HTMLElement),
     crmMonthlyChart: requireElement("crmMonthlyChart", HTMLElement),
+    crmRoleChart: requireElement("crmRoleChart", HTMLElement),
     crmMissingBody: requireElement("crmMissingBody", HTMLTableSectionElement),
     exportCrmMissingButton: requireElement("exportCrmMissingButton", HTMLButtonElement),
     exportWorkbenchSelectionButton: requireElement("exportWorkbenchSelectionButton", HTMLButtonElement),

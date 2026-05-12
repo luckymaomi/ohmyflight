@@ -4,6 +4,7 @@
   const Validity = window.SuperTraining.Validity;
   const WorkbenchExport = window.SuperTraining.WorkbenchExport;
   const CrmExport = window.SuperTraining.CrmExport;
+  const WorkbookHealth = window.SuperTraining.WorkbookHealth;
   const ReportSheet = window.SuperTraining.ReportSheet;
   const runtime = window.SuperTrainingApp;
   const COPY = runtime.copy;
@@ -25,7 +26,9 @@
       state.sourceFileName = "";
       state.workbook = null;
       state.analysis = null;
+      state.workbookHealth = null;
       projects.renderEmptyState();
+      renderers.renderWorkbookHealth();
       controls.setStatus(COPY.defaultStatus);
       return;
     }
@@ -36,10 +39,12 @@
     try {
       const workbook = await Scanner.readWorkbookFile(file);
       const analysis = Scanner.analyzeWorkbook(workbook);
+      const workbookHealth = WorkbookHealth.buildWorkbookHealth(workbook, analysis, Scanner);
 
       state.sourceFileName = file.name;
       state.workbook = workbook;
       state.analysis = analysis;
+      state.workbookHealth = workbookHealth;
       state.updateSelectedProjects = [];
       state.workbenchResult = null;
       state.workbenchView = null;
@@ -48,6 +53,7 @@
       elements.workbenchSearchInput.value = "";
 
       renderers.renderWorkbookOverview();
+      renderers.renderWorkbookHealth();
       renderers.renderValiditySheetOptions();
       projects.renderProjectGroups();
       projects.renderMonthSelect();
@@ -67,10 +73,12 @@
       state.sourceFileName = "";
       state.workbook = null;
       state.analysis = null;
+      state.workbookHealth = null;
       state.workbenchView = null;
       state.workbenchSelection = null;
       state.crmAnnualResult = null;
       projects.renderEmptyState();
+      renderers.renderWorkbookHealth();
       controls.setStatus(error.message || "工作簿读取失败。", true);
     } finally {
       controls.setBusy(false);

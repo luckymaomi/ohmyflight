@@ -51,6 +51,7 @@ interface SuperTrainingAppState {
   sourceFileName: string;
   workbook: SuperTrainingWorkbook | null;
   analysis: SuperTrainingAnalysis | null;
+  workbookHealth: any;
   busy: boolean;
   pendingExport: SuperTrainingWorkbook | null;
   pendingExportName: string;
@@ -71,6 +72,7 @@ interface SuperTrainingUpdatedRowEntry {
 interface SuperTrainingAppElements {
   workbookFile: HTMLInputElement;
   workbookOverview: HTMLElement;
+  workbookHealthPanel: HTMLElement;
   statusLine: HTMLElement;
   updateValiditySheetSelect: HTMLSelectElement;
   updateProjectGroup: HTMLElement;
@@ -96,6 +98,7 @@ interface SuperTrainingAppElements {
   crmStatsGrid: HTMLElement;
   crmParticipationChart: HTMLElement;
   crmMonthlyChart: HTMLElement;
+  crmRoleChart: HTMLElement;
   crmMissingBody: HTMLTableSectionElement;
   exportCrmMissingButton: HTMLButtonElement;
   exportWorkbenchSelectionButton: HTMLButtonElement;
