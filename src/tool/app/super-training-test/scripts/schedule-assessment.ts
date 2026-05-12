@@ -446,8 +446,26 @@
     item.total += 1;
   }
 
-  function buildProjectSummaryRows(rows) {
+  function buildProjectSummaryRows(rows, options = {}) {
+    const summaryOptions = options as {
+      analysis?: { projects?: Array<{ canonical?: string }> };
+      baseRows?: Array<{ projectName: string }>;
+    };
     const projectMap = new Map();
+    if (summaryOptions.analysis && summaryOptions.analysis.projects) {
+      summaryOptions.analysis.projects.forEach((project) => {
+        if (project && project.canonical && !projectMap.has(project.canonical)) {
+          projectMap.set(project.canonical, createProjectSummaryItem(project.canonical));
+        }
+      });
+    }
+    if (summaryOptions.baseRows) {
+      summaryOptions.baseRows.forEach((row) => {
+        if (row && row.projectName && !projectMap.has(row.projectName)) {
+          projectMap.set(row.projectName, createProjectSummaryItem(row.projectName));
+        }
+      });
+    }
     rows.forEach((row) => {
       if (!WorkbenchStatus.isDefaultVisible(row.status)) return;
       if (!projectMap.has(row.projectName)) {
@@ -547,9 +565,9 @@
     });
   }
 
-  function buildSummaryData(rows) {
+  function buildSummaryData(rows, options = {}) {
     return {
-      projectSummaryRows: buildProjectSummaryRows(rows),
+      projectSummaryRows: buildProjectSummaryRows(rows, options),
       projectGroups: buildProjectGroups(rows),
       personRiskRows: buildPersonRiskRows(rows)
     };
@@ -575,7 +593,7 @@
         : `排班总览默认显示 ${detailRows.length} 条待处理或异常记录，原始扫描 ${allRows.length} 条。`,
       statsCards: buildStatsCards(detailRows),
       chartData: buildChartData(detailRows),
-      summaryData: buildSummaryData(detailRows),
+      summaryData: buildSummaryData(detailRows, { analysis }),
       displayColumns: ["状态", "项目", "姓名", "当前有效期", "已排日期", "说明"],
       detailColumns: ["状态", "项目", "员工号", "姓名", "当前有效期", "到期月份", "最晚完成日期", "已排日期", "来源", "说明"],
       allDetailRows: allRows,
@@ -599,7 +617,11 @@
         : `排班总览默认显示 ${detailRows.length} 条待处理或异常记录，原始扫描 ${allRows.length} 条。`,
       statsCards: buildStatsCards(detailRows),
       chartData: buildChartData(detailRows),
-      summaryData: buildSummaryData(detailRows),
+      summaryData: buildSummaryData(detailRows, {
+        baseRows: baseResult.summaryData && baseResult.summaryData.projectSummaryRows
+          ? baseResult.summaryData.projectSummaryRows
+          : []
+      }),
       displayColumns: baseResult.displayColumns || ["状态", "项目", "姓名", "当前有效期", "已排日期", "说明"],
       detailRows,
       allDetailRows: allRows,

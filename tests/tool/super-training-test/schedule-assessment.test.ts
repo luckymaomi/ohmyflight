@@ -15,18 +15,18 @@ function buildWorkbook() {
   const workbook = XLSX.utils.book_new();
 
   const peopleSheet = XLSX.utils.aoa_to_sheet([
-    ["员工号", "姓名", "危险品", "航空安保"],
-    ["2001", "已过期", makeDate(2026, 4, 30), ""],
-    ["2002", "必须排", makeDate(2026, 5, 31), ""],
-    ["2003", "推荐排", makeDate(2026, 6, 30), ""],
-    ["2004", "未录入有效安排", makeDate(2026, 5, 31), ""],
-    ["2005", "已录入有效安排", makeDate(2026, 5, 31), ""],
-    ["2006", "取消后必须排", makeDate(2026, 5, 31), ""],
-    ["2007", "异常日期", "坏日期", ""],
-    ["2008", "安保推荐", "", makeDate(2026, 6, 30)],
-    ["2009", "过期已排补训", makeDate(2026, 5, 3), ""],
-    ["2010", "程春林", "", makeDate(2026, 4, 30)],
-    ["2011", "宋云龙", "", makeDate(2026, 4, 30)]
+    ["员工号", "姓名", "危险品", "航空安保", "飞行作风"],
+    ["2001", "已过期", makeDate(2026, 4, 30), "", ""],
+    ["2002", "必须排", makeDate(2026, 5, 31), "", ""],
+    ["2003", "推荐排", makeDate(2026, 6, 30), "", ""],
+    ["2004", "未录入有效安排", makeDate(2026, 5, 31), "", ""],
+    ["2005", "已录入有效安排", makeDate(2026, 5, 31), "", ""],
+    ["2006", "取消后必须排", makeDate(2026, 5, 31), "", ""],
+    ["2007", "异常日期", "坏日期", "", ""],
+    ["2008", "安保推荐", "", makeDate(2026, 6, 30), ""],
+    ["2009", "过期已排补训", makeDate(2026, 5, 3), "", ""],
+    ["2010", "程春林", "", makeDate(2026, 4, 30), ""],
+    ["2011", "宋云龙", "", makeDate(2026, 4, 30), ""]
   ], { cellDates: true });
 
   const dangerousGoodsSheet = XLSX.utils.aoa_to_sheet([
@@ -44,6 +44,7 @@ function buildWorkbook() {
   XLSX.utils.book_append_sheet(workbook, peopleSheet, "人员信息表");
   XLSX.utils.book_append_sheet(workbook, dangerousGoodsSheet, "危险品");
   XLSX.utils.book_append_sheet(workbook, securitySheet, "航空安保");
+  XLSX.utils.book_append_sheet(workbook, securitySheet, "飞行作风");
   return workbook;
 }
 
@@ -138,7 +139,8 @@ describe("schedule assessment", () => {
       total: row.total
     }))).toEqual([
       { projectName: "危险品", expired: 1, expiredScheduled: 1, must: 3, uncoveredScheduled: 0, recommended: 0, abnormal: 1, total: 6 },
-      { projectName: "航空安保", expired: 0, expiredScheduled: 0, must: 1, uncoveredScheduled: 0, recommended: 0, abnormal: 0, total: 1 }
+      { projectName: "航空安保", expired: 0, expiredScheduled: 0, must: 1, uncoveredScheduled: 0, recommended: 0, abnormal: 0, total: 1 },
+      { projectName: "飞行作风", expired: 0, expiredScheduled: 0, must: 0, uncoveredScheduled: 0, recommended: 0, abnormal: 0, total: 0 }
     ]);
     expect(result.summaryData.projectSummaryRows[0].rowsByStatus["必须排"].map((row: any) => row.name)).toEqual([
       "必须排",
