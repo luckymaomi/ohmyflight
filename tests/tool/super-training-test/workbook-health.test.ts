@@ -10,9 +10,9 @@ function makeDate(year: number, month: number, day: number) {
 function buildWorkbook() {
   const workbook = XLSX.utils.book_new();
   const peopleSheet = XLSX.utils.aoa_to_sheet([
-    ["员工号", "姓名", "分部", "技术信息", "应急训练", "危险品", "航空安保", "疲劳管理", "飞行作风", "英语能力", "汉语能力", "是否运行", "备注"],
-    ["1001", "张三", "一分部", "777:C类机长", makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), "是", ""],
-    ["1001", "重复员工号", "一分部", "转入待定", makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), "是", ""]
+    ["员工号", "姓名", "分部", "技术信息", "应急训练", "危险品", "航空安保", "TSA安保", "疲劳管理", "飞行作风", "英语能力", "汉语能力", "是否运行", "备注"],
+    ["1001", "张三", "一分部", "777:C类机长", makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), "是", ""],
+    ["1001", "重复员工号", "一分部", "转入待定", makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), "是", ""]
   ], { cellDates: true });
   const projectHeaders = ["员工号", "姓名", "项目名称", "培训信息是否录入", "培训开始日期", "培训结束日期", "有效期", "备注"];
   const normalProjectSheet = XLSX.utils.aoa_to_sheet([
@@ -37,6 +37,7 @@ function buildWorkbook() {
   XLSX.utils.book_append_sheet(workbook, normalProjectSheet, "应急训练");
   XLSX.utils.book_append_sheet(workbook, normalProjectSheet, "危险品");
   XLSX.utils.book_append_sheet(workbook, normalProjectSheet, "航空安保");
+  XLSX.utils.book_append_sheet(workbook, normalProjectSheet, "TSA安保");
   XLSX.utils.book_append_sheet(workbook, normalProjectSheet, "疲劳管理");
   XLSX.utils.book_append_sheet(workbook, normalProjectSheet, "飞行作风");
   XLSX.utils.book_append_sheet(workbook, normalProjectSheet, "英语能力");

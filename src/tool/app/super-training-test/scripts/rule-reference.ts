@@ -5,6 +5,7 @@
 
   const elements = {
     projectBody: document.getElementById("projectBody"),
+    excelGuideBody: document.getElementById("excelGuideBody"),
     caseSections: document.getElementById("caseSections")
   };
 
@@ -81,10 +82,12 @@
         ]
       },
       {
-        title: "最新日期类：航空安保 / 疲劳管理 / 飞行作风",
+        title: "最新日期类：航空安保 / TSA安保 / 疲劳管理 / 飞行作风",
         rows: [
           buildExample("航空安保", "首次培训", "2000-01-01", ""),
           buildExample("航空安保", "有效期内复训", "2001-12-20", "2002-01-31"),
+          buildExample("TSA安保", "首次培训", "2026-05-06", ""),
+          buildExample("TSA安保", "有效期内复训", "2026-05-06", "2026-05-31"),
           buildExample("疲劳管理", "提前复训", "2000-06-15", "2002-01-31"),
           buildExample("疲劳管理", "到期当天复训", "2002-01-31", "2002-01-31"),
           buildExample("飞行作风", "过期后补训", "2002-03-01", "2002-01-31"),
@@ -109,6 +112,49 @@
         <td>${Utils.escapeHtml(formatRuleDuration(rule))}</td>
         <td>${Utils.escapeHtml(formatWindowText(rule))}</td>
         <td>${Utils.escapeHtml(rule.rounding)}</td>
+      </tr>
+    `).join("");
+  }
+
+  function buildExcelGuideRows() {
+    return [
+      {
+        scene: "人员信息表有效期",
+        rule: "每个有效期项目维护一列，到期日以人员信息表为准。"
+      },
+      {
+        scene: "项目 sheet 有效期列",
+        rule: "用于人工查看；排班判断和有效期更新以人员信息表有效期列和项目培训日期为准。"
+      },
+      {
+        scene: "培训信息是否录入",
+        rule: "写“是”时参与有效期更新；排班覆盖判断按已排培训日期和备注判断。"
+      },
+      {
+        scene: "备注取消",
+        rule: "备注包含“取消”时，这条排班记录按取消处理。"
+      },
+      {
+        scene: "航空安保",
+        rule: "做了航空安保，就在“航空安保”sheet 记录。"
+      },
+      {
+        scene: "TSA安保",
+        rule: "做了 TSA 安保，就在“TSA安保”sheet 记录。"
+      },
+      {
+        scene: "同一天做航空安保和 TSA",
+        rule: "“航空安保”sheet 记一条，“TSA安保”sheet 也记一条。"
+      }
+    ];
+  }
+
+  function renderExcelGuide() {
+    if (!elements.excelGuideBody) return;
+    elements.excelGuideBody.innerHTML = buildExcelGuideRows().map((row) => `
+      <tr>
+        <td>${Utils.escapeHtml(row.scene)}</td>
+        <td>${Utils.escapeHtml(row.rule)}</td>
       </tr>
     `).join("");
   }
@@ -154,5 +200,6 @@
   }
 
   renderProjectTable();
+  renderExcelGuide();
   renderCaseSections();
 })();

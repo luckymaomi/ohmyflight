@@ -79,6 +79,15 @@ export const TRAINING_RULE_DEFINITIONS: TrainingRuleDefinition[] = [
     rounding: "月底"
   },
   {
+    project: "TSA安保",
+    aliases: ["TSA安保"],
+    ruleType: "最新日期",
+    validityValue: 12,
+    validityUnit: "日历月",
+    baseMonthFlex: 0,
+    rounding: "月底"
+  },
+  {
     project: "疲劳管理",
     aliases: ["疲劳管理"],
     ruleType: "最新日期",
@@ -136,6 +145,8 @@ export const TRAINING_RENEWAL_CASES: RenewalRuleCase[] = [
   { project: "汉语能力", scenario: "超期后续考", oldExpiry: "2027-06-15", trainingDate: "2027-06-16", expectedJudgement: "超期", expectedNewExpiry: "2033-06-16", expectedWindowStart: "2027-03-15", expectedWindowEnd: "2027-06-15" },
   { project: "航空安保", scenario: "首次培训", oldExpiry: null, trainingDate: "2000-01-01", expectedJudgement: "首次/无旧值", expectedNewExpiry: "2002-01-31" },
   { project: "航空安保", scenario: "有效期内复训", oldExpiry: "2002-01-31", trainingDate: "2001-12-20", expectedJudgement: "无窗口", expectedNewExpiry: "2003-12-31" },
+  { project: "TSA安保", scenario: "首次培训", oldExpiry: null, trainingDate: "2026-05-06", expectedJudgement: "首次/无旧值", expectedNewExpiry: "2027-05-31" },
+  { project: "TSA安保", scenario: "有效期内复训", oldExpiry: "2026-05-31", trainingDate: "2026-05-06", expectedJudgement: "无窗口", expectedNewExpiry: "2027-05-31" },
   { project: "疲劳管理", scenario: "提前复训", oldExpiry: "2002-01-31", trainingDate: "2000-06-15", expectedJudgement: "无窗口", expectedNewExpiry: "2002-06-30" },
   { project: "疲劳管理", scenario: "到期当天复训", oldExpiry: "2002-01-31", trainingDate: "2002-01-31", expectedJudgement: "无窗口", expectedNewExpiry: "2004-01-31" },
   { project: "飞行作风", scenario: "过期后补训", oldExpiry: "2002-01-31", trainingDate: "2002-03-01", expectedJudgement: "超期", expectedNewExpiry: "2004-03-31" },
@@ -148,5 +159,6 @@ export const TRAINING_SCHEDULE_CASES: ScheduleRuleCase[] = [
   { project: "危险品", scenario: "窗口前阶段", oldExpiry: "2027-06-15", stageStart: "2027-03-01", stageEnd: "2027-03-14", expectedStatus: "有效未到窗口" },
   { project: "英语能力", scenario: "失效日当天仍在窗口内", oldExpiry: "2027-06-15", stageStart: "2027-06-15", stageEnd: "2027-06-30", expectedStatus: "命中窗口" },
   { project: "航空安保", scenario: "无窗口项目在本阶段到期", oldExpiry: "2026-04-30", stageStart: "2026-04-01", stageEnd: "2026-04-30", expectedStatus: "本阶段到期" },
-  { project: "航空安保", scenario: "无窗口项目在阶段外未到期", oldExpiry: "2026-05-31", stageStart: "2026-04-01", stageEnd: "2026-04-30", expectedStatus: "阶段外未到期" }
+  { project: "航空安保", scenario: "无窗口项目在阶段外未到期", oldExpiry: "2026-05-31", stageStart: "2026-04-01", stageEnd: "2026-04-30", expectedStatus: "阶段外未到期" },
+  { project: "TSA安保", scenario: "无窗口项目在本阶段到期", oldExpiry: "2026-05-31", stageStart: "2026-05-01", stageEnd: "2026-05-31", expectedStatus: "本阶段到期" }
 ];

@@ -15,7 +15,7 @@ function buildWorkbook() {
   const workbook = XLSX.utils.book_new();
 
   const peopleSheet = XLSX.utils.aoa_to_sheet([
-    ["员工号", "姓名", "危险品", "航空安保", "飞行作风"],
+    ["员工号", "姓名", "危险品", "航空安保", "TSA安保", "飞行作风"],
     ["2001", "已过期", makeDate(2026, 4, 30), "", ""],
     ["2002", "必须排", makeDate(2026, 5, 31), "", ""],
     ["2003", "推荐排", makeDate(2026, 6, 30), "", ""],
@@ -23,10 +23,13 @@ function buildWorkbook() {
     ["2005", "已录入有效安排", makeDate(2026, 5, 31), "", ""],
     ["2006", "取消后必须排", makeDate(2026, 5, 31), "", ""],
     ["2007", "异常日期", "坏日期", "", ""],
-    ["2008", "安保推荐", "", makeDate(2026, 6, 30), ""],
+    ["2008", "安保推荐", "", makeDate(2026, 6, 30), "", ""],
     ["2009", "过期已排补训", makeDate(2026, 5, 3), "", ""],
     ["2010", "程春林", "", makeDate(2026, 4, 30), ""],
-    ["2011", "宋云龙", "", makeDate(2026, 4, 30), ""]
+    ["2011", "宋云龙", "", makeDate(2026, 4, 30), "", ""],
+    ["2012", "TSA必须排", "", "", makeDate(2026, 6, 30), ""],
+    ["2013", "TSA已排", "", "", makeDate(2026, 6, 30), ""],
+    ["2014", "同日航空安保和TSA分别记录", "", makeDate(2026, 6, 30), makeDate(2026, 6, 30), ""]
   ], { cellDates: true });
 
   const dangerousGoodsSheet = XLSX.utils.aoa_to_sheet([
@@ -38,12 +41,19 @@ function buildWorkbook() {
   ], { cellDates: true });
 
   const securitySheet = XLSX.utils.aoa_to_sheet([
-    ["员工号", "姓名", "项目名称", "培训信息是否录入", "培训开始日期", "培训结束日期", "有效期", "备注"]
+    ["员工号", "姓名", "项目名称", "培训信息是否录入", "培训开始日期", "培训结束日期", "有效期", "备注"],
+    ["2014", "同日航空安保和TSA分别记录", "航空安保", "否", makeDate(2026, 6, 1), makeDate(2026, 6, 1), "", ""]
+  ], { cellDates: true });
+
+  const tsaSheet = XLSX.utils.aoa_to_sheet([
+    ["员工号", "姓名", "项目名称", "培训信息是否录入", "培训开始日期", "培训结束日期", "有效期", "备注"],
+    ["2013", "TSA已排", "TSA安保", "否", makeDate(2026, 6, 1), makeDate(2026, 6, 1), "", ""]
   ], { cellDates: true });
 
   XLSX.utils.book_append_sheet(workbook, peopleSheet, "人员信息表");
   XLSX.utils.book_append_sheet(workbook, dangerousGoodsSheet, "危险品");
   XLSX.utils.book_append_sheet(workbook, securitySheet, "航空安保");
+  XLSX.utils.book_append_sheet(workbook, tsaSheet, "TSA安保");
   XLSX.utils.book_append_sheet(workbook, securitySheet, "飞行作风");
   return workbook;
 }
@@ -91,6 +101,10 @@ describe("schedule assessment", () => {
     expect(visibleRows.get("取消后必须排/危险品").status).toBe("必须排");
     expect(visibleRows.get("异常日期/危险品").status).toBe("异常");
     expect(visibleRows.get("安保推荐/航空安保").status).toBe("必须排");
+    expect(visibleRows.get("TSA必须排/TSA安保").status).toBe("必须排");
+    expect(allRows.get("TSA已排/TSA安保").status).toBe("正常");
+    expect(visibleRows.get("同日航空安保和TSA分别记录/TSA安保").status).toBe("必须排");
+    expect(allRows.get("同日航空安保和TSA分别记录/航空安保").status).toBe("正常");
     expect(visibleRows.get("过期已排补训/危险品").status).toBe("已过期已排补训");
     expect(visibleRows.get("过期已排补训/危险品").scheduledDate).toBe("2026-05-07");
     expect(visibleRows.has("程春林/航空安保")).toBe(false);
@@ -103,7 +117,7 @@ describe("schedule assessment", () => {
 
     expect(simplifyStats(result.statsCards)).toEqual([
       { label: "已过期", value: 1 },
-      { label: "必须排", value: 4 },
+      { label: "必须排", value: 6 },
       { label: "推荐排", value: 0 },
       { label: "已排未覆盖", value: 0 },
       { label: "异常", value: 1 },
@@ -113,19 +127,20 @@ describe("schedule assessment", () => {
     expect(result.chartData.statusRows).toEqual([
       { name: "已过期", value: 1 },
       { name: "已过期已排补训", value: 1 },
-      { name: "必须排", value: 4 },
+      { name: "必须排", value: 6 },
       { name: "已排未覆盖", value: 0 },
       { name: "推荐排", value: 0 },
       { name: "异常", value: 1 }
     ]);
     expect(result.chartData.projectRows).toEqual([
       { projectName: "危险品", expired: 1, expiredScheduled: 1, must: 3, uncoveredScheduled: 0, recommended: 0, abnormal: 1 },
+      { projectName: "TSA安保", expired: 0, expiredScheduled: 0, must: 2, uncoveredScheduled: 0, recommended: 0, abnormal: 0 },
       { projectName: "航空安保", expired: 0, expiredScheduled: 0, must: 1, uncoveredScheduled: 0, recommended: 0, abnormal: 0 }
     ]);
     expect(result.chartData.monthRows).toEqual([
       { label: "2026-04", expired: 1, expiredScheduled: 0, must: 0, uncoveredScheduled: 0, recommended: 0, abnormal: 0 },
       { label: "2026-05", expired: 0, expiredScheduled: 1, must: 2, uncoveredScheduled: 0, recommended: 0, abnormal: 0 },
-      { label: "2026-06", expired: 0, expiredScheduled: 0, must: 2, uncoveredScheduled: 0, recommended: 0, abnormal: 0 },
+      { label: "2026-06", expired: 0, expiredScheduled: 0, must: 4, uncoveredScheduled: 0, recommended: 0, abnormal: 0 },
       { label: "无月份", expired: 0, expiredScheduled: 0, must: 0, uncoveredScheduled: 0, recommended: 0, abnormal: 1 }
     ]);
     expect(result.summaryData.projectSummaryRows.map((row: any) => ({
@@ -139,6 +154,7 @@ describe("schedule assessment", () => {
       total: row.total
     }))).toEqual([
       { projectName: "危险品", expired: 1, expiredScheduled: 1, must: 3, uncoveredScheduled: 0, recommended: 0, abnormal: 1, total: 6 },
+      { projectName: "TSA安保", expired: 0, expiredScheduled: 0, must: 2, uncoveredScheduled: 0, recommended: 0, abnormal: 0, total: 2 },
       { projectName: "航空安保", expired: 0, expiredScheduled: 0, must: 1, uncoveredScheduled: 0, recommended: 0, abnormal: 0, total: 1 },
       { projectName: "飞行作风", expired: 0, expiredScheduled: 0, must: 0, uncoveredScheduled: 0, recommended: 0, abnormal: 0, total: 0 }
     ]);

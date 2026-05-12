@@ -31,6 +31,16 @@
       enabled: true
     },
     {
+      canonical: "TSA安保",
+      aliases: ["TSA安保"],
+      ruleType: "最新日期",
+      validityValue: 12,
+      validityUnit: "日历月",
+      baseMonthFlex: 0,
+      rounding: "月底",
+      enabled: true
+    },
+    {
       canonical: "疲劳管理",
       aliases: ["疲劳管理"],
       ruleType: "最新日期",
