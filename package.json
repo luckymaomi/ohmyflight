@@ -6,9 +6,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "tsx scripts/build.mts && vitest run",
     "test:watch": "tsx scripts/build.mts && vitest",
-    "test:smoke": "tsx scripts/build.mts && vitest run tests/smoke tests/structure",
-    "test:tool": "tsx scripts/build.mts && vitest run tests/tool",
-    "test:structure": "tsx scripts/build.mts && vitest run tests/structure"
+    "test:smoke": "tsx scripts/build.mts && vitest run tests/smoke",
+    "test:tool": "tsx scripts/build.mts && vitest run tests/tool"
   },
   "devDependencies": {
     "@types/node": "^24.6.0",

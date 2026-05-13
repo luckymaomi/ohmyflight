@@ -31,4 +31,4 @@
 
 1. 先看 `spec/app/README.md`
 2. 再按工具名打开对应文档
-3. 需要培训类工具时，优先看 `super-training-test/README.md` 和 `super-training-test/training-rule-spec.md`
+3. 需要培训类工具时，优先看 `training-workbench/README.md` 和 `training-workbench/training-rule-spec.md`

@@ -1,0 +1,374 @@
+(function () {
+  const Utils = window.TrainingTool.Utils;
+  const WorkbenchStatus = window.TrainingTool.WorkbenchStatus;
+  const runtime = window.TrainingToolApp;
+  const elements = runtime.elements;
+  let workbenchStatusChart = null;
+  let workbenchProjectChart = null;
+  let workbenchMonthChart = null;
+  let scheduledDistributionDateChart = null;
+  let crmParticipationChart = null;
+  let crmMonthlyChart = null;
+  let crmRoleChart = null;
+
+  function getEcharts() {
+    return window.echarts || null;
+  }
+
+  function getOrCreateChart(element, currentChart) {
+    const echarts = getEcharts();
+    if (!echarts) return null;
+    return currentChart || echarts.init(element);
+  }
+
+  function getCssColor(name, fallback) {
+    const value = window.getComputedStyle
+      ? window.getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+      : "";
+    return value || fallback;
+  }
+
+  function getChartColors() {
+    return {
+      info: getCssColor("--st-info-soft", "#eff6ff"),
+      ok: getCssColor("--st-success-soft", "#b7efc5"),
+      danger: getCssColor("--st-danger-soft", "#ffc9c7")
+    };
+  }
+
+  function getChartTheme() {
+    const text = getCssColor("--omf-text", "#1f2328");
+    const muted = getCssColor("--omf-text-muted", "#656d76");
+    const surface = getCssColor("--omf-surface", "#ffffff");
+    const border = getCssColor("--omf-border", "#d0d7de");
+
+    return {
+      text,
+      muted,
+      surface,
+      border,
+      textStyle: {
+        color: text,
+        textBorderWidth: 0,
+        textShadowBlur: 0
+      },
+      mutedTextStyle: {
+        color: muted,
+        textBorderWidth: 0,
+        textShadowBlur: 0
+      },
+      axisLine: { lineStyle: { color: border } },
+      splitLine: { lineStyle: { color: border } },
+      tooltip: {
+        backgroundColor: surface,
+        borderColor: border,
+        textStyle: { color: text }
+      }
+    };
+  }
+
+  function withChartTheme(option) {
+    const theme = getChartTheme();
+    return {
+      textStyle: theme.textStyle,
+      ...option,
+      tooltip: option.tooltip ? { ...theme.tooltip, ...option.tooltip } : option.tooltip,
+      legend: option.legend ? { textStyle: theme.textStyle, inactiveColor: theme.muted, ...option.legend } : option.legend,
+      xAxis: option.xAxis ? {
+        axisLine: theme.axisLine,
+        splitLine: theme.splitLine,
+        ...option.xAxis,
+        axisLabel: { ...theme.mutedTextStyle, ...(option.xAxis.axisLabel || {}) }
+      } : option.xAxis,
+      yAxis: option.yAxis ? {
+        axisLine: theme.axisLine,
+        splitLine: theme.splitLine,
+        ...option.yAxis,
+        axisLabel: { ...theme.mutedTextStyle, ...(option.yAxis.axisLabel || {}) }
+      } : option.yAxis
+    };
+  }
+
+  function renderChartEmpty(element, message) {
+    element.innerHTML = `<div class="empty-block">${Utils.escapeHtml(message)}</div>`;
+  }
+
+  function renderWorkbenchCharts(chartData) {
+    const echarts = getEcharts();
+    if (!echarts) {
+      renderChartEmpty(elements.workbenchStatusChart, "图表库未加载。");
+      renderChartEmpty(elements.workbenchProjectChart, "图表库未加载。");
+      renderChartEmpty(elements.workbenchMonthChart, "图表库未加载。");
+      return;
+    }
+
+    const statusRows = chartData && chartData.statusRows ? chartData.statusRows : [];
+    const projectRows = chartData && chartData.projectRows ? chartData.projectRows : [];
+    const monthRows = chartData && chartData.monthRows ? chartData.monthRows : [];
+    const visibleSeries = WorkbenchStatus.VISIBLE_STATUS_FIELDS.map((item) => ({
+      name: item.status,
+      field: item.field
+    }));
+
+    workbenchStatusChart = getOrCreateChart(elements.workbenchStatusChart, workbenchStatusChart);
+    workbenchProjectChart = getOrCreateChart(elements.workbenchProjectChart, workbenchProjectChart);
+    workbenchMonthChart = getOrCreateChart(elements.workbenchMonthChart, workbenchMonthChart);
+
+    workbenchStatusChart.setOption(withChartTheme({
+      tooltip: { trigger: "item" },
+      legend: { bottom: 0, left: "center" },
+      series: [{
+        type: "pie",
+        radius: ["45%", "70%"],
+        center: ["50%", "42%"],
+        avoidLabelOverlap: true,
+        label: getChartTheme().textStyle,
+        data: statusRows
+      }]
+    }));
+
+    workbenchProjectChart.setOption(withChartTheme({
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+      legend: { top: 0 },
+      grid: { top: 44, right: 18, bottom: 12, left: 86, containLabel: true },
+      xAxis: {
+        type: "value",
+        minInterval: 1
+      },
+      yAxis: {
+        type: "category",
+        data: projectRows.map((row) => row.projectName),
+        axisLabel: {
+          interval: 0,
+          fontSize: 11,
+          width: 76,
+          overflow: "truncate"
+        }
+      },
+      series: visibleSeries.map((item) => ({
+        name: item.name,
+        type: "bar",
+        stack: "total",
+        data: projectRows.map((row) => row[item.field])
+      }))
+    }));
+
+    workbenchMonthChart.setOption(withChartTheme({
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+      legend: { top: 0 },
+      grid: { top: 44, right: 18, bottom: 38, left: 48, containLabel: true },
+      xAxis: {
+        type: "category",
+        data: monthRows.map((row) => row.label),
+        axisLabel: {
+          interval: 0,
+          fontSize: 11
+        }
+      },
+      yAxis: {
+        type: "value",
+        minInterval: 1
+      },
+      series: visibleSeries.map((item) => ({
+        name: item.name,
+        type: "bar",
+        stack: "total",
+        data: monthRows.map((row) => row[item.field])
+      }))
+    }));
+
+    workbenchStatusChart.resize();
+    workbenchProjectChart.resize();
+    workbenchMonthChart.resize();
+  }
+
+  function renderScheduledDistributionCharts(summary) {
+    const echarts = getEcharts();
+    if (!echarts) {
+      renderChartEmpty(elements.scheduledDistributionDateChart, "图表库未加载。");
+      return;
+    }
+
+    const dateRows = summary && summary.dateRows ? summary.dateRows : [];
+
+    scheduledDistributionDateChart = getOrCreateChart(elements.scheduledDistributionDateChart, scheduledDistributionDateChart);
+
+    scheduledDistributionDateChart.setOption(withChartTheme({
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+      grid: { top: 20, right: 38, bottom: 42, left: 96, containLabel: true },
+      dataZoom: [
+        { type: "slider", yAxisIndex: 0, right: 4, width: 14, start: 0, end: Math.min(100, dateRows.length ? 18 / dateRows.length * 100 : 100) },
+        { type: "inside", yAxisIndex: 0 }
+      ],
+      xAxis: { type: "value", minInterval: 1 },
+      yAxis: {
+        type: "category",
+        data: dateRows.map((row) => row.label),
+        axisLabel: { interval: 0, fontSize: 11 }
+      },
+      series: [{
+        name: "已排培训",
+        type: "bar",
+        label: {
+          show: true,
+          position: "right",
+          ...getChartTheme().textStyle
+        },
+        data: dateRows.map((row) => row.total)
+      }]
+    }));
+
+    scheduledDistributionDateChart.resize();
+  }
+
+  function renderCrmCharts(result) {
+    const echarts = getEcharts();
+    if (!echarts) {
+      renderChartEmpty(elements.crmParticipationChart, "图表库未加载。");
+      renderChartEmpty(elements.crmMonthlyChart, "图表库未加载。");
+      renderChartEmpty(elements.crmRoleChart, "图表库未加载。");
+      return;
+    }
+
+    const participationRows = result && result.participationRows ? result.participationRows : [];
+    const monthlyRows = result && result.monthlyRows ? result.monthlyRows : [];
+    const roleRows = result && result.roleRows ? result.roleRows : [];
+
+    crmParticipationChart = getOrCreateChart(elements.crmParticipationChart, crmParticipationChart);
+    crmMonthlyChart = getOrCreateChart(elements.crmMonthlyChart, crmMonthlyChart);
+    crmRoleChart = getOrCreateChart(elements.crmRoleChart, crmRoleChart);
+    const chartColors = getChartColors();
+    const colorForCrmKind = (kind) => (kind === "missing" ? chartColors.danger : chartColors.ok);
+
+    crmParticipationChart.setOption(withChartTheme({
+      tooltip: { trigger: "item" },
+      legend: { bottom: 0, left: "center" },
+      series: [{
+        type: "pie",
+        radius: ["42%", "68%"],
+        center: ["50%", "42%"],
+        startAngle: 90,
+        clockwise: false,
+        avoidLabelOverlap: true,
+        label: {
+          show: false
+        },
+        labelLine: {
+          show: false
+        },
+        data: participationRows.map((row) => ({
+          name: row.name,
+          value: row.value,
+          itemStyle: { color: colorForCrmKind(row.kind) }
+        })),
+        colorBy: "data"
+      }]
+    }));
+
+    crmMonthlyChart.setOption(withChartTheme({
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+      grid: { top: 20, right: 28, bottom: 36, left: 48, containLabel: true },
+      xAxis: {
+        type: "category",
+        data: monthlyRows.map((row) => row.label),
+        axisLabel: { interval: 0, fontSize: 11 }
+      },
+      yAxis: { type: "value", minInterval: 1 },
+      series: [{
+        name: "人数",
+        type: "bar",
+        label: {
+          show: true,
+          position: "top",
+          ...getChartTheme().textStyle
+        },
+        itemStyle: {
+          color(params) {
+            const item = monthlyRows[params.dataIndex];
+            return colorForCrmKind(item && item.kind);
+          }
+        },
+        data: monthlyRows.map((row) => row.count)
+      }]
+    }));
+
+    crmRoleChart.setOption(withChartTheme({
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        valueFormatter(value) {
+          return `${value}人`;
+        }
+      },
+      legend: { top: 0 },
+      grid: { top: 42, right: 48, bottom: 18, left: 70, containLabel: true },
+      xAxis: {
+        type: "value",
+        minInterval: 1
+      },
+      yAxis: {
+        type: "category",
+        data: roleRows.map((row) => row.role),
+        axisLabel: { interval: 0, fontSize: 12 }
+      },
+      series: [
+        {
+          name: "已参加",
+          type: "bar",
+          stack: "total",
+          itemStyle: { color: colorForCrmKind("attended") },
+          label: {
+            show: true,
+            ...getChartTheme().textStyle,
+            formatter(params) {
+              return params.value ? `${params.value}` : "";
+            }
+          },
+          data: roleRows.map((row) => row.attended)
+        },
+        {
+          name: "未参加",
+          type: "bar",
+          stack: "total",
+          itemStyle: { color: colorForCrmKind("missing") },
+          label: {
+            show: true,
+            ...getChartTheme().textStyle,
+            formatter(params) {
+              return params.value ? `${params.value}` : "";
+            }
+          },
+          data: roleRows.map((row) => row.missing)
+        }
+      ]
+    }));
+
+    crmParticipationChart.resize();
+    crmMonthlyChart.resize();
+    crmRoleChart.resize();
+  }
+
+  function refreshRenderedCharts() {
+    const state = runtime.state;
+    if (state.workbenchResult && state.workbenchResult.chartData) {
+      renderWorkbenchCharts(state.workbenchResult.chartData);
+    }
+    if (state.scheduledDistribution && state.scheduledDistribution.summary) {
+      renderScheduledDistributionCharts(state.scheduledDistribution.summary);
+    }
+    if (state.crmAnnualResult) {
+      renderCrmCharts(state.crmAnnualResult);
+    }
+  }
+
+  window.addEventListener("ohmyflight:themechange", () => {
+    window.setTimeout(refreshRenderedCharts, 0);
+  });
+
+  runtime.charts = {
+    renderWorkbenchCharts,
+    renderScheduledDistributionCharts,
+    renderCrmCharts,
+    refreshRenderedCharts
+  };
+})();

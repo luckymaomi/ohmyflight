@@ -1,5 +1,4 @@
 :root {
-    --tool-page-bg-image: url("../assets/bg.webp");
     --radius-lg: 8px;
 }
 
@@ -25,10 +24,7 @@ body {
     margin: 0;
     min-height: 100vh;
     font-family: "Aptos", "Segoe UI Variable", sans-serif;
-    background:
-        linear-gradient(var(--omf-page-bg-overlay), var(--omf-page-bg-overlay)),
-        var(--tool-page-bg-image) center / cover fixed no-repeat,
-        var(--omf-page-bg);
+    background: var(--omf-page-bg);
     color: var(--omf-text);
     transition: background-color 0.18s ease, color 0.18s ease;
 }
@@ -73,7 +69,7 @@ body {
     width: 100%;
     padding: 10px 16px 14px;
     border: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.42);
+    border-bottom: 1px solid var(--omf-border);
     background: transparent;
     color: inherit;
     font: inherit;
@@ -87,13 +83,13 @@ body {
 }
 
 .search-input::placeholder {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--omf-text-muted);
     opacity: 1;
     letter-spacing: 0;
 }
 
 .search-input:focus {
-    border-bottom-color: rgba(255, 255, 255, 0.68);
+    border-bottom-color: var(--omf-border-strong);
 }
 
 .switch-row {
@@ -190,7 +186,7 @@ body {
     padding: 0;
     border: 0;
     background: transparent;
-    color: rgba(255, 255, 255, 0.78);
+    color: var(--omf-text-muted);
     font: inherit;
     font-size: 14px;
     opacity: 0.76;
@@ -198,7 +194,7 @@ body {
 }
 
 .category-link.active {
-    color: #ffffff;
+    color: var(--omf-text);
     font-weight: 700;
     opacity: 1;
 }

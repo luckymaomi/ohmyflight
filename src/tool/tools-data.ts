@@ -6,7 +6,7 @@ const tools: ToolSection[] = [
         category: 'common',
         categoryName: '常用',
         items: [
-            { name: '超级培训', desc: '面向培训总表的一体化工具，支持排班总览、有效期更新、人员明细和已排培训分布', entry: 'super-training-test' },
+            { name: '培训皇帝', desc: '培训工具，皇帝御用', entry: 'training-workbench' },
             { name: '姓名匹配员工号', desc: '从混杂文本中识别姓名，并匹配对应员工号，支持一键复制', entry: 'crew-match-name-id' },
             { name: '通用锁班助手（测试）', desc: 'Python脚本，自动化填写飞行门户非生产任务录入表单，支持批量录入锁班信息', entry: 'lock-entry-helper' },
             { name: '飞行经历/左座经历起落数按天统计（测试）', desc: 'Python脚本，自动化查询飞行门户飞行经历/左座经历起落数并按天统计', entry: 'flight-stats-helper' },

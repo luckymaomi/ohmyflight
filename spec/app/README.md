@@ -10,10 +10,10 @@
   在审班表中标注重点人员和类别
 - `hotel-bill-check.md`
   按姓名和日期容差核对账单与登记表
-- `super-training-test/README.md`
+- `training-workbench/README.md`
   面向新总表结构的培训更新与预排主工具
-- `super-training-test/training-rule-spec.md`
-  超级培训采用的培训规则口径
+- `training-workbench/training-rule-spec.md`
+  培训皇帝采用的培训规则口径
 
 ## 浏览器本地工具
 

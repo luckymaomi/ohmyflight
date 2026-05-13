@@ -1,9 +1,9 @@
 type XlsxGlobal = typeof import("xlsx-js-style");
 type TrainingToolsNamespace = Record<string, any>;
-type SuperTrainingNamespace = Record<string, any>;
+type TrainingToolNamespace = Record<string, any>;
 
 interface SiteConfig {
-  bgType: "image" | "video";
+  bgType: "none" | "image" | "video";
   bgImage: string;
   bgVideo: string;
 }
@@ -30,7 +30,7 @@ interface Window {
   tools: ToolSection[];
   XLSX: XlsxGlobal;
   TrainingTools: TrainingToolsNamespace;
-  SuperTraining: SuperTrainingNamespace;
+  TrainingTool: TrainingToolNamespace;
   OhmyflightTheme?: {
     getTheme(): "light" | "dark";
     setTheme(theme: "light" | "dark"): "light" | "dark";

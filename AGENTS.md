@@ -2,6 +2,11 @@
 
 本文件面向在本仓库内工作的模型和 agent。它不是宣传文档，而是开发约束。
 
+## 文件读取编码
+
+- 阅读本仓库所有文本文件时，必须按 UTF-8 读取。
+- PowerShell 直接 `Get-Content` 中文文件时可能出现终端显示乱码；判断文件内容是否损坏时，必须用 UTF-8 读取确认，不要把终端乱码误判为文件已坏。
+
 ## 最高原则：事实高于一切
 
 所有与用户的交互、所有与用户的交流、所有发言、所有判断、所有计划、所有代码修改，都必须基于代码中的客观实际，以及用户呈现出来的客观文本、截图、HTML、数据、运行结果和明确需求。
@@ -129,7 +134,7 @@
 - 构建入口是 `npm run build`，实际执行 `tsx scripts/build.mts`：先打包源码压缩包，再清空并复制 `public/` 到 `dist/`，最后把 `src/**/*.ts` 转译为对应的 `dist/**/*.js`。
 - 测试入口以 `package.json` 为准：`npm test` 会先构建再运行 `vitest run`；`npm run typecheck` 只做 TypeScript 类型检查。
 - `spec/` 是用户侧功能事实和业务规则文档。
-- 培训相关核心实现集中在 `src/tool/app/super-training-test/`、`src/tool/app/training-tools-suite/`、对应 `public/tool/app/...` 页面、`spec/app/...` 文档和 `tests/tool/...` 测试。
+- 培训相关核心实现集中在 `src/tool/app/training-workbench/`、`src/tool/app/training-tools-suite/`、对应 `public/tool/app/...` 页面、`spec/app/...` 文档和 `tests/tool/...` 测试。
 - 首页是 `public/index.html` 和 `src/home/*`；工具入口页是 `public/tool/index.html`、`public/tool/index.css`、`src/tool/tools-render.ts`、`src/tool/tool-mode-toggle.ts`、`src/tool/tools-data.ts`。
 - 当前仓库包含 Bootstrap 5.3.3 的本地文件：`public/libs/bootstrap.min.css` 和 `public/libs/bootstrap.bundle.min.js`。大量工具页直接引用这些本地 Bootstrap 文件。
 - 当前仓库已有 `public/libs/versions.json` 记录部分本地依赖版本。
