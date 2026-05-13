@@ -50,7 +50,8 @@
       projects: elements.workbenchProjectSelect.value ? [elements.workbenchProjectSelect.value] : [],
       statuses: elements.workbenchStatusSelect.value ? [elements.workbenchStatusSelect.value] : [],
       months: elements.workbenchMonthSelect.value ? [elements.workbenchMonthSelect.value] : [],
-      searchText: elements.workbenchSearchInput.value
+      searchText: elements.workbenchSearchInput.value,
+      pressureYear: elements.workbenchPressureYearInput.value
     };
   }
 

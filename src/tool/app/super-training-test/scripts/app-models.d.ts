@@ -86,6 +86,7 @@ interface SuperTrainingAppElements {
   workbenchSearchInput: HTMLInputElement;
   workbenchStartDateInput: HTMLInputElement;
   workbenchEndDateInput: HTMLInputElement;
+  workbenchPressureYearInput: HTMLInputElement;
   workbenchStatusChart: HTMLElement;
   workbenchProjectChart: HTMLElement;
   workbenchMonthChart: HTMLElement;

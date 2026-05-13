@@ -102,18 +102,18 @@
     workbenchMonthChart.setOption({
       tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
       legend: { top: 0 },
-      grid: { top: 44, right: 18, bottom: 12, left: 72, containLabel: true },
+      grid: { top: 44, right: 18, bottom: 38, left: 48, containLabel: true },
       xAxis: {
-        type: "value",
-        minInterval: 1
-      },
-      yAxis: {
         type: "category",
         data: monthRows.map((row) => row.label),
         axisLabel: {
           interval: 0,
           fontSize: 11
         }
+      },
+      yAxis: {
+        type: "value",
+        minInterval: 1
       },
       series: visibleSeries.map((item) => ({
         name: item.name,

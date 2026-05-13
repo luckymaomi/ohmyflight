@@ -18,6 +18,7 @@
   function initializeDefaultDates() {
     elements.workbenchStartDateInput.value = todayString();
     elements.workbenchEndDateInput.value = nextMonthEndString();
+    elements.workbenchPressureYearInput.value = String(new Date().getFullYear());
   }
 
   function setStatus(message, isError = false) {
@@ -53,6 +54,7 @@
     elements.workbenchSearchInput.disabled = !state.workbenchResult || state.busy;
     elements.workbenchStartDateInput.disabled = !state.analysis || state.busy;
     elements.workbenchEndDateInput.disabled = !state.analysis || state.busy;
+    elements.workbenchPressureYearInput.disabled = !state.workbenchResult || state.busy;
     elements.exportButton.disabled = !state.pendingExport || state.busy;
   }
 

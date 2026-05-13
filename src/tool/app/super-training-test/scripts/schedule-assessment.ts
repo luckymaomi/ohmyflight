@@ -13,6 +13,7 @@
     statuses?: string[];
     months?: string[];
     searchText?: string;
+    pressureYear?: number | string;
   };
 
   function getRowTrainingDate(row, sheetInfo) {
@@ -410,17 +411,28 @@
     WorkbenchStatus.incrementVisibleStatusBucket(item, status);
   }
 
-  function buildMonthChartRows(rows) {
-    const monthMap = new Map();
+  function normalizePressureYear(value, fallbackDate) {
+    const year = Number(value);
+    if (Number.isInteger(year) && year >= 2000 && year <= 2100) return year;
+    if (fallbackDate && fallbackDate.getFullYear) return fallbackDate.getFullYear();
+    return createTodayDate().getFullYear();
+  }
+
+  function buildYearMonthKeys(year) {
+    return Array.from({ length: 12 }, (_, index) => `${year}-${String(index + 1).padStart(2, "0")}`);
+  }
+
+  function buildMonthChartRows(rows, options: { pressureYear?: number | string; stageStart?: Date } = {}) {
+    const year = normalizePressureYear(options.pressureYear, options.stageStart);
+    const monthMap = new Map(buildYearMonthKeys(year).map((monthKey) => [monthKey, createStatusBucket(monthKey)]));
+
     rows.forEach((row) => {
       if (!WorkbenchStatus.isDefaultVisible(row.status)) return;
-      const monthKey = row.dueMonth || "无月份";
-      if (!monthMap.has(monthKey)) {
-        monthMap.set(monthKey, createStatusBucket(monthKey));
-      }
-      incrementStatusBucket(monthMap.get(monthKey), row.status);
+      if (!monthMap.has(row.dueMonth)) return;
+      incrementStatusBucket(monthMap.get(row.dueMonth), row.status);
     });
-    return [...monthMap.values()].sort((left, right) => left.label.localeCompare(right.label));
+
+    return [...monthMap.values()];
   }
 
   function createProjectSummaryItem(projectName) {
@@ -573,26 +585,27 @@
     };
   }
 
-  function buildChartData(rows) {
+  function buildChartData(rows, options: { pressureYear?: number | string; stageStart?: Date } = {}) {
     return {
       statusRows: buildStatusChartRows(rows),
       projectRows: buildProjectChartRows(rows),
-      monthRows: buildMonthChartRows(rows)
+      monthRows: buildMonthChartRows(rows, options)
     };
   }
 
-  function buildResult(analysis, options: { today?: Date; stageEnd?: Date; filters?: AssessmentFilters } = {}) {
+  function buildResult(analysis, options: { today?: Date; stageEnd?: Date; filters?: AssessmentFilters; pressureYear?: number | string } = {}) {
     const assessment = buildRows(analysis, options);
     const allRows = assessment.rows;
     const detailRows = filterRows(allRows, options.filters || {});
     const hasExplicitStatusFilter = normalizeFilterSet((options.filters || {}).statuses).size > 0;
+    const pressureYear = (options.filters && options.filters.pressureYear) || options.pressureYear;
 
     return {
       summaryText: hasExplicitStatusFilter
         ? `排班总览显示 ${detailRows.length} 条，原始扫描 ${allRows.length} 条。`
         : `排班总览默认显示 ${detailRows.length} 条待处理或异常记录，原始扫描 ${allRows.length} 条。`,
       statsCards: buildStatsCards(detailRows),
-      chartData: buildChartData(detailRows),
+      chartData: buildChartData(detailRows, { pressureYear, stageStart: assessment.stageStart }),
       summaryData: buildSummaryData(detailRows, { analysis }),
       displayColumns: ["状态", "项目", "姓名", "当前有效期", "已排日期", "说明"],
       detailColumns: ["状态", "项目", "员工号", "姓名", "当前有效期", "到期月份", "最晚完成日期", "已排日期", "来源", "说明"],
@@ -616,7 +629,7 @@
         ? `排班总览显示 ${detailRows.length} 条，原始扫描 ${allRows.length} 条。`
         : `排班总览默认显示 ${detailRows.length} 条待处理或异常记录，原始扫描 ${allRows.length} 条。`,
       statsCards: buildStatsCards(detailRows),
-      chartData: buildChartData(detailRows),
+      chartData: buildChartData(detailRows, { pressureYear: filters.pressureYear, stageStart: Utils.parseDate(baseResult.stageStart) }),
       summaryData: buildSummaryData(detailRows, {
         baseRows: baseResult.summaryData && baseResult.summaryData.projectSummaryRows
           ? baseResult.summaryData.projectSummaryRows

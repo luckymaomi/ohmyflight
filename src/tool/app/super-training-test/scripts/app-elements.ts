@@ -26,6 +26,7 @@
     workbenchSearchInput: requireElement("workbenchSearchInput", HTMLInputElement),
     workbenchStartDateInput: requireElement("workbenchStartDateInput", HTMLInputElement),
     workbenchEndDateInput: requireElement("workbenchEndDateInput", HTMLInputElement),
+    workbenchPressureYearInput: requireElement("workbenchPressureYearInput", HTMLInputElement),
     workbenchStatusChart: requireElement("workbenchStatusChart", HTMLElement),
     workbenchProjectChart: requireElement("workbenchProjectChart", HTMLElement),
     workbenchMonthChart: requireElement("workbenchMonthChart", HTMLElement),

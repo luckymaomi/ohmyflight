@@ -18,6 +18,7 @@
     elements.workbenchStatusSelect.addEventListener("change", workbenchController.handleWorkbenchFilterChange);
     elements.workbenchMonthSelect.addEventListener("change", workbenchController.handleWorkbenchFilterChange);
     elements.workbenchSearchInput.addEventListener("input", workbenchController.handleWorkbenchFilterChange);
+    elements.workbenchPressureYearInput.addEventListener("change", workbenchController.handleWorkbenchFilterChange);
     elements.scheduledDistributionProjectSelect.addEventListener("change", runtime.renderers.renderScheduledDistribution);
     elements.scheduledDistributionMonthSelect.addEventListener("change", runtime.renderers.renderScheduledDistribution);
     elements.crmYearInput.addEventListener("change", runtime.renderers.renderCrmAnnual);
