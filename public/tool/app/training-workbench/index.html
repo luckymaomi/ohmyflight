@@ -236,6 +236,39 @@
                     <div class="chart-box" id="scheduledDistributionDateChart"></div>
                 </div>
             </section>
+            <section class="annual-training-panel" aria-labelledby="annualTrainingTitle">
+                <div class="section-head">
+                    <div>
+                        <h2 class="section-title" id="annualTrainingTitle">年度已培训人次</h2>
+                        <p class="section-intro">只统计项目 sheet 中已录入且未取消的培训记录，用于查看年度培训人次分布。</p>
+                    </div>
+                </div>
+                <div class="form-grid form-grid-3">
+                    <div class="field">
+                        <label for="annualTrainingProjectSelect">培训类型</label>
+                        <select id="annualTrainingProjectSelect" disabled>
+                            <option value="">全部培训类型</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="annualTrainingYearSelect">统计年份</label>
+                        <select id="annualTrainingYearSelect" disabled>
+                            <option value="">全部年份</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="annualTrainingMonthSelect">培训月份</label>
+                        <select id="annualTrainingMonthSelect" disabled>
+                            <option value="">全部月份</option>
+                        </select>
+                    </div>
+                </div>
+                <p class="summary-meta" id="annualTrainingSummary">导入总表后显示年度已培训人次统计。</p>
+                <div class="chart-panel annual-training-chart-panel">
+                    <div class="chart-title">按月份人次</div>
+                    <div class="chart-box" id="annualTrainingDateChart"></div>
+                </div>
+            </section>
             <section class="crm-annual-panel" aria-labelledby="crmAnnualTitle">
                 <div class="section-head">
                     <div>
@@ -432,6 +465,7 @@
     <script src="./scripts/simulation-schedule.js"></script>
     <script src="./scripts/schedule-assessment.js"></script>
     <script src="./scripts/scheduled-distribution.js"></script>
+    <script src="./scripts/annual-training-stats.js"></script>
     <script src="./scripts/crm-annual.js"></script>
     <script src="./scripts/workbook-health.js"></script>
     <script src="./scripts/crm-export.js"></script>

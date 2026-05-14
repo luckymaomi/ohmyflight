@@ -8,6 +8,7 @@
   const resultTable = runtime.resultTable;
   const summaryView = runtime.summaryView;
   const ScheduledDistribution = window.TrainingTool.ScheduledDistribution;
+  const AnnualTrainingStats = window.TrainingTool.AnnualTrainingStats;
   const CrmAnnual = window.TrainingTool.CrmAnnual;
   const Scanner = window.TrainingTool.Scanner;
 
@@ -179,6 +180,18 @@
     elements.scheduledDistributionMonthSelect.disabled = !state.analysis || !monthOptions.length;
   }
 
+  function renderAnnualTrainingOptions(distribution) {
+    const projectOptions = distribution && distribution.filterOptions ? distribution.filterOptions.projects : [];
+    const yearOptions = distribution && distribution.filterOptions ? distribution.filterOptions.years : [];
+    const monthOptions = distribution && distribution.filterOptions ? distribution.filterOptions.months : [];
+    renderSelectOptions(elements.annualTrainingProjectSelect, projectOptions, "全部培训类型");
+    renderSelectOptions(elements.annualTrainingYearSelect, yearOptions, "全部年份");
+    renderSelectOptions(elements.annualTrainingMonthSelect, monthOptions, "全部月份");
+    elements.annualTrainingProjectSelect.disabled = !state.analysis || !projectOptions.length;
+    elements.annualTrainingYearSelect.disabled = !state.analysis || !yearOptions.length;
+    elements.annualTrainingMonthSelect.disabled = !state.analysis || !monthOptions.length;
+  }
+
   function renderProjectCards() {
     if (!state.analysis || !state.analysis.projects.length) {
       elements.projectCards.innerHTML = `<div class="empty-block">${COPY.defaultProjectCards}</div>`;
@@ -246,6 +259,28 @@
     renderScheduledDistributionOptions(distribution);
     charts.renderScheduledDistributionCharts(distribution.summary);
     elements.scheduledDistributionSummary.textContent = `当前筛选已排培训 ${distribution.summary.total} 人次。`;
+  }
+
+  function renderAnnualTrainingStats() {
+    if (!state.analysis) {
+      state.annualTrainingStats = null;
+      state.annualTrainingStatsView = null;
+      renderAnnualTrainingOptions(null);
+      charts.renderAnnualTrainingCharts(null);
+      elements.annualTrainingSummary.textContent = "导入总表后显示年度已培训人次统计。";
+      return;
+    }
+
+    const distribution = AnnualTrainingStats.buildDistribution(state.analysis, {
+      projectName: elements.annualTrainingProjectSelect.value,
+      year: elements.annualTrainingYearSelect.value,
+      monthKey: elements.annualTrainingMonthSelect.value
+    });
+    state.annualTrainingStats = distribution;
+    state.annualTrainingStatsView = distribution;
+    renderAnnualTrainingOptions(distribution);
+    charts.renderAnnualTrainingCharts(distribution.summary);
+    elements.annualTrainingSummary.textContent = `当前筛选已培训 ${distribution.summary.total} 人次，涉及 ${distribution.summary.projectCount} 个项目。`;
   }
 
   function renderCrmStats(result) {
@@ -331,6 +366,7 @@
     charts.renderWorkbenchCharts(null);
     summaryView.renderWorkbenchSummary(null);
     renderScheduledDistribution();
+    renderAnnualTrainingStats();
     renderCrmAnnual();
     if (runtime.simulationSchedule) runtime.simulationSchedule.render();
     resultTable.renderTable(elements.detailTableHead, elements.detailTableBody, [], [], COPY.defaultDetailTable);
@@ -348,6 +384,8 @@
     if (kind === "workbench") {
       charts.renderWorkbenchCharts(result.chartData);
       summaryView.renderWorkbenchSummary(result.summaryData);
+      renderScheduledDistribution();
+      renderAnnualTrainingStats();
       elements.detailTableTitle.textContent = "排班总览明细";
       resultTable.renderTable(
         elements.detailTableHead,
@@ -390,6 +428,7 @@
     renderWorkbenchFilterOptions,
     renderProjectCards,
     renderScheduledDistribution,
+    renderAnnualTrainingStats,
     renderCrmAnnual,
     renderResultPlaceholders,
     renderActionResult

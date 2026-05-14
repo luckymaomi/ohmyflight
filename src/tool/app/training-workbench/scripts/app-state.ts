@@ -16,6 +16,8 @@
     workbenchSelectedPersonKeys: [],
     simulationRecords: [],
     scheduledDistribution: null,
+    annualTrainingStats: null,
+    annualTrainingStatsView: null,
     crmAnnualResult: null,
     updateSelectedProjects: []
   };

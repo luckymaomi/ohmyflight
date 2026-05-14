@@ -62,6 +62,8 @@ interface TrainingToolAppState {
   workbenchSelectedPersonKeys: string[];
   simulationRecords: any[];
   scheduledDistribution: any;
+  annualTrainingStats: any;
+  annualTrainingStatsView: any;
   crmAnnualResult: any;
   updateSelectedProjects: string[];
 }
@@ -96,6 +98,11 @@ interface TrainingToolAppElements {
   scheduledDistributionMonthSelect: HTMLSelectElement;
   scheduledDistributionSummary: HTMLElement;
   scheduledDistributionDateChart: HTMLElement;
+  annualTrainingProjectSelect: HTMLSelectElement;
+  annualTrainingYearSelect: HTMLSelectElement;
+  annualTrainingMonthSelect: HTMLSelectElement;
+  annualTrainingSummary: HTMLElement;
+  annualTrainingDateChart: HTMLElement;
   crmYearInput: HTMLInputElement;
   crmSummary: HTMLElement;
   crmStatsGrid: HTMLElement;
@@ -146,6 +153,7 @@ interface TrainingToolAppRuntime {
   workbenchController: any;
   actions: any;
   charts: any;
+  annualTrainingStats: any;
   resultTable: any;
   summaryView: any;
   simulationSchedule: any;

@@ -21,6 +21,9 @@
     elements.workbenchPressureYearInput.addEventListener("change", workbenchController.handleWorkbenchFilterChange);
     elements.scheduledDistributionProjectSelect.addEventListener("change", runtime.renderers.renderScheduledDistribution);
     elements.scheduledDistributionMonthSelect.addEventListener("change", runtime.renderers.renderScheduledDistribution);
+    elements.annualTrainingProjectSelect.addEventListener("change", runtime.renderers.renderAnnualTrainingStats);
+    elements.annualTrainingYearSelect.addEventListener("change", runtime.renderers.renderAnnualTrainingStats);
+    elements.annualTrainingMonthSelect.addEventListener("change", runtime.renderers.renderAnnualTrainingStats);
     elements.crmYearInput.addEventListener("change", runtime.renderers.renderCrmAnnual);
     elements.updateProjectGroup.addEventListener("change", projects.handleUpdateProjectGroupChange);
     elements.updateValidityButton.addEventListener("click", actions.handleUpdatePreview);

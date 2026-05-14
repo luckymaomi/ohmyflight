@@ -62,6 +62,7 @@
       renderers.renderProjectCards();
       renderers.renderResultPlaceholders();
       renderers.renderScheduledDistribution();
+      renderers.renderAnnualTrainingStats();
       renderers.renderCrmAnnual();
       controls.clearPendingExport();
       controls.refreshButtons();
@@ -81,6 +82,7 @@
       state.crmAnnualResult = null;
       projects.renderEmptyState();
       renderers.renderWorkbookHealth();
+      renderers.renderAnnualTrainingStats();
       controls.setStatus(error.message || "工作簿读取失败。", true);
     } finally {
       controls.setBusy(false);

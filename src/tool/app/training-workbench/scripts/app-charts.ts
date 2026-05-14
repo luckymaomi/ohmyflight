@@ -7,6 +7,7 @@
   let workbenchProjectChart = null;
   let workbenchMonthChart = null;
   let scheduledDistributionDateChart = null;
+  let annualTrainingDateChart = null;
   let crmParticipationChart = null;
   let crmMonthlyChart = null;
   let crmRoleChart = null;
@@ -221,6 +222,40 @@
     scheduledDistributionDateChart.resize();
   }
 
+  function renderAnnualTrainingCharts(summary) {
+    const echarts = getEcharts();
+    if (!echarts) {
+      renderChartEmpty(elements.annualTrainingDateChart, "图表库未加载。");
+      return;
+    }
+
+    const monthRows = summary && summary.monthRows ? summary.monthRows : [];
+
+    annualTrainingDateChart = getOrCreateChart(elements.annualTrainingDateChart, annualTrainingDateChart);
+    annualTrainingDateChart.setOption(withChartTheme({
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+      grid: { top: 20, right: 28, bottom: 42, left: 48, containLabel: true },
+      xAxis: {
+        type: "category",
+        data: monthRows.map((row) => row.label),
+        axisLabel: { interval: 0, fontSize: 11 }
+      },
+      yAxis: { type: "value", minInterval: 1 },
+      series: [{
+        name: "已培训人次",
+        type: "bar",
+        label: {
+          show: true,
+          position: "top",
+          ...getChartTheme().textStyle
+        },
+        data: monthRows.map((row) => row.total)
+      }]
+    }));
+
+    annualTrainingDateChart.resize();
+  }
+
   function renderCrmCharts(result) {
     const echarts = getEcharts();
     if (!echarts) {
@@ -356,6 +391,9 @@
     if (state.scheduledDistribution && state.scheduledDistribution.summary) {
       renderScheduledDistributionCharts(state.scheduledDistribution.summary);
     }
+    if (state.annualTrainingStatsView && state.annualTrainingStatsView.summary) {
+      renderAnnualTrainingCharts(state.annualTrainingStatsView.summary);
+    }
     if (state.crmAnnualResult) {
       renderCrmCharts(state.crmAnnualResult);
     }
@@ -368,6 +406,7 @@
   runtime.charts = {
     renderWorkbenchCharts,
     renderScheduledDistributionCharts,
+    renderAnnualTrainingCharts,
     renderCrmCharts,
     refreshRenderedCharts
   };
