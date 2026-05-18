@@ -15,7 +15,7 @@ function buildWorkbook() {
   const workbook = XLSX.utils.book_new();
 
   const peopleSheet = XLSX.utils.aoa_to_sheet([
-    ["员工号", "姓名", "危险品", "航空安保", "TSA安保", "英语能力", "飞行作风"],
+    ["员工号", "姓名", "危险品", "航空安保", "TSA", "英语能力", "飞行作风"],
     ["2001", "已过期", makeDate(2026, 4, 30), "", "", "", ""],
     ["2002", "必须排", makeDate(2026, 5, 31), "", "", "", ""],
     ["2003", "推荐排", makeDate(2026, 6, 30), "", "", "", ""],
@@ -50,13 +50,13 @@ function buildWorkbook() {
 
   const tsaSheet = XLSX.utils.aoa_to_sheet([
     ["员工号", "姓名", "项目名称", "培训信息是否录入", "培训开始日期", "培训结束日期", "有效期", "备注"],
-    ["2013", "TSA已排", "TSA安保", "否", makeDate(2026, 6, 1), makeDate(2026, 6, 1), "", ""]
+    ["2013", "TSA已排", "TSA", "否", makeDate(2026, 6, 1), makeDate(2026, 6, 1), "", ""]
   ], { cellDates: true });
 
   XLSX.utils.book_append_sheet(workbook, peopleSheet, "人员信息表");
   XLSX.utils.book_append_sheet(workbook, dangerousGoodsSheet, "危险品");
   XLSX.utils.book_append_sheet(workbook, securitySheet, "航空安保");
-  XLSX.utils.book_append_sheet(workbook, tsaSheet, "TSA安保");
+  XLSX.utils.book_append_sheet(workbook, tsaSheet, "TSA");
   XLSX.utils.book_append_sheet(workbook, securitySheet, "飞行作风");
   return workbook;
 }
@@ -105,23 +105,23 @@ describe("schedule assessment", () => {
     expect(visibleRows.get("取消后必须排/危险品").status).toBe("必须排");
     expect(visibleRows.get("异常日期/危险品").status).toBe("异常");
     expect(visibleRows.get("安保推荐/航空安保").status).toBe("必须排");
-    expect(visibleRows.get("TSA必须排/TSA安保").status).toBe("必须排");
-    expect(allRows.get("TSA已排/TSA安保").status).toBe("正常");
-    expect(visibleRows.get("同日航空安保和TSA分别记录/TSA安保").status).toBe("必须排");
+    expect(visibleRows.get("TSA必须排/TSA").status).toBe("必须排");
+    expect(allRows.get("TSA已排/TSA").status).toBe("正常");
+    expect(visibleRows.get("同日航空安保和TSA分别记录/TSA").status).toBe("必须排");
     expect(allRows.get("同日航空安保和TSA分别记录/航空安保").status).toBe("正常");
     expect(visibleRows.get("过期已排补训/危险品").status).toBe("已过期已排补训");
     expect(visibleRows.get("过期已排补训/危险品").scheduledDate).toBe("2026-05-07");
     expect(visibleRows.has("程春林/航空安保")).toBe(false);
-    expect(visibleRows.has("程春林/TSA安保")).toBe(false);
+    expect(visibleRows.has("程春林/TSA")).toBe(false);
     expect(visibleRows.has("宋云龙/航空安保")).toBe(false);
-    expect(visibleRows.has("宋云龙/TSA安保")).toBe(false);
+    expect(visibleRows.has("宋云龙/TSA")).toBe(false);
     expect(visibleRows.has("邢晓楠/航空安保")).toBe(false);
-    expect(visibleRows.has("邢晓楠/TSA安保")).toBe(false);
+    expect(visibleRows.has("邢晓楠/TSA")).toBe(false);
     expect(visibleRows.has("邢晓楠/英语能力")).toBe(false);
     expect(visibleRows.has("沈欣/航空安保")).toBe(false);
-    expect(visibleRows.has("沈欣/TSA安保")).toBe(false);
+    expect(visibleRows.has("沈欣/TSA")).toBe(false);
     expect(visibleRows.has("张鹏/航空安保")).toBe(false);
-    expect(visibleRows.has("张鹏/TSA安保")).toBe(false);
+    expect(visibleRows.has("张鹏/TSA")).toBe(false);
     expect(visibleRows.get("沈欣/危险品").status).toBe("必须排");
 
     expect(allRows.get("未录入有效安排/危险品").status).toBe("正常");
@@ -148,7 +148,7 @@ describe("schedule assessment", () => {
     ]);
     expect(result.chartData.projectRows).toEqual([
       { projectName: "危险品", expired: 1, expiredScheduled: 1, must: 4, uncoveredScheduled: 0, recommended: 0, abnormal: 1 },
-      { projectName: "TSA安保", expired: 0, expiredScheduled: 0, must: 2, uncoveredScheduled: 0, recommended: 0, abnormal: 0 },
+      { projectName: "TSA", expired: 0, expiredScheduled: 0, must: 2, uncoveredScheduled: 0, recommended: 0, abnormal: 0 },
       { projectName: "航空安保", expired: 0, expiredScheduled: 0, must: 1, uncoveredScheduled: 0, recommended: 0, abnormal: 0 }
     ]);
     expect(result.chartData.monthRows).toEqual([
@@ -176,7 +176,7 @@ describe("schedule assessment", () => {
       total: row.total
     }))).toEqual([
       { projectName: "危险品", expired: 1, expiredScheduled: 1, must: 4, uncoveredScheduled: 0, recommended: 0, abnormal: 1, total: 7 },
-      { projectName: "TSA安保", expired: 0, expiredScheduled: 0, must: 2, uncoveredScheduled: 0, recommended: 0, abnormal: 0, total: 2 },
+      { projectName: "TSA", expired: 0, expiredScheduled: 0, must: 2, uncoveredScheduled: 0, recommended: 0, abnormal: 0, total: 2 },
       { projectName: "航空安保", expired: 0, expiredScheduled: 0, must: 1, uncoveredScheduled: 0, recommended: 0, abnormal: 0, total: 1 },
       { projectName: "飞行作风", expired: 0, expiredScheduled: 0, must: 0, uncoveredScheduled: 0, recommended: 0, abnormal: 0, total: 0 }
     ]);
@@ -197,7 +197,7 @@ describe("schedule assessment", () => {
       today: makeDate(2026, 5, 8),
       extraProjectRows: [
         {
-          projectName: "TSA安保",
+          projectName: "TSA",
           employeeId: "2012",
           name: "TSA必须排",
           trainingStartDate: makeDate(2026, 6, 1),
@@ -211,10 +211,10 @@ describe("schedule assessment", () => {
     const allRows = new Map<string, any>(result.allDetailRows.map((row: any) => [`${row.name}/${row.projectName}`, row]));
     const visibleRows = new Map<string, any>(result.detailRows.map((row: any) => [`${row.name}/${row.projectName}`, row]));
 
-    expect(allRows.get("TSA必须排/TSA安保").status).toBe("正常");
-    expect(allRows.get("TSA必须排/TSA安保").source).toBe("模拟排班 simulation-1");
-    expect(allRows.get("TSA必须排/TSA安保").scheduledDate).toBe("2026-06-01");
-    expect(visibleRows.has("TSA必须排/TSA安保")).toBe(false);
+    expect(allRows.get("TSA必须排/TSA").status).toBe("正常");
+    expect(allRows.get("TSA必须排/TSA").source).toBe("模拟排班 simulation-1");
+    expect(allRows.get("TSA必须排/TSA").scheduledDate).toBe("2026-06-01");
+    expect(visibleRows.has("TSA必须排/TSA")).toBe(false);
   });
 
 });

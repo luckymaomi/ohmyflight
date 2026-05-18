@@ -10,7 +10,7 @@ function makeDate(year: number, month: number, day: number) {
 function buildWorkbook() {
   const workbook = XLSX.utils.book_new();
   const peopleSheet = XLSX.utils.aoa_to_sheet([
-    ["员工号", "姓名", "分部", "技术信息", "应急训练", "危险品", "航空安保", "TSA安保", "疲劳管理", "飞行作风", "英语能力", "汉语能力", "是否运行", "备注"],
+    ["员工号", "姓名", "分部", "技术信息", "应急训练", "危险品", "航空安保", "TSA", "疲劳管理", "飞行作风", "英语能力", "汉语能力", "是否运行", "备注"],
     ["1001", "张三", "一分部", "777:C类机长", makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), "是", ""],
     ["1001", "重复员工号", "一分部", "转入待定", makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), makeDate(2026, 5, 31), "是", ""]
   ], { cellDates: true });
@@ -37,7 +37,7 @@ function buildWorkbook() {
   XLSX.utils.book_append_sheet(workbook, normalProjectSheet, "应急训练");
   XLSX.utils.book_append_sheet(workbook, normalProjectSheet, "危险品");
   XLSX.utils.book_append_sheet(workbook, normalProjectSheet, "航空安保");
-  XLSX.utils.book_append_sheet(workbook, normalProjectSheet, "TSA安保");
+  XLSX.utils.book_append_sheet(workbook, normalProjectSheet, "TSA");
   XLSX.utils.book_append_sheet(workbook, normalProjectSheet, "疲劳管理");
   XLSX.utils.book_append_sheet(workbook, normalProjectSheet, "飞行作风");
   XLSX.utils.book_append_sheet(workbook, normalProjectSheet, "英语能力");

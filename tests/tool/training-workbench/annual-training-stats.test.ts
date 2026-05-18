@@ -11,7 +11,7 @@ function buildWorkbook() {
   const workbook = XLSX.utils.book_new();
 
   const peopleSheet = XLSX.utils.aoa_to_sheet([
-    ["员工号", "姓名", "危险品", "TSA安保"],
+    ["员工号", "姓名", "危险品", "TSA"],
     ["1001", "张三", makeDate(2026, 5, 31), makeDate(2026, 5, 31)]
   ], { cellDates: true });
 
@@ -25,13 +25,13 @@ function buildWorkbook() {
 
   const tsaSheet = XLSX.utils.aoa_to_sheet([
     ["员工号", "姓名", "项目名称", "培训信息是否录入", "培训开始日期", "培训结束日期", "有效期", "备注"],
-    ["1005", "钱七", "TSA安保", "是", makeDate(2026, 1, 15), makeDate(2026, 1, 15), "", ""],
-    ["1006", "孙八", "TSA安保", "是", "", makeDate(2026, 3, 3), "", ""]
+    ["1005", "钱七", "TSA", "是", makeDate(2026, 1, 15), makeDate(2026, 1, 15), "", ""],
+    ["1006", "孙八", "TSA", "是", "", makeDate(2026, 3, 3), "", ""]
   ], { cellDates: true });
 
   XLSX.utils.book_append_sheet(workbook, peopleSheet, "人员信息表");
   XLSX.utils.book_append_sheet(workbook, dangerousGoodsSheet, "危险品");
-  XLSX.utils.book_append_sheet(workbook, tsaSheet, "TSA安保");
+  XLSX.utils.book_append_sheet(workbook, tsaSheet, "TSA");
   return workbook;
 }
 
@@ -67,7 +67,7 @@ describe("annual training stats", () => {
     expect(annual.summary.total).toBe(3);
     expect(annual.summary.projectCount).toBe(2);
     expect(annual.summary.projectRows).toEqual([
-      { projectName: "TSA安保", total: 2 },
+      { projectName: "TSA", total: 2 },
       { projectName: "危险品", total: 1 }
     ]);
     expect(annual.summary.monthRows.filter((row: any) => row.total > 0)).toEqual([
@@ -78,13 +78,13 @@ describe("annual training stats", () => {
     expect(annual.filterOptions.months).toEqual(["2026-01", "2026-03"]);
 
     const januaryTsa = AnnualTrainingStats.buildDistribution(analysis, {
-      projectName: "TSA安保",
+      projectName: "TSA",
       year: 2026,
       monthKey: "2026-01"
     });
     expect(januaryTsa.summary.total).toBe(1);
     expect(januaryTsa.rows.map((row: any) => `${row.projectName}/${row.name}/${row.trainingDate}`)).toEqual([
-      "TSA安保/钱七/2026-01-15"
+      "TSA/钱七/2026-01-15"
     ]);
   });
 });

@@ -79,8 +79,8 @@ function runComputeExpiryCases(failures) {
     { project: "汉语能力", oldExpiry: "2027-06-15", trainingDate: "2027-05-20", expected: "2033-06-15" },
     { project: "航空安保", oldExpiry: "", trainingDate: "2000-01-01", expected: "2002-01-31" },
     { project: "航空安保", oldExpiry: "2002-01-31", trainingDate: "2002-02-01", expected: "2004-02-29" },
-    { project: "TSA安保", oldExpiry: "", trainingDate: "2026-05-06", expected: "2027-05-31" },
-    { project: "TSA安保", oldExpiry: "2026-05-31", trainingDate: "2026-05-06", expected: "2027-05-31" },
+    { project: "TSA", oldExpiry: "", trainingDate: "2026-05-06", expected: "2027-05-31" },
+    { project: "TSA", oldExpiry: "2026-05-31", trainingDate: "2026-05-06", expected: "2027-05-31" },
     { project: "疲劳管理", oldExpiry: "2002-01-31", trainingDate: "2001-08-05", expected: "2003-08-31" },
     { project: "飞行作风", oldExpiry: "2002-01-31", trainingDate: "2002-03-15", expected: "2004-03-31" }
   ];
@@ -101,8 +101,8 @@ function runUpdateJudgementCases(failures) {
     { project: "英语能力", oldExpiry: "2027-06-15", trainingDate: "2027-06-15", expected: "命中窗口" },
     { project: "航空安保", oldExpiry: "2026-04-30", trainingDate: "2026-01-15", expected: "最新日期重算" },
     { project: "航空安保", oldExpiry: "2026-04-30", trainingDate: "2026-05-01", expected: "超期" },
-    { project: "TSA安保", oldExpiry: "2026-05-31", trainingDate: "2026-05-06", expected: "最新日期重算" },
-    { project: "TSA安保", oldExpiry: "2026-05-31", trainingDate: "2026-06-01", expected: "超期" }
+    { project: "TSA", oldExpiry: "2026-05-31", trainingDate: "2026-05-06", expected: "最新日期重算" },
+    { project: "TSA", oldExpiry: "2026-05-31", trainingDate: "2026-06-01", expected: "超期" }
   ];
 
   cases.forEach((item, index) => {
@@ -136,7 +136,7 @@ function runScheduleCases(failures) {
     { project: "英语能力", oldExpiry: "2027-06-15", stageStart: "2027-06-15", stageEnd: "2027-06-30", expected: "命中窗口" },
     { project: "航空安保", oldExpiry: "2026-04-30", stageStart: "2026-04-01", stageEnd: "2026-04-30", expected: "本阶段到期" },
     { project: "航空安保", oldExpiry: "2026-05-01", stageStart: "2026-05-02", stageEnd: "2026-05-31", expected: "已过期" },
-    { project: "TSA安保", oldExpiry: "2026-05-31", stageStart: "2026-05-01", stageEnd: "2026-05-31", expected: "本阶段到期" }
+    { project: "TSA", oldExpiry: "2026-05-31", stageStart: "2026-05-01", stageEnd: "2026-05-31", expected: "本阶段到期" }
   ];
 
   cases.forEach((item, index) => {

@@ -31,8 +31,8 @@
       enabled: true
     },
     {
-      canonical: "TSA安保",
-      aliases: ["TSA安保"],
+      canonical: "TSA",
+      aliases: ["TSA"],
       ruleType: "最新日期",
       validityValue: 12,
       validityUnit: "日历月",

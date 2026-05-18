@@ -4,28 +4,28 @@
   const IGNORED_PERSON_PROJECTS = [
     {
       name: "程春林",
-      projects: ["航空安保", "TSA安保", "英语能力"],
+      projects: ["航空安保", "TSA", "英语能力"],
       reason: "自动过滤清单：该人员这些项目过期不用管。"
     },
     {
       name: "宋云龙",
-      projects: ["航空安保", "TSA安保", "英语能力"],
+      projects: ["航空安保", "TSA", "英语能力"],
       reason: "自动过滤清单：该人员这些项目过期不用管。"
     },
     {
       name: "邢晓楠",
-      projects: ["航空安保", "TSA安保", "英语能力"],
+      projects: ["航空安保", "TSA", "英语能力"],
       reason: "自动过滤清单：该人员这些项目过期不用管。"
     },
     {
       name: "沈欣",
-      projects: ["航空安保", "TSA安保"],
-      reason: "自动过滤清单：安保教员不用管航空安保和TSA安保。"
+      projects: ["航空安保", "TSA"],
+      reason: "自动过滤清单：安保教员不用管航空安保和TSA。"
     },
     {
       name: "张鹏",
-      projects: ["航空安保", "TSA安保"],
-      reason: "自动过滤清单：安保教员不用管航空安保和TSA安保。"
+      projects: ["航空安保", "TSA"],
+      reason: "自动过滤清单：安保教员不用管航空安保和TSA。"
     }
   ];
 
