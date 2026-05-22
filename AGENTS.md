@@ -54,6 +54,14 @@
 - 不要回滚用户已有改动，除非 owner 明确要求。
 - 遇到脏工作区时，只处理和任务相关的文件。
 
+## 项目级 Skills
+
+- 项目级 skill 放在 `.agents/skills/`。
+- 任务命中项目级 skill 描述时，必须先阅读对应 `SKILL.md`，再执行任务。
+- 涉及 Playwright 临时脚本、内网页面查询、Excel 批量查询时，必须先看 `.agents/skills/playwright-probe/SKILL.md`。
+- 用户提供的 Playwright 录制脚本是业务需求和业务路径，不代表成熟稳定的最终实现。
+- 项目级 skill 是本仓库内的具体工作规程；如果和 owner 当前明确需求冲突，以 owner 当前需求为准，但必须说明冲突点和处理方式。
+
 ## 规格与测试
 
 - `spec/` 是用户侧功能事实和重要业务规则的记录位置。
