@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人员结构统计</title>
+    <script src="../../../theme.js"></script>
+    <link rel="stylesheet" href="../../../libs/bootstrap.min.css">
+    <link rel="stylesheet" href="../../../theme.css">
+    <style>
+        body { background: transparent; padding: 20px; }
+        .container { max-width: 1400px; }
+        .card { border-color: var(--omf-border); border-radius: 8px; }
+        .card-body { padding: 16px 18px; }
+        .card-title { font-weight: 700; }
+        .result-card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid var(--omf-border);
+            padding-bottom: 10px;
+        }
+        .result-card-head .card-title {
+            font-size: 18px;
+            line-height: 1.25;
+        }
+        .status { margin-top: 8px; padding: 6px 10px; border-radius: 4px; font-size: 12px; display: none; }
+        .status-success { background: var(--omf-success-bg); color: var(--omf-success-text); display: block; }
+        .status-error { background: var(--omf-danger-bg); color: var(--omf-danger-text); display: block; }
+        .status-loading, .status-hint { background: var(--omf-surface-soft); color: var(--omf-text-muted); display: block; }
+        .summary-strip {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .summary-item { color: var(--omf-text-muted); }
+        .summary-label {
+            display: block;
+            color: var(--omf-text-muted);
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        .summary-value {
+            display: block;
+            color: var(--omf-text);
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .result-table { width: 100%; table-layout: fixed; font-size: 13px; margin-bottom: 0; }
+        .result-table th {
+            background: var(--omf-surface-soft);
+            border-bottom: 1px solid var(--omf-border);
+            color: var(--omf-text);
+            font-weight: 700;
+            text-align: left;
+            white-space: nowrap;
+        }
+        .result-table th,
+        .result-table td {
+            border-color: var(--omf-border);
+            padding: 9px 10px;
+            vertical-align: top;
+        }
+        .result-table th:nth-child(1),
+        .result-table td:nth-child(1) { width: 26%; }
+        .result-table th:nth-child(2),
+        .result-table td:nth-child(2) { width: 12%; }
+        .result-table th:nth-child(3),
+        .result-table td:nth-child(3) { width: 12%; }
+        .result-table th:nth-child(4),
+        .result-table td:nth-child(4) { width: 50%; }
+        .result-table th:nth-child(2),
+        .result-table th:nth-child(3),
+        .result-table td:nth-child(2),
+        .result-table td:nth-child(3) { text-align: right; white-space: nowrap; }
+        .result-table td:nth-child(2) { font-weight: 600; }
+        .result-table td:nth-child(4) { color: var(--omf-text-muted); }
+        .result-table-shell { margin-top: 0; overflow-x: auto; }
+        .result-table-shell .table > :not(caption) > * > * { background-color: transparent; }
+        .result-table-shell .table thead th { background-color: var(--omf-surface-soft); }
+        .result-table-shell .table-hover > tbody > tr:hover > * { --bs-table-bg-state: transparent; }
+        .warning-list {
+            color: var(--omf-warning-text);
+            font-size: 13px;
+            line-height: 1.7;
+            margin: 0;
+            padding-left: 18px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card mb-4">
+        <div class="card-body text-center position-relative">
+            <a href="../../../index.html" class="position-absolute start-0 top-50 translate-middle-y ms-3 text-decoration-none">返回首页</a>
+            <h4 class="card-title mb-0">人员结构统计</h4>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title border-bottom pb-2 mb-3">上传人员信息表</h5>
+            <div class="row g-3 align-items-end">
+                <div class="col-md-6">
+                    <label class="form-label">Excel 文件</label>
+                    <input type="file" class="form-control" id="fileInput" accept=".xlsx,.xls">
+                    <div id="fileStatus" class="status status-hint">请选择包含人员信息表头的 Excel。</div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">工作表</label>
+                    <select class="form-select" id="sheetSelect" disabled></select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button id="analyzeBtn" class="btn btn-outline-secondary w-50" type="button" disabled>开始统计</button>
+                    <button id="exportBtn" class="btn btn-outline-secondary w-50" type="button" disabled>导出Excel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4" id="warningSection" style="display:none;">
+        <div class="card-body">
+            <h5 class="card-title border-bottom pb-2 mb-3">需要核对</h5>
+            <ul id="warningList" class="warning-list"></ul>
+        </div>
+    </div>
+
+    <div id="resultSection" style="display:none;">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">统计摘要</h5>
+                <div id="summary" class="summary-strip"></div>
+            </div>
+        </div>
+        <div id="resultTables"></div>
+    </div>
+</div>
+
+<script src="../../../libs/xlsx.full.min.js"></script>
+<script src="logic.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

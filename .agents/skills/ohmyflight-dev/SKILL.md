@@ -1,0 +1,57 @@
+---
+name: ohmyflight-dev
+description: ohmyflight 仓库内新增或修改工具的一般开发流程，适用于前端工具、Python 小工具、Excel 解析导出工具、业务规则实现、入口注册、spec 文档、测试和构建收尾。
+---
+
+# Ohmyflight Dev
+
+在本仓库新增或修改工具时使用本 skill。
+
+## 开发参考
+
+- 先读 `AGENTS.md`，再看仓库里同类型的成熟 app，不要从零臆造结构。
+- 前端 Excel 工具优先参考 `crew-flight-stats`、`hotel-bill-check`、`focus-crew`。
+- 文本解析工具优先参考 `crew-extract-id`、`crew-match-name-id`。
+- 大型前端模块优先参考 `training-workbench`。
+- Python 工具优先参考 `lock-entry-helper`、`flight-stats-helper`、`oa-read-helper`。
+- 工具入口看 `src/tool/tools-data.ts`，页面放 `public/tool/app/<tool>/`，源码放 `src/tool/app/<tool>/`。
+
+## 实现原则
+
+- 具体业务规则写进 `spec/app/`，不要写进 skill。
+- 代码、测试、文档三位一体同步；三者有一个还在描述旧事实，任务就没完成。
+- 业务逻辑和页面渲染分开：解析、统计、规则判断放可测试的逻辑模块，页面只负责上传、展示、导出和状态提示。
+- Excel 和文本处理优先按表头、字段名、结构化数据定位，不要写死文件名、sheet 名、列号或示例值，除非 spec 明确要求。
+- 输出给人核对的文件必须保留必要结果、口径和异常说明，不要堆无用噪音。
+
+## 验证原则
+
+- 不要被页面表象迷惑。数据统计、Excel 解析、文本匹配、日期规则这类功能，正确性主要看核心逻辑测试、真实样本回放和导出结构检查。
+- 真实浏览器只用于验证页面交互、资源加载、布局或必须依赖浏览器 API 的行为，不能替代核心逻辑测试。
+- UI 样式细节不作为核心测试对象；业务规则、解析规则、日期窗口、导出字段、曾经出错的回归点必须优先测试。
+- 修改规则或修复回归时，优先把失败场景写进测试，再改实现。
+
+## 收尾命令
+
+按改动范围运行相关测试，然后收尾必须跑：
+
+```powershell
+npm.cmd run build
+npm.cmd run typecheck
+npm.cmd test
+```
+
+如果只验证某个测试文件，可先跑：
+
+```powershell
+npx.cmd vitest run tests/tool/<name>.test.ts
+```
+
+PowerShell 可能因为执行策略拦截 `npm.ps1`，本仓库内优先使用 `npm.cmd` 和 `npx.cmd`。
+
+## 提交前
+
+- 检查 `git status --short`。
+- 只暂存本次任务相关文件。
+- 不提交真实业务 Excel、Word、临时探测脚本、临时输出文件或无关脏改动。
+- 提交信息按 `AGENTS.md`：简体中文，一句话，不分段不分行。

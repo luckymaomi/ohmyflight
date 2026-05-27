@@ -7,6 +7,7 @@ const tools: ToolSection[] = [
         categoryName: '常用',
         items: [
             { name: '培训皇帝', desc: '培训工具，皇帝御用', entry: 'training-workbench' },
+            { name: '人员结构统计', desc: '导入人员信息表，按报告口径统计人员结构并导出 Excel', entry: 'personnel-structure-stats' },
             { name: '姓名匹配员工号', desc: '从混杂文本中识别姓名，并匹配对应员工号，支持一键复制', entry: 'crew-match-name-id' },
             { name: '通用锁班助手（测试）', desc: 'Python脚本，自动化填写飞行门户非生产任务录入表单，支持批量录入锁班信息', entry: 'lock-entry-helper' },
             { name: '飞行经历/左座经历起落数按天统计（测试）', desc: 'Python脚本，自动化查询飞行门户飞行经历/左座经历起落数并按天统计', entry: 'flight-stats-helper' },
