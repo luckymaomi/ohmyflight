@@ -39,9 +39,38 @@ async function walkTypeScriptFiles(rootDir) {
   return results.sort();
 }
 
+async function walkSourceAssetFiles(rootDir) {
+  const results = [];
+  const assetExtensions = new Set([".py"]);
+
+  async function visit(currentDir) {
+    const entries = await fs.readdir(currentDir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = path.join(currentDir, entry.name);
+      if (entry.isDirectory()) {
+        await visit(fullPath);
+        continue;
+      }
+
+      if (entry.isFile() && assetExtensions.has(path.extname(entry.name).toLowerCase())) {
+        results.push(fullPath);
+      }
+    }
+  }
+
+  await visit(rootDir);
+  return results.sort();
+}
+
 function toOutputPath(sourceFilePath) {
   const relativePath = path.relative(sourceRoot, sourceFilePath);
   return path.join(distRoot, relativePath.replace(/\.ts$/i, ".js"));
+}
+
+function toAssetOutputPath(sourceFilePath) {
+  const relativePath = path.relative(sourceRoot, sourceFilePath);
+  return path.join(distRoot, relativePath);
 }
 
 async function prepareDist() {
@@ -155,6 +184,13 @@ async function emitSourceFile(sourceFilePath) {
   return path.relative(projectRoot, outputFilePath);
 }
 
+async function copySourceAsset(sourceFilePath) {
+  const outputFilePath = toAssetOutputPath(sourceFilePath);
+  await fs.mkdir(path.dirname(outputFilePath), { recursive: true });
+  await fs.copyFile(sourceFilePath, outputFilePath);
+  return path.relative(projectRoot, outputFilePath);
+}
+
 async function main() {
   await packageSourceArchive();
   await prepareDist();
@@ -169,6 +205,11 @@ async function main() {
   const emittedFiles = [];
   for (const sourceFilePath of sourceFiles) {
     emittedFiles.push(await emitSourceFile(sourceFilePath));
+  }
+
+  const assetFiles = await walkSourceAssetFiles(sourceRoot);
+  for (const sourceFilePath of assetFiles) {
+    emittedFiles.push(await copySourceAsset(sourceFilePath));
   }
 
   await generateVersionFile();

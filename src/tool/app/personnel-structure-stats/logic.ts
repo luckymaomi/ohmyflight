@@ -211,6 +211,14 @@ function isFirstOfficerGroup(record: PersonnelRecord): boolean {
     return isRegularFirstOfficer(record) || isTransferFirstOfficer(record);
 }
 
+function isStructureCrew(record: PersonnelRecord): boolean {
+    return isTeacher(record)
+        || isCaptain(record)
+        || isTransferCaptain(record)
+        || isRegularFirstOfficer(record)
+        || isTransferFirstOfficer(record);
+}
+
 function hasQualification(record: PersonnelRecord, code: string): boolean {
     return Boolean(record.qualifications[code]);
 }
@@ -251,8 +259,40 @@ function makeItem(label: string, count: number, denominator: number, rule: strin
     };
 }
 
+type ClassifiedItemDefinition = {
+    label: string;
+    predicate: (record: PersonnelRecord) => boolean;
+    rule: string;
+};
+
 function count(records: PersonnelRecord[], predicate: (record: PersonnelRecord) => boolean): number {
     return records.filter(predicate).length;
+}
+
+function formatPeople(records: PersonnelRecord[]): string {
+    return records.map((record) => {
+        const identity = [record.employeeId, record.name].filter(Boolean).join(" ");
+        return identity || techLabel(record);
+    }).join("、");
+}
+
+function makeClosedItems(
+    records: PersonnelRecord[],
+    denominator: number,
+    definitions: ClassifiedItemDefinition[],
+    otherRulePrefix: string
+): PersonnelStatItem[] {
+    const matched = new Set<PersonnelRecord>();
+    const items = definitions.map((definition) => {
+        const matchedRecords = records.filter((record) => definition.predicate(record));
+        matchedRecords.forEach((record) => matched.add(record));
+        return makeItem(definition.label, matchedRecords.length, denominator, definition.rule);
+    });
+    const otherRecords = records.filter((record) => !matched.has(record));
+    if (otherRecords.length) {
+        items.push(makeItem("其他", otherRecords.length, denominator, `${otherRulePrefix}：${formatPeople(otherRecords)}。`));
+    }
+    return items;
 }
 
 function makeComboItems(
@@ -289,6 +329,118 @@ function makeComboItems(
     ];
 }
 
+function buildCaptainRouteItems(records: PersonnelRecord[], denominator: number): PersonnelStatItem[] {
+    const comboItems = makeComboItems(records, denominator, "R", {
+        northOnly: "仅北美带队",
+        europeOnly: "仅欧洲带队",
+        westOnly: "仅西亚带队",
+        none: "无美欧西亚单飞"
+    }, "RAMA/REUO/RWAS 单飞资格").filter((item) => item.label !== "无美欧西亚单飞");
+
+    const matched = new Set<PersonnelRecord>();
+    records.forEach((record) => {
+        const hasNorth = hasQualification(record, "RAMA");
+        const hasEurope = hasQualification(record, "REUO");
+        const hasWest = hasQualification(record, "RWAS");
+        const hasAnySingleFlight = hasNorth || hasEurope || hasWest;
+        if (hasAnySingleFlight || isLineCaptain(record) || techLabel(record) === "Z类机长") {
+            matched.add(record);
+        }
+    });
+
+    const unmatched = records.filter((record) => !matched.has(record));
+
+    return [
+        ...comboItems,
+        makeItem("航线机长", count(records, isLineCaptain), denominator, "B类及以上、无RAMA/REUO/RWAS单飞资格、且不是Z类机长。"),
+        makeItem("左座带飞", count(records, (record) => techLabel(record) === "Z类机长"), denominator, "Z类机长。"),
+        makeItem(
+            "其他",
+            unmatched.length,
+            denominator,
+            unmatched.length ? `不属于上述航线资格分类，需人工核对：${formatPeople(unmatched)}。` : "上述航线资格分类已覆盖全部人员。"
+        )
+    ];
+}
+
+function buildCaptainLevelItems(records: PersonnelRecord[], denominator: number): PersonnelStatItem[] {
+    return [
+        makeItem("检查员", count(records, isInspector), denominator, "检查员资格为公司检查员或委任代表。"),
+        ...makeClosedItems(records, denominator, [
+            {
+                label: "C类教员",
+                predicate: (record) => techLabel(record) === "飞行教员C",
+                rule: "技术信息为飞行教员C。"
+            },
+            {
+                label: "B类教员",
+                predicate: (record) => techLabel(record) === "飞行教员B",
+                rule: "技术信息为飞行教员B。"
+            },
+            {
+                label: "A类教员",
+                predicate: (record) => techLabel(record) === "飞行教员A",
+                rule: "技术信息为飞行教员A。"
+            },
+            {
+                label: "D类机长",
+                predicate: (record) => techLabel(record) === "D类机长",
+                rule: "技术信息为D类机长。"
+            },
+            {
+                label: "C类机长",
+                predicate: (record) => techLabel(record) === "C类机长",
+                rule: "技术信息为C类机长。"
+            },
+            {
+                label: "B类机长",
+                predicate: (record) => techLabel(record) === "B类机长",
+                rule: "技术信息为B类机长。"
+            },
+            {
+                label: "Z类机长",
+                predicate: (record) => techLabel(record) === "Z类机长",
+                rule: "技术信息为Z类机长。"
+            },
+            {
+                label: "在训机长",
+                predicate: isTransferCaptain,
+                rule: "划转机长。"
+            }
+        ], "未落入教员/机长等级分类，需人工核对")
+    ];
+}
+
+function buildFirstOfficerLevelItems(records: PersonnelRecord[], denominator: number): PersonnelStatItem[] {
+    return makeClosedItems(records, denominator, [
+        {
+            label: "D类副驾驶",
+            predicate: (record) => techLabel(record) === "D类副驾驶",
+            rule: "技术信息为D类副驾驶。"
+        },
+        {
+            label: "C类副驾驶",
+            predicate: (record) => techLabel(record) === "C类副驾驶",
+            rule: "技术信息为C类副驾驶。"
+        },
+        {
+            label: "B类副驾驶",
+            predicate: (record) => techLabel(record) === "B类副驾驶",
+            rule: "技术信息为B类副驾驶。"
+        },
+        {
+            label: "A类副驾驶",
+            predicate: (record) => techLabel(record) === "A1类副驾驶" || techLabel(record) === "A2类副驾驶",
+            rule: "技术信息为A1类副驾驶或A2类副驾驶。"
+        },
+        {
+            label: "转机型副驾驶",
+            predicate: isTransferFirstOfficer,
+            rule: "划转副驾驶。"
+        }
+    ], "未落入副驾驶等级分类，需人工核对");
+}
+
 function mapOrigin(origin: string): string {
     const normalized = normalizeText(origin);
     if (normalized === "总队777" || normalized === "777返聘") return "飞行/总队 777";
@@ -315,12 +467,14 @@ function uniqueSorted(values: string[]): string[] {
 
 function calculate(records: PersonnelRecord[]): PersonnelStructureResult {
     const registeredCrew = records.filter(isRegisteredCrew);
+    const structureCrew = records.filter(isStructureCrew);
     const captainBase = records.filter((record) => isTeacher(record) || isCaptain(record));
     const captainWithTraining = records.filter(isCaptainOrAbove);
     const firstOfficerBase = records.filter(isRegularFirstOfficer);
     const firstOfficerWithTransfer = records.filter(isFirstOfficerGroup);
 
     const registeredCrewCount = registeredCrew.length;
+    const structureCrewCount = structureCrew.length;
     const groundCount = FIXED_GROUND_COUNT;
     const totalPeople = registeredCrewCount + groundCount;
     const captainBaseDenominator = captainBase.length;
@@ -340,49 +494,30 @@ function calculate(records: PersonnelRecord[]): PersonnelStructureResult {
         },
         {
             title: "飞行管理人员占比",
-            denominatorLabel: `${registeredCrewCount}人`,
+            denominatorLabel: `${structureCrewCount}人`,
             items: [
-                makeItem("管理人员", count(registeredCrew, (record) => Boolean(record.managementRole)), registeredCrewCount, "行政职务非空。"),
-                makeItem("非管理人员", count(registeredCrew, (record) => !record.managementRole), registeredCrewCount, "行政职务为空。")
+                makeItem("管理人员", count(structureCrew, (record) => Boolean(record.managementRole)), structureCrewCount, "行政职务非空。"),
+                makeItem("非管理人员", count(structureCrew, (record) => !record.managementRole), structureCrewCount, "行政职务为空。")
             ]
         },
         {
             title: "教员、机长、副驾驶占比",
-            denominatorLabel: `${registeredCrewCount}人`,
+            denominatorLabel: `${structureCrewCount}人`,
             items: [
-                makeItem("教员", count(registeredCrew, isTeacher), registeredCrewCount, "已注册空勤中，技术信息包含飞行教员。"),
-                makeItem("机长", count(registeredCrew, isCaptain), registeredCrewCount, "已注册空勤中的非教员机长，不含划转机长。"),
-                makeItem("副驾驶", count(registeredCrew, isRegularFirstOfficer), registeredCrewCount, "已注册空勤中的副驾驶，不含划转副驾驶。")
+                makeItem("教员", count(structureCrew, isTeacher), structureCrewCount, "技术信息包含飞行教员。"),
+                makeItem("机长", count(structureCrew, (record) => isCaptain(record) || isTransferCaptain(record)), structureCrewCount, "非教员机长，含划转机长。"),
+                makeItem("副驾驶", count(structureCrew, (record) => isRegularFirstOfficer(record) || isTransferFirstOfficer(record)), structureCrewCount, "副驾驶，含划转副驾驶。")
             ]
         },
         {
             title: "机长含以上各级别占比",
             denominatorLabel: `${captainWithTrainingDenominator}人`,
-            items: [
-                makeItem("检查员", count(captainWithTraining, isInspector), captainWithTrainingDenominator, "检查员资格为公司检查员或委任代表。"),
-                makeItem("C类教员", count(captainWithTraining, (record) => techLabel(record) === "飞行教员C"), captainWithTrainingDenominator, "技术信息为飞行教员C。"),
-                makeItem("B类教员", count(captainWithTraining, (record) => techLabel(record) === "飞行教员B"), captainWithTrainingDenominator, "技术信息为飞行教员B。"),
-                makeItem("A类教员", count(captainWithTraining, (record) => techLabel(record) === "飞行教员A"), captainWithTrainingDenominator, "技术信息为飞行教员A。"),
-                makeItem("D类机长", count(captainWithTraining, (record) => techLabel(record) === "D类机长"), captainWithTrainingDenominator, "技术信息为D类机长。"),
-                makeItem("C类机长", count(captainWithTraining, (record) => techLabel(record) === "C类机长"), captainWithTrainingDenominator, "技术信息为C类机长。"),
-                makeItem("B类机长", count(captainWithTraining, (record) => techLabel(record) === "B类机长"), captainWithTrainingDenominator, "技术信息为B类机长。"),
-                makeItem("Z类机长", count(captainWithTraining, (record) => techLabel(record) === "Z类机长"), captainWithTrainingDenominator, "技术信息为Z类机长。"),
-                makeItem("在训机长", count(captainWithTraining, isTransferCaptain), captainWithTrainingDenominator, "划转机长。")
-            ]
+            items: buildCaptainLevelItems(captainWithTraining, captainWithTrainingDenominator)
         },
         {
             title: "机长航线资格占比",
             denominatorLabel: `${captainBaseDenominator}人`,
-            items: [
-                ...makeComboItems(captainBase, captainBaseDenominator, "R", {
-                    northOnly: "仅北美带队",
-                    europeOnly: "仅欧洲带队",
-                    westOnly: "仅西亚带队",
-                    none: "无美欧西亚单飞"
-                }, "RAMA/REUO/RWAS 单飞资格").filter((item) => item.label !== "无美欧西亚单飞"),
-                makeItem("航线机长", count(captainBase, isLineCaptain), captainBaseDenominator, "B类及以上、无RAMA/REUO/RWAS单飞资格、且不是Z类机长。"),
-                makeItem("左座带飞", count(captainBase, (record) => techLabel(record) === "Z类机长"), captainBaseDenominator, "Z类机长。")
-            ]
+            items: buildCaptainRouteItems(captainBase, captainBaseDenominator)
         },
         {
             title: "机长报务占比",
@@ -397,13 +532,7 @@ function calculate(records: PersonnelRecord[]): PersonnelStructureResult {
         {
             title: "副驾驶级别占比",
             denominatorLabel: `${firstOfficerWithTransferDenominator}人`,
-            items: [
-                makeItem("D类副驾驶", count(firstOfficerWithTransfer, (record) => techLabel(record) === "D类副驾驶"), firstOfficerWithTransferDenominator, "技术信息为D类副驾驶。"),
-                makeItem("C类副驾驶", count(firstOfficerWithTransfer, (record) => techLabel(record) === "C类副驾驶"), firstOfficerWithTransferDenominator, "技术信息为C类副驾驶。"),
-                makeItem("B类副驾驶", count(firstOfficerWithTransfer, (record) => techLabel(record) === "B类副驾驶"), firstOfficerWithTransferDenominator, "技术信息为B类副驾驶。"),
-                makeItem("A类副驾驶", count(firstOfficerWithTransfer, (record) => techLabel(record) === "A1类副驾驶" || techLabel(record) === "A2类副驾驶"), firstOfficerWithTransferDenominator, "技术信息为A1类副驾驶或A2类副驾驶。"),
-                makeItem("转机型副驾驶", count(firstOfficerWithTransfer, isTransferFirstOfficer), firstOfficerWithTransferDenominator, "划转副驾驶。")
-            ]
+            items: buildFirstOfficerLevelItems(firstOfficerWithTransfer, firstOfficerWithTransferDenominator)
         },
         {
             title: "副驾驶报务占比",
@@ -417,26 +546,42 @@ function calculate(records: PersonnelRecord[]): PersonnelStructureResult {
         },
         {
             title: "人员居住情况",
-            denominatorLabel: `${captainBaseDenominator}人 / ${firstOfficerBaseDenominator}人`,
+            denominatorLabel: `${captainWithTrainingDenominator}人 / ${firstOfficerWithTransferDenominator}人`,
             items: [
-                makeItem("机长本地居住", count(captainBase, isLocal), captainBaseDenominator, "原单位以总队开头或等于777返聘。"),
-                makeItem("机长异地居住", count(captainBase, (record) => !isLocal(record)), captainBaseDenominator, "除本地外均为异地。"),
-                makeItem("副驾驶本地居住", count(firstOfficerBase, isLocal), firstOfficerBaseDenominator, "原单位以总队开头或等于777返聘。"),
-                makeItem("副驾驶异地居住", count(firstOfficerBase, (record) => !isLocal(record)), firstOfficerBaseDenominator, "除本地外均为异地。")
+                makeItem("机长本地居住", count(captainWithTraining, isLocal), captainWithTrainingDenominator, "原单位以总队开头或等于777返聘。"),
+                makeItem("机长异地居住", count(captainWithTraining, (record) => !isLocal(record)), captainWithTrainingDenominator, "除本地外均为异地。"),
+                makeItem("副驾驶本地居住", count(firstOfficerWithTransfer, isLocal), firstOfficerWithTransferDenominator, "原单位以总队开头或等于777返聘。"),
+                makeItem("副驾驶异地居住", count(firstOfficerWithTransfer, (record) => !isLocal(record)), firstOfficerWithTransferDenominator, "除本地外均为异地。")
             ]
         }
     ];
 
     const originCounts = new Map<string, number>();
-    registeredCrew.forEach((record) => {
+    const originPeople = new Map<string, PersonnelRecord[]>();
+    structureCrew.forEach((record) => {
         const label = mapOrigin(record.origin);
         originCounts.set(label, (originCounts.get(label) || 0) + 1);
+        const people = originPeople.get(label) || [];
+        people.push(record);
+        originPeople.set(label, people);
     });
+    const otherOriginEntries = Array.from(originCounts.entries())
+        .filter(([label]) => !ORIGIN_LABELS.includes(label));
+    const otherOriginCount = otherOriginEntries.reduce((sum, [, value]) => sum + value, 0);
+    const otherOriginRule = otherOriginEntries.length
+        ? `未映射原单位，需人工核对：${otherOriginEntries.map(([label]) => {
+            const people = originPeople.get(label) || [];
+            return `${label}（${formatPeople(people)}）`;
+        }).join("；")}。`
+        : "";
 
     sections.push({
         title: "空勤人员原单位情况",
-        denominatorLabel: `${registeredCrewCount}人`,
-        items: ORIGIN_LABELS.map((label) => makeItem(label, originCounts.get(label) || 0, registeredCrewCount, "按原单位映射汇总；总队777与777返聘合并到飞行/总队777。"))
+        denominatorLabel: `${structureCrewCount}人`,
+        items: [
+            ...ORIGIN_LABELS.map((label) => makeItem(label, originCounts.get(label) || 0, structureCrewCount, "按原单位映射汇总；总队777与777返聘合并到飞行/总队777。")),
+            ...(otherOriginCount ? [makeItem("其他", otherOriginCount, structureCrewCount, otherOriginRule)] : [])
+        ]
     });
 
     const recognizedTech = records.filter((record) =>
@@ -450,7 +595,7 @@ function calculate(records: PersonnelRecord[]): PersonnelStructureResult {
         .filter((record) => record.techInfo && !recognizedTech.includes(record))
         .map((record) => record.techInfo));
 
-    const unrecognizedOrigin = uniqueSorted(registeredCrew
+    const unrecognizedOrigin = uniqueSorted(structureCrew
         .map((record) => record.origin)
         .filter((origin) => origin && !ORIGIN_LABELS.includes(mapOrigin(origin))));
 
