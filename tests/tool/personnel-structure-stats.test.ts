@@ -55,9 +55,9 @@ describe("personnel structure stats", () => {
   it("calculates Word-structure personnel stats without mixing single-flight and communication codes", () => {
     const result = logic.calculate(logic.parseRows(buildRows()));
 
-    expect(result.totalPeople).toBe(6);
+    expect(result.totalPeople).toBe(33);
     expect(result.registeredCrewCount).toBe(4);
-    expect(result.groundCount).toBe(2);
+    expect(result.groundCount).toBe(29);
 
     expect(countOf(result, "教员、机长、副驾驶占比", "教员")).toBe(1);
     expect(countOf(result, "教员、机长、副驾驶占比", "机长")).toBe(3);
@@ -106,9 +106,9 @@ describe("personnel structure stats", () => {
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" });
     const result = logic.calculate(logic.parseRows(rows));
 
-    expect(result.totalPeople).toBe(388);
+    expect(result.totalPeople).toBe(395);
     expect(result.registeredCrewCount).toBe(366);
-    expect(result.groundCount).toBe(22);
+    expect(result.groundCount).toBe(29);
     expect(countOf(result, "飞行管理人员占比", "管理人员")).toBe(23);
     expect(countOf(result, "教员、机长、副驾驶占比", "教员")).toBe(102);
     expect(countOf(result, "教员、机长、副驾驶占比", "机长")).toBe(106);

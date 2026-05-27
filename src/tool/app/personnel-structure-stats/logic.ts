@@ -90,6 +90,8 @@ const ORIGIN_LABELS = [
     "上海"
 ];
 
+const FIXED_GROUND_COUNT = 29;
+
 function normalizeText(value: unknown): string {
     if (value === null || value === undefined) return "";
     return String(value).trim();
@@ -318,22 +320,22 @@ function calculate(records: PersonnelRecord[]): PersonnelStructureResult {
     const firstOfficerBase = records.filter(isRegularFirstOfficer);
     const firstOfficerWithTransfer = records.filter(isFirstOfficerGroup);
 
-    const totalPeople = records.length;
     const registeredCrewCount = registeredCrew.length;
+    const groundCount = FIXED_GROUND_COUNT;
+    const totalPeople = registeredCrewCount + groundCount;
     const captainBaseDenominator = captainBase.length;
     const captainWithTrainingDenominator = captainWithTraining.length;
     const firstOfficerBaseDenominator = firstOfficerBase.length;
     const firstOfficerWithTransferDenominator = firstOfficerWithTransfer.length;
-    const groundCount = totalPeople - registeredCrewCount;
 
     const sections: PersonnelStatSection[] = [
         {
             title: "总人数及空地人员占比",
             denominatorLabel: `${totalPeople}人`,
             items: [
-                makeItem("总人数", totalPeople, totalPeople, "上传表格中的全部人员行。"),
+                makeItem("总人数", totalPeople, totalPeople, "已注册空勤人员加固定地面人员29人。"),
                 makeItem("空勤人员（已注册人员）", registeredCrewCount, totalPeople, "飞行教员、非划转机长、非划转副驾驶。"),
-                makeItem("地面人员", groundCount, totalPeople, "总人数减已注册空勤人员。")
+                makeItem("地面人员", groundCount, totalPeople, "固定按29人统计。")
             ]
         },
         {
