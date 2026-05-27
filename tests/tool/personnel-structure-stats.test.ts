@@ -59,9 +59,10 @@ describe("personnel structure stats", () => {
     expect(result.registeredCrewCount).toBe(4);
     expect(result.groundCount).toBe(29);
 
+    expect(section(result, "教员、机长、副驾驶占比").denominatorLabel).toBe("4人");
     expect(countOf(result, "教员、机长、副驾驶占比", "教员")).toBe(1);
-    expect(countOf(result, "教员、机长、副驾驶占比", "机长")).toBe(3);
-    expect(countOf(result, "教员、机长、副驾驶占比", "副驾驶")).toBe(2);
+    expect(countOf(result, "教员、机长、副驾驶占比", "机长")).toBe(2);
+    expect(countOf(result, "教员、机长、副驾驶占比", "副驾驶")).toBe(1);
 
     expect(section(result, "机长含以上各级别占比").denominatorLabel).toBe("4人");
     expect(countOf(result, "机长含以上各级别占比", "A类教员")).toBe(1);

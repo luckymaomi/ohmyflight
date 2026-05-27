@@ -1,7 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 
 import ts from "typescript";
 
@@ -12,6 +14,7 @@ const sourceRoot = path.join(projectRoot, "src");
 const staticRoot = path.join(projectRoot, "public");
 const distRoot = path.join(projectRoot, "dist");
 const sourceArchiveScript = path.join(projectRoot, "package_site_source.py");
+const execFileAsync = promisify(execFile);
 
 async function walkTypeScriptFiles(rootDir) {
   const results = [];
@@ -73,6 +76,46 @@ async function runCommand(command, args) {
   });
 }
 
+async function readGitText(args) {
+  try {
+    const { stdout } = await execFileAsync("git", args, {
+      cwd: projectRoot,
+      encoding: "utf8"
+    });
+    return stdout.trim();
+  } catch {
+    return "";
+  }
+}
+
+async function generateVersionFile() {
+  const commit = await readGitText(["rev-parse", "--short", "HEAD"]);
+  const branch = await readGitText(["branch", "--show-current"]);
+  const rawLog = await readGitText(["log", "-5", "--pretty=format:%h%x09%s"]);
+  const commits = rawLog
+    ? rawLog.split(/\r?\n/).map((line) => {
+        const [hash = "", ...messageParts] = line.split("\t");
+        return {
+          hash,
+          message: messageParts.join("\t")
+        };
+      }).filter((item) => item.hash || item.message)
+    : [];
+
+  const version = {
+    commit,
+    branch,
+    builtAt: new Date().toISOString(),
+    commits
+  };
+
+  await fs.writeFile(
+    path.join(distRoot, "version.json"),
+    `${JSON.stringify(version, null, 2)}\n`,
+    "utf8"
+  );
+}
+
 async function packageSourceArchive() {
   const candidates = [
     ["python", [sourceArchiveScript]],
@@ -127,6 +170,8 @@ async function main() {
   for (const sourceFilePath of sourceFiles) {
     emittedFiles.push(await emitSourceFile(sourceFilePath));
   }
+
+  await generateVersionFile();
 
   process.stdout.write(`Built ${emittedFiles.length} scripts into dist/\n`);
 }

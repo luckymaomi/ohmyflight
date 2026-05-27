@@ -203,6 +203,32 @@ body {
     opacity: 0.34;
 }
 
+.version-panel {
+    display: none;
+    padding: 0 2px 2px;
+    color: var(--omf-text-muted);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.version-panel.is-visible {
+    display: block;
+}
+
+.version-panel strong {
+    color: var(--omf-text);
+    font-weight: 700;
+}
+
+.version-panel .version-log {
+    display: inline;
+}
+
+.version-panel .version-log span:not(:last-child)::after {
+    content: " / ";
+    color: var(--omf-text-muted);
+}
+
 .cards {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));

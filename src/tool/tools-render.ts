@@ -61,6 +61,7 @@ const haloOuter = document.getElementById("haloOuter");
 const ball = document.getElementById("ball");
 const moon = document.getElementById("moon");
 const moonBody = document.getElementById("moonBody");
+const versionPanel = document.getElementById("versionPanel");
 
 if (
     cardsRoot instanceof HTMLElement &&
@@ -82,6 +83,7 @@ if (
     bindSearchInput(searchInput);
     bindCategoryTabs();
     initThemeToggle();
+    renderVersionPanel();
     renderCurrentView(cardsRoot, searchInput);
 }
 
@@ -117,6 +119,55 @@ function initThemeToggle(): void {
 function getCurrentTheme(): ThemeMode {
     const theme = window.OhmyflightTheme?.getTheme();
     return theme === "dark" ? "dark" : "light";
+}
+
+type VersionInfo = {
+    commit?: string;
+    branch?: string;
+    builtAt?: string;
+    commits?: Array<{
+        hash?: string;
+        message?: string;
+    }>;
+};
+
+function escapeHtml(value: unknown): string {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+async function renderVersionPanel(): Promise<void> {
+    if (!(versionPanel instanceof HTMLElement)) return;
+
+    try {
+        const response = await fetch("../version.json", { cache: "no-store" });
+        if (!response.ok) return;
+
+        const version = await response.json() as VersionInfo;
+        const commit = version.commit || "unknown";
+        const builtAt = version.builtAt ? new Date(version.builtAt) : null;
+        const builtAtText = builtAt && !Number.isNaN(builtAt.getTime())
+            ? builtAt.toLocaleString("zh-CN", { hour12: false })
+            : "未知时间";
+        const logs = (version.commits || []).slice(0, 3)
+            .map((item) => {
+                const hash = item.hash ? `${item.hash} ` : "";
+                return `<span>${escapeHtml(hash + (item.message || ""))}</span>`;
+            })
+            .join("");
+
+        versionPanel.innerHTML = `
+            当前版本 <strong>${escapeHtml(commit)}</strong>
+            · 构建 ${escapeHtml(builtAtText)}
+            ${logs ? ` · 最近更新 <span class="version-log">${logs}</span>` : ""}
+        `;
+        versionPanel.classList.add("is-visible");
+    } catch {
+        versionPanel.classList.remove("is-visible");
+    }
 }
 
 function getInitialCategory(): ToolCategory {

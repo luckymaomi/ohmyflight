@@ -348,11 +348,11 @@ function calculate(records: PersonnelRecord[]): PersonnelStructureResult {
         },
         {
             title: "教员、机长、副驾驶占比",
-            denominatorLabel: `${totalPeople}人`,
+            denominatorLabel: `${registeredCrewCount}人`,
             items: [
-                makeItem("教员", count(records, isTeacher), totalPeople, "技术信息包含飞行教员。"),
-                makeItem("机长", count(records, (record) => isCaptain(record) || isTransferCaptain(record)), totalPeople, "非教员机长，含划转机长。"),
-                makeItem("副驾驶", count(records, (record) => isRegularFirstOfficer(record) || isTransferFirstOfficer(record)), totalPeople, "副驾驶，含划转副驾驶。")
+                makeItem("教员", count(registeredCrew, isTeacher), registeredCrewCount, "已注册空勤中，技术信息包含飞行教员。"),
+                makeItem("机长", count(registeredCrew, isCaptain), registeredCrewCount, "已注册空勤中的非教员机长，不含划转机长。"),
+                makeItem("副驾驶", count(registeredCrew, isRegularFirstOfficer), registeredCrewCount, "已注册空勤中的副驾驶，不含划转副驾驶。")
             ]
         },
         {
