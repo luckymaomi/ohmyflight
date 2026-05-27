@@ -23,7 +23,6 @@ init()
 LOGIN_URL = "https://ieb.csair.com/login"
 INDEX_URL = "https://ieb.csair.com/index/index"
 DEFAULT_CONCURRENCY = 20
-DEFAULT_REASON = "调试解锁"
 MAX_ROUNDS = 20
 TEXT_RUNNING = "运行管理"
 TEXT_NON_PRODUCTION = "非生产任务"
@@ -976,6 +975,38 @@ def collect_records() -> list[LockRecord]:
     return records
 
 
+def format_reason_preview(reason_text: str, limit: int = 18) -> str:
+    preview = reason_text.replace("\n", " / ")
+    if len(preview) > limit:
+        return preview[:limit] + "..."
+    return preview
+
+
+def read_multiline(prompt: str, confirm_key: str = "ok", cancel_key: str = "c") -> str | None:
+    print(prompt)
+    lines: list[str] = []
+    while True:
+        line = input()
+        if line.lower() == cancel_key:
+            return None
+        if line.lower() == confirm_key:
+            break
+        if line:
+            lines.append(line)
+    if not lines:
+        return None
+    return "\n".join(lines)
+
+
+def set_common_reason() -> str | None:
+    text = read_multiline(c_hint("请粘贴统一备注(输入OK确认,c取消):"), "ok", "c")
+    if text is None:
+        print(c_warn("本次不填写备注"))
+        return None
+    print(c_ok(f"已设置统一备注: {format_reason_preview(text, limit=30)}"))
+    return text
+
+
 async def run(records: list[LockRecord], concurrency: int, reason_text: str, browser_path: str | None) -> str:
     output_file = create_result_excel("并发锁班")
     async with async_playwright() as playwright:
@@ -1033,7 +1064,12 @@ def main() -> int:
     print(c_info("通用锁班助手 - 并发实验版"))
     print(c_warn("实验版不会替换 app.py。并发越高越需要核对结果Excel里的匹配校验。"))
     browser_path = input(c_hint("浏览器路径(回车用默认): ")).strip() or None
-    reason_text = input(c_hint(f"统一备注(默认 {DEFAULT_REASON}): ")).strip() or DEFAULT_REASON
+    reason_text = ""
+    use_reason = input(c_hint("是否填写统一备注?(y/n): ")).strip().lower()
+    if use_reason == "y":
+        reason_text = set_common_reason() or ""
+    else:
+        print(c_ok("本次不填写备注"))
     raw_concurrency = input(c_hint(f"并发数(默认 {DEFAULT_CONCURRENCY}): ")).strip()
     concurrency = int(raw_concurrency) if raw_concurrency.isdigit() and int(raw_concurrency) > 0 else DEFAULT_CONCURRENCY
 
