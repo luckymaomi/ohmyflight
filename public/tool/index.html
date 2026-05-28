@@ -4,81 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ohmyflight</title>
-    <script src="../theme.js"></script>
-    <link rel="stylesheet" href="../theme.css">
     <link rel="stylesheet" href="./index.css">
 </head>
 <body>
-    <main class="app">
-        <header class="topbar">
-            <div class="search-region">
-                <label class="sr-only" for="searchInput">搜索</label>
-                <input id="searchInput" class="search-input" type="search" placeholder="搜索工具" aria-label="搜索工具" autocomplete="off" spellcheck="false">
+    <main class="page-shell">
+        <section class="toolbar" aria-label="工具搜索和链接">
+            <label class="sr-only" for="searchInput">搜索工具</label>
+            <input id="searchInput" class="search-input" type="search" placeholder="搜索工具名称或简介" autocomplete="off" spellcheck="false">
+            <div class="head-links">
+                <a class="icon-link" href="https://github.com/agentjz/ohmyflight" target="_blank" rel="noopener noreferrer" aria-label="GitHub 项目地址" title="GitHub 项目地址">
+                    <svg viewBox="0 0 16 16" aria-hidden="true">
+                        <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.65 7.65 0 0 1 8 3.86c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
+                    </svg>
+                </a>
+                <a class="icon-link" href="../downloads/ohmyflight-source.zip" download aria-label="下载源码" title="下载源码">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/>
+                    </svg>
+                </a>
             </div>
-            <div class="switch-row">
-                <div class="switch-label" id="lightLabel">
-                    <strong>light</strong>
-                </div>
-                <div class="button-box" id="toggleButton" data-mode="light" data-motion="steady">
-                    <div class="sky">
-                        <div class="inner-shadow"></div>
-                        <div class="sky-light" id="skyLayer"></div>
-                    </div>
-                    <div class="star-cloud-box">
-                        <div class="star-box" id="starBox"></div>
-                        <div class="cloud-box">
-                            <div class="cloud-near" id="cloudNear"></div>
-                            <div class="cloud-far" id="cloudFar"></div>
-                        </div>
-                    </div>
-                    <div class="halo-box">
-                        <div class="halo-flex">
-                            <div class="halo-inner halo-left" id="haloInner"></div>
-                            <div class="halo-middle halo-left" id="haloMiddle"></div>
-                            <div class="halo-outer halo-left" id="haloOuter"></div>
-                        </div>
-                    </div>
-                    <div class="ball-box">
-                        <div class="ball-cut-in to-left" id="ball">
-                            <div class="sun"></div>
-                            <div class="moon" id="moon">
-                                <div class="moon-body" id="moonBody">
-                                    <div class="moon-crater" style="--crater-size:0.172;--crater-top:15%;--crater-left:38%;"></div>
-                                    <div class="moon-crater" style="--crater-size:0.287;--crater-top:46%;--crater-left:13%;"></div>
-                                    <div class="moon-crater" style="--crater-size:0.201;--crater-top:61%;--crater-left:61%;"></div>
-                                </div>
-                                <div class="moon-shadow"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="switch-label muted" id="darkLabel">
-                    <strong>dark</strong>
-                </div>
-            </div>
-        </header>
+        </section>
 
-        <section class="workspace" id="toolsView" aria-label="工具面板">
-            <nav class="subnav" aria-label="工具分类">
-                <button class="category-link active" type="button" data-category="common">常用</button>
-                <button class="category-link" type="button" data-category="other">其他</button>
-            </nav>
-            <section class="version-panel" id="versionPanel" aria-label="更新信息"></section>
-            <section class="cards" id="toolCards"></section>
+        <section class="version-panel" id="versionPanel" aria-label="更新信息"></section>
+
+        <section class="table-shell" aria-label="工具清单">
+            <table class="tool-table">
+                <thead>
+                    <tr>
+                        <th class="name-col">工具</th>
+                        <th>功能</th>
+                        <th class="status-col">状态</th>
+                    </tr>
+                </thead>
+                <tbody id="toolRows"></tbody>
+            </table>
+            <div id="emptyState" class="empty-state" hidden>未找到匹配工具。</div>
         </section>
     </main>
-    <div class="source-links" aria-label="项目链接">
-        <a class="source-link" href="https://github.com/agentjz/ohmyflight" target="_blank" rel="noopener noreferrer" aria-label="GitHub 仓库">
-            <svg class="source-link-icon" viewBox="0 0 16 16" aria-hidden="true">
-                <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.65 7.65 0 0 1 8 3.86c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
-            </svg>
-            <span>GitHub</span>
-        </a>
-        <a class="source-link" href="../downloads/ohmyflight-source.zip" download>下载源码</a>
-    </div>
 
     <script src="./tools-data.js"></script>
-    <script src="./tool-mode-toggle.js"></script>
     <script src="./tools-render.js"></script>
 </body>
 </html>

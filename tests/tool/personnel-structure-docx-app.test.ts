@@ -179,4 +179,30 @@ print(row.cells[7].text)
     expect(output).toContain("14%");
   });
 
+  it("opens the tkinter gui when app.py runs without arguments", () => {
+    const output = runPython(`
+import importlib.util
+from pathlib import Path
+
+path = Path(r"${appPath.replace(/\\/g, "\\\\")}")
+spec = importlib.util.spec_from_file_location("personnel_app", path)
+module = importlib.util.module_from_spec(spec)
+import sys
+sys.modules[spec.name] = module
+spec.loader.exec_module(module)
+
+called = {}
+def fake_gui():
+    called["ok"] = True
+    return 0
+
+module.run_gui = fake_gui
+code = module.main([])
+print(code)
+print(called.get("ok"))
+`);
+    expect(output).toContain("0");
+    expect(output).toContain("True");
+  });
+
 });

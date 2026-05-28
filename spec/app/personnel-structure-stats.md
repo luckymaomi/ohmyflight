@@ -235,7 +235,7 @@
 
 脚本输入：
 
-- 人员信息 Excel
+- 人员信息 Excel 原表，不是前端导出的统计 Excel
 - 人员结构报告 `.docx`
 - 可选月份参数 `--month 1-12`
 - 可选工作表参数 `--sheet`
@@ -294,3 +294,5 @@ python app.py
 python app.py --excel 人员信息.xlsx --docx 人员结构报告.docx --month 5
 python app.py --excel 人员信息.xlsx --docx 人员结构报告.docx --month 5 --dry-run
 ```
+
+不带参数运行 `python app.py` 时，打开 Tkinter 图形界面。图形界面选择人员信息 Excel 原表和人员结构报告 `.docx` 后生成新的 Word 报告。

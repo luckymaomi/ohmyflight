@@ -6,7 +6,7 @@ import { resolveFromDist } from "./paths";
 type BrowserSandbox = Record<string, unknown> & {
   window?: BrowserSandbox;
   globalThis?: BrowserSandbox;
-  __tools?: ToolSection[];
+  __tools?: ToolItem[];
 };
 
 function createBaseSandbox(overrides: Record<string, unknown> = {}): BrowserSandbox {

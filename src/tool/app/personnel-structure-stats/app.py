@@ -824,6 +824,146 @@ def choose_file(title: str, filetypes: list[tuple[str, str]]) -> Path | None:
     return Path(filename) if filename else None
 
 
+def run_report(
+    excel_path: Path,
+    docx_path: Path,
+    output_path: Path | None = None,
+    sheet: str | None = None,
+    month: int | None = None,
+    dry_run: bool = False,
+) -> tuple[StatResult, list[str], Path]:
+    if not excel_path.exists():
+        raise FileNotFoundError(f"Excel 文件不存在：{excel_path}")
+    if not docx_path.exists():
+        raise FileNotFoundError(f"docx 文件不存在：{docx_path}")
+
+    target_path = output_path or default_output_path(docx_path)
+    records = parse_excel(excel_path, sheet)
+    result = calculate(records)
+    logs = fill_docx(docx_path, result, target_path, month, dry_run)
+    return result, logs, target_path
+
+
+def format_run_summary(result: StatResult, logs: list[str]) -> str:
+    lines = [
+        f"总人数：{result.total_people}，已注册空勤：{result.registered_crew_count}，地面人员：{result.ground_count}",
+    ]
+    if result.warnings:
+        lines.append("需要核对：")
+        lines.extend(f"  - {warning}" for warning in result.warnings)
+    lines.append("写入结果：")
+    lines.extend(f"  - {log}" for log in logs)
+    return "\n".join(lines)
+
+
+def run_gui() -> int:
+    try:
+        import tkinter as tk
+        from tkinter import filedialog, messagebox, scrolledtext
+    except Exception as exc:
+        print(f"无法启动图形界面：{exc}", file=sys.stderr)
+        return 1
+
+    root = tk.Tk()
+    root.title("人员结构报告生成")
+    root.geometry("780x560")
+    root.minsize(720, 500)
+
+    excel_var = tk.StringVar()
+    docx_var = tk.StringVar()
+    output_var = tk.StringVar()
+    sheet_var = tk.StringVar()
+    month_var = tk.StringVar()
+
+    def choose_excel() -> None:
+        filename = filedialog.askopenfilename(
+            title="选择人员信息 Excel",
+            filetypes=[("Excel 文件", "*.xlsx *.xlsm *.xls"), ("所有文件", "*.*")]
+        )
+        if filename:
+            excel_var.set(filename)
+
+    def choose_docx() -> None:
+        filename = filedialog.askopenfilename(
+            title="选择人员结构报告 Word",
+            filetypes=[("Word 文件", "*.docx"), ("所有文件", "*.*")]
+        )
+        if filename:
+            docx_var.set(filename)
+
+    def choose_output() -> None:
+        filename = filedialog.asksaveasfilename(
+            title="选择输出 Word 路径",
+            defaultextension=".docx",
+            filetypes=[("Word 文件", "*.docx"), ("所有文件", "*.*")]
+        )
+        if filename:
+            output_var.set(filename)
+
+    def append_log(text: str) -> None:
+        log_box.configure(state="normal")
+        log_box.delete("1.0", tk.END)
+        log_box.insert(tk.END, text)
+        log_box.configure(state="disabled")
+
+    def generate() -> None:
+        try:
+            excel_text = excel_var.get().strip()
+            docx_text = docx_var.get().strip()
+            if not excel_text or not docx_text:
+                messagebox.showwarning("缺少文件", "请先选择人员信息 Excel 原表和人员结构报告 Word。")
+                return
+
+            month_text = month_var.get().strip()
+            month = int(month_text) if month_text else None
+            if month is not None and not 1 <= month <= 12:
+                raise ValueError("月份必须是 1 到 12。")
+
+            result, logs, target_path = run_report(
+                excel_path=Path(excel_text),
+                docx_path=Path(docx_text),
+                output_path=Path(output_var.get().strip()) if output_var.get().strip() else None,
+                sheet=sheet_var.get().strip() or None,
+                month=month,
+                dry_run=False,
+            )
+            append_log(format_run_summary(result, logs))
+            messagebox.showinfo("生成完成", f"已生成：{target_path}")
+        except Exception as exc:
+            append_log(f"错误：{exc}")
+            messagebox.showerror("生成失败", str(exc))
+
+    root.columnconfigure(1, weight=1)
+    root.rowconfigure(6, weight=1)
+
+    tk.Label(root, text="人员信息 Excel 原表").grid(row=0, column=0, padx=12, pady=(14, 6), sticky="w")
+    tk.Entry(root, textvariable=excel_var).grid(row=0, column=1, padx=6, pady=(14, 6), sticky="ew")
+    tk.Button(root, text="选择", command=choose_excel).grid(row=0, column=2, padx=12, pady=(14, 6))
+
+    tk.Label(root, text="人员结构报告 Word/docx").grid(row=1, column=0, padx=12, pady=6, sticky="w")
+    tk.Entry(root, textvariable=docx_var).grid(row=1, column=1, padx=6, pady=6, sticky="ew")
+    tk.Button(root, text="选择", command=choose_docx).grid(row=1, column=2, padx=12, pady=6)
+
+    tk.Label(root, text="输出 Word（可选）").grid(row=2, column=0, padx=12, pady=6, sticky="w")
+    tk.Entry(root, textvariable=output_var).grid(row=2, column=1, padx=6, pady=6, sticky="ew")
+    tk.Button(root, text="选择", command=choose_output).grid(row=2, column=2, padx=12, pady=6)
+
+    tk.Label(root, text="工作表（可选）").grid(row=3, column=0, padx=12, pady=6, sticky="w")
+    tk.Entry(root, textvariable=sheet_var).grid(row=3, column=1, padx=6, pady=6, sticky="ew")
+
+    tk.Label(root, text="月份 1-12（可选）").grid(row=4, column=0, padx=12, pady=6, sticky="w")
+    tk.Entry(root, textvariable=month_var, width=12).grid(row=4, column=1, padx=6, pady=6, sticky="w")
+
+    tk.Button(root, text="生成 Word 报告", command=generate, height=2).grid(row=5, column=0, columnspan=3, padx=12, pady=12, sticky="ew")
+
+    log_box = scrolledtext.ScrolledText(root, state="disabled", wrap="word")
+    log_box.grid(row=6, column=0, columnspan=3, padx=12, pady=(0, 12), sticky="nsew")
+    append_log("选择人员信息 Excel 原表和人员结构报告 Word/docx 后，点击“生成 Word 报告”。\n这里不使用前端导出的统计 Excel。\n不填写月份时，脚本会自动识别空月份列。")
+
+    root.mainloop()
+    return 0
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="用人员信息 Excel 填写人员结构报告 docx。")
     parser.add_argument("--excel", type=Path, help="人员信息 Excel 文件路径。")
@@ -836,6 +976,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 
 def main(argv: list[str]) -> int:
+    if not argv:
+        return run_gui()
+
     args = parse_args(argv)
     excel_path = args.excel
     docx_path = args.docx
@@ -847,25 +990,17 @@ def main(argv: list[str]) -> int:
     if excel_path is None or docx_path is None:
         print("已取消：未选择 Excel 或 docx。")
         return 1
-    if not excel_path.exists():
-        raise FileNotFoundError(f"Excel 文件不存在：{excel_path}")
-    if not docx_path.exists():
-        raise FileNotFoundError(f"docx 文件不存在：{docx_path}")
 
-    output_path = args.output or default_output_path(docx_path)
-    records = parse_excel(excel_path, args.sheet)
-    result = calculate(records)
-    logs = fill_docx(docx_path, result, output_path, args.month, args.dry_run)
+    result, logs, _ = run_report(
+        excel_path=excel_path,
+        docx_path=docx_path,
+        output_path=args.output,
+        sheet=args.sheet,
+        month=args.month,
+        dry_run=args.dry_run,
+    )
 
-    print(f"已读取人员记录：{len(records)}")
-    print(f"总人数：{result.total_people}，已注册空勤：{result.registered_crew_count}，地面人员：{result.ground_count}")
-    if result.warnings:
-        print("需要核对：")
-        for warning in result.warnings:
-            print(f"  - {warning}")
-    print("写入结果：")
-    for log in logs:
-        print(f"  - {log}")
+    print(format_run_summary(result, logs))
     return 0
 
 

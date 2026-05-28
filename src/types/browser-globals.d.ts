@@ -27,7 +27,7 @@ interface WordTemplateAppConfig {
 }
 
 interface Window {
-  tools: ToolSection[];
+  tools: ToolItem[];
   XLSX: XlsxGlobal;
   TrainingTools: TrainingToolsNamespace;
   TrainingTool: TrainingToolNamespace;
@@ -37,35 +37,9 @@ interface Window {
     toggleTheme(): "light" | "dark";
     storageKey: string;
   };
-  ThemeToggle?: new (
-    elements: {
-      host: HTMLElement;
-      lightLabel: HTMLElement;
-      darkLabel: HTMLElement;
-      skyLayer: HTMLElement;
-      starBox: HTMLElement;
-      cloudNear: HTMLElement;
-      cloudFar: HTMLElement;
-      haloInner: HTMLElement;
-      haloMiddle: HTMLElement;
-      haloOuter: HTMLElement;
-      ball: HTMLElement;
-      moon: HTMLElement;
-      moonBody: HTMLElement;
-    },
-    options?: {
-      defaultMode?: "light" | "dark";
-      onChange?: (mode: "light" | "dark") => void;
-    }
-  ) => {
-    getMode(): "light" | "dark";
-    setMode(mode: "light" | "dark"): void;
-    toggle(): void;
-    destroy(): void;
-  };
 }
 
-declare var tools: ToolSection[] | undefined;
+declare var tools: ToolItem[] | undefined;
 
 declare const CONFIG: SiteConfig;
 declare const XLSX: XlsxGlobal;
