@@ -215,6 +215,14 @@ def normalize_employee_id(value) -> str:
     return match.group(0) if match else text
 
 
+def parse_whitelist(text: str) -> set[str]:
+    all_nums = re.findall(r"\d{6}", re.sub(r"\D", " ", text))
+    if all_nums:
+        return set(all_nums)
+    digits = re.sub(r"\D", "", text)
+    return {digits[index : index + 6] for index in range(0, len(digits), 6) if len(digits[index : index + 6]) == 6}
+
+
 def parse_leave_type(text: str) -> str:
     if not text:
         return ""
@@ -347,7 +355,7 @@ def parse_single_record(line: str, sequence: int) -> LockRecord | None:
     )
 
 
-def read_multiline_records() -> list[LockRecord]:
+def read_multiline_records(whitelist: set[str] | None = None) -> list[LockRecord]:
     print(c_hint("请粘贴锁班记录，每行一条，输入 ok 开始，输入 c 取消："))
     lines = []
     while True:
@@ -362,7 +370,9 @@ def read_multiline_records() -> list[LockRecord]:
 
     records = []
     for index, line in enumerate(lines, start=1):
-        record = parse_single_record(line, index)
+        record = parse_single_record(line, len(records) + 1)
+        if whitelist and record and record.employee_id not in whitelist:
+            continue
         if record and record.leave_type:
             records.append(record)
         else:
@@ -370,7 +380,7 @@ def read_multiline_records() -> list[LockRecord]:
     return records
 
 
-def read_excel_records(filepath: str) -> tuple[list[LockRecord], list[str]]:
+def read_excel_records(filepath: str, whitelist: set[str] | None = None) -> tuple[list[LockRecord], list[str]]:
     records = []
     errors = []
     wb = load_workbook(filepath, data_only=True)
@@ -392,6 +402,8 @@ def read_excel_records(filepath: str) -> tuple[list[LockRecord], list[str]]:
             continue
         if not start_date:
             errors.append(f"第{row_num}行开始日期无效")
+            continue
+        if whitelist and employee_id not in whitelist:
             continue
 
         records.append(
@@ -960,16 +972,23 @@ def unmatched_lock_result(record: LockRecord, note: str) -> LockResult:
     )
 
 
-def collect_records() -> list[LockRecord]:
+def whitelist_status(whitelist: set[str] | None) -> str:
+    if whitelist:
+        return c_ok(f"白名单:{len(whitelist)}人")
+    return c_warn("白名单:无")
+
+
+def collect_records(whitelist: set[str] | None = None) -> list[LockRecord]:
+    print(whitelist_status(whitelist))
     mode = input(c_hint("选择输入方式：1粘贴 2读取Excel（默认2）: ")).strip() or "2"
     if mode == "1":
-        return read_multiline_records()
+        return read_multiline_records(whitelist)
 
     filepath = input(c_hint("请输入Excel文件路径: ")).strip().strip('"').strip("'")
     if not filepath or not os.path.exists(filepath):
         print(c_err("Excel文件不存在"))
         return []
-    records, errors = read_excel_records(filepath)
+    records, errors = read_excel_records(filepath, whitelist)
     for error in errors:
         print(c_warn(error))
     return records
@@ -998,6 +1017,19 @@ def read_multiline(prompt: str, confirm_key: str = "ok", cancel_key: str = "c") 
     return "\n".join(lines)
 
 
+def set_whitelist() -> set[str] | None:
+    text = read_multiline(c_hint("请粘贴员工号列表(输入ok确认,c取消):"), "ok", "c")
+    if text is None:
+        print(c_warn("已取消"))
+        return None
+    whitelist = parse_whitelist(text)
+    if not whitelist:
+        print(c_err("未识别到有效员工号"))
+        return None
+    print(c_ok(f"已设置白名单,共{len(whitelist)}人"))
+    return whitelist
+
+
 def set_common_reason() -> str | None:
     text = read_multiline(c_hint("请粘贴统一备注(输入OK确认,c取消):"), "ok", "c")
     if text is None:
@@ -1007,24 +1039,63 @@ def set_common_reason() -> str | None:
     return text
 
 
-async def run(records: list[LockRecord], concurrency: int, reason_text: str, browser_path: str | None) -> str:
-    output_file = create_result_excel("并发锁班")
+async def prepare_entry_page(context):
+    page = await context.new_page()
+    page.set_default_timeout(30000)
+    try:
+        await page.goto(LOGIN_URL)
+        await page.wait_for_load_state("networkidle")
+        await page.locator("#scanLogin").wait_for()
+        await page.locator("#scanLogin").click()
+        print(c_info("请扫码登录..."))
+        try:
+            await page.wait_for_url("**/index/**", timeout=240000)
+            print(c_ok("登录成功"))
+        except PlaywrightTimeoutError:
+            print(c_warn("未检测到自动跳转，将继续尝试进入首页。"))
+    except Exception as exc:
+        print(c_warn(f"自动登录流程未完成: {str(exc).splitlines()[0]}"))
+        print(c_warn("请手动完成登录"))
+        input(c_hint("登录完成后按回车继续..."))
+
+    try:
+        print(c_info("正在进入非生产任务录入页面..."))
+        await open_entry_page(page)
+        print(c_ok("已进入非生产任务录入页面"))
+    except Exception as exc:
+        print(c_warn(f"自动导航失败: {str(exc).splitlines()[0]}"))
+        print(c_warn("请手动进入非生产任务录入页面"))
+        input(c_hint("准备好后按回车继续..."))
+    return page
+
+
+def preview_records(records: list[LockRecord], concurrency: int) -> bool:
+    print(c_ok(f"共 {len(records)} 条记录，并发 {concurrency}。"))
+    for record in records[:20]:
+        print(f"{record.sequence}. {record.employee_id} {record.name} {record.leave_type} {record.start_date}~{record.end_date}")
+    if len(records) > 20:
+        print(c_warn(f"仅预览前20条，剩余 {len(records) - 20} 条不逐条显示。"))
+    confirm = input(c_hint("输入 y 开始并发锁班，其他键退出: ")).strip().lower()
+    return confirm == "y"
+
+
+async def run(concurrency: int, reason_text: str, browser_path: str | None, whitelist: set[str] | None) -> str:
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch(headless=False, executable_path=browser_path or None, slow_mo=0)
         context = await browser.new_context(ignore_https_errors=True)
-        login_page = await context.new_page()
+        ready_page = None
         try:
-            await login_page.goto(LOGIN_URL)
-            await login_page.wait_for_load_state("networkidle")
-            await login_page.locator("#scanLogin").wait_for()
-            await login_page.locator("#scanLogin").click()
-            print(c_info("请扫码登录..."))
-            try:
-                await login_page.wait_for_url("**/index/**", timeout=240000)
-                print(c_ok("登录成功"))
-            except PlaywrightTimeoutError:
-                print(c_warn("未检测到自动跳转，将继续尝试进入首页。"))
-            await login_page.close()
+            ready_page = await prepare_entry_page(context)
+            print(c_ok("开始导入锁班数据"))
+            records = collect_records(whitelist)
+            if not records:
+                print(c_err("没有可处理记录"))
+                return ""
+            if not preview_records(records, concurrency):
+                return ""
+            output_file = create_result_excel("并发锁班")
+            await ready_page.close()
+            ready_page = None
 
             result_queue: asyncio.Queue = asyncio.Queue()
             writer_task = asyncio.create_task(writer(output_file, result_queue, len(records)))
@@ -1055,6 +1126,11 @@ async def run(records: list[LockRecord], concurrency: int, reason_text: str, bro
             await result_queue.join()
             await writer_task
         finally:
+            if ready_page is not None:
+                try:
+                    await ready_page.close()
+                except Exception:
+                    pass
             await context.close()
             await browser.close()
     return output_file
@@ -1064,6 +1140,16 @@ def main() -> int:
     print(c_info("通用锁班助手 - 并发实验版"))
     print(c_warn("实验版不会替换 app.py。并发越高越需要核对结果Excel里的匹配校验。"))
     browser_path = input(c_hint("浏览器路径(回车用默认): ")).strip() or None
+    if browser_path:
+        print(c_ok(f"使用指定浏览器: {browser_path}"))
+    else:
+        print(c_ok("使用默认浏览器"))
+    whitelist = None
+    use_wl = input(c_hint("是否预设白名单?(y/n): ")).strip().lower()
+    if use_wl == "y":
+        whitelist = set_whitelist()
+    else:
+        print(c_ok("不设置白名单,处理所有员工"))
     reason_text = ""
     use_reason = input(c_hint("是否填写统一备注?(y/n): ")).strip().lower()
     if use_reason == "y":
@@ -1073,21 +1159,10 @@ def main() -> int:
     raw_concurrency = input(c_hint(f"并发数(默认 {DEFAULT_CONCURRENCY}): ")).strip()
     concurrency = int(raw_concurrency) if raw_concurrency.isdigit() and int(raw_concurrency) > 0 else DEFAULT_CONCURRENCY
 
-    records = collect_records()
-    if not records:
-        print(c_err("没有可处理记录"))
-        return 1
-
-    print(c_ok(f"共 {len(records)} 条记录，并发 {concurrency}。"))
-    for record in records[:20]:
-        print(f"{record.sequence}. {record.employee_id} {record.name} {record.leave_type} {record.start_date}~{record.end_date}")
-    confirm = input(c_hint("输入 y 开始并发锁班，其他键退出: ")).strip().lower()
-    if confirm != "y":
-        return 0
-
     try:
-        output_file = asyncio.run(run(records, concurrency, reason_text, browser_path))
-        print(c_ok(f"处理完成，结果Excel: {output_file}"))
+        output_file = asyncio.run(run(concurrency, reason_text, browser_path, whitelist))
+        if output_file:
+            print(c_ok(f"处理完成，结果Excel: {output_file}"))
         return 0
     except KeyboardInterrupt:
         print(c_warn("收到中断信号，已停止。"))

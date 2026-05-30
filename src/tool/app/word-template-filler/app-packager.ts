@@ -38,8 +38,8 @@ const AppPackager = {
         }
         
         // 4. 生成说明文档
-        const readme = AppPackager.generateReadme(appName, safeName, templateFile.name);
-        zip.file('使用说明.txt', readme);
+        const instructionText = AppPackager.generateInstructions(appName, safeName, templateFile.name);
+        zip.file('使用说明.txt', instructionText);
         
         // 5. 生成配置备份（方便以后修改）
         const configBackup = AppPackager.generateConfigBackup(config);
@@ -58,7 +58,7 @@ const AppPackager = {
     },
     
     // 生成说明文档
-    generateReadme: (appName, safeName, templateFileName) => {
+    generateInstructions: (appName, safeName, templateFileName) => {
         return `${appName} - 使用说明
 ========================================
 

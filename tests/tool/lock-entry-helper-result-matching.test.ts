@@ -61,6 +61,40 @@ assert errors == [], errors
 });
 
 describe("lock entry helper superapp.py concurrent helper", () => {
+  it("filters Excel records by whitelist before concurrent processing", () => {
+    runPythonCheck(String.raw`
+import importlib.util
+import sys
+import tempfile
+from pathlib import Path
+from openpyxl import Workbook
+
+path = Path("public/tool/app/lock-entry-helper/superapp.py")
+spec = importlib.util.spec_from_file_location("superapp", path)
+module = importlib.util.module_from_spec(spec)
+sys.modules["superapp"] = module
+spec.loader.exec_module(module)
+
+workbook = Workbook()
+sheet = workbook.active
+sheet.append(["员工号", "姓名", "锁班类型", "开始日期", "结束日期"])
+sheet.append(["282119", "陈坤淋", "PARENT_LVE", "2026-06-13", "2026-06-20"])
+sheet.append(["186640", "郭岛", "RECU_LVE", "2026-06-21", "2026-06-30"])
+with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as file:
+    temp_path = file.name
+workbook.save(temp_path)
+workbook.close()
+
+records, errors = module.read_excel_records(temp_path, {"282119"})
+Path(temp_path).unlink()
+
+assert errors == [], errors
+assert len(records) == 1, records
+assert records[0].sequence == 1, records
+assert records[0].employee_id == "282119", records
+`);
+  });
+
   it("aligns portal rows that include a visible sequence cell", () => {
     runPythonCheck(String.raw`
 import importlib.util
