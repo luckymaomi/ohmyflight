@@ -30,9 +30,10 @@
                 <div class="alert alert-info mt-3 mb-0">
                     <strong>当前版本说明：</strong>
                     <ul class="mb-0 mt-2">
-                        <li><strong>app.py</strong> - 当前唯一版本：支持批量、手动、Excel 导入三种模式</li>
+                        <li><strong>app.py</strong> - 原始助手：稳定单页流程，支持批量、手动、Excel 导入三种模式</li>
+                        <li><strong>superapp.py</strong> - 并发助手：实验性并发录入，默认 20 个页面并发处理，适合大量数据提速</li>
                         <li>启动时可选填写统一备注，输入 <code>OK</code> 确认后复用于本次全部记录</li>
-                        <li>批量和 Excel 导入会新建结果 Excel，每处理一条实时写入一条结果</li>
+                        <li>并发助手会新建结果 Excel，每处理一条实时写入一条结果</li>
                         <li>遇到冲突或错误时会自动跳过；冲突原因会写入结果 Excel 的备注和冲突列</li>
                     </ul>
                 </div>
@@ -42,7 +43,22 @@
         <div class="card mb-4">
             <div class="card-body">
                 <h5 class="card-title border-bottom pb-2 mb-3">下载</h5>
-                <a href="app.py" download class="btn btn-outline-secondary">下载 app.py</a>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 h-100">
+                            <h6 class="fw-bold">原始助手 app.py</h6>
+                            <p class="text-muted small mb-3">稳定单页流程，适合少量或常规锁班录入。</p>
+                            <a href="app.py" download class="btn btn-outline-secondary">下载 app.py</a>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 h-100">
+                            <h6 class="fw-bold">并发助手 superapp.py</h6>
+                            <p class="text-muted small mb-3">并发录入版本，默认 20 个页面同时处理，适合批量提速。</p>
+                            <a href="superapp.py" download class="btn btn-outline-secondary">下载 superapp.py</a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

@@ -12,27 +12,74 @@ function runPythonCheck(script: string) {
   ).not.toThrow();
 }
 
-describe("lock entry helper result matching", () => {
+describe("lock entry helper app.py original helper", () => {
+  it("parses pasted lock records with employee, leave type and date range", () => {
+    runPythonCheck(String.raw`
+import importlib.util
+import sys
+from pathlib import Path
+
+path = Path("public/tool/app/lock-entry-helper/app.py")
+spec = importlib.util.spec_from_file_location("lock_app", path)
+module = importlib.util.module_from_spec(spec)
+sys.modules["lock_app"] = module
+spec.loader.exec_module(module)
+
+record = module.parse_single_record("282119 陈坤淋 PARENT_LVE 2026-06-13 2026-06-20")
+
+assert record["员工号"] == "282119", record
+assert record["姓名"] == "陈坤淋", record
+assert record["请假类型"] == "PARENT_LVE", record
+assert record["开始日期"] == "2026-06-13", record
+assert record["结束日期"] == "2026-06-20", record
+`);
+  });
+
+  it("filters batch records by whitelist", () => {
+    runPythonCheck(String.raw`
+import importlib.util
+import sys
+from pathlib import Path
+
+path = Path("public/tool/app/lock-entry-helper/app.py")
+spec = importlib.util.spec_from_file_location("lock_app", path)
+module = importlib.util.module_from_spec(spec)
+sys.modules["lock_app"] = module
+spec.loader.exec_module(module)
+
+text = "\n".join([
+    "282119 陈坤淋 PARENT_LVE 2026-06-13 2026-06-20",
+    "186640 郭岛 RECU_LVE 2026-06-21 2026-06-30",
+])
+records, errors = module.parse_batch_input(text, {"282119"})
+
+assert len(records) == 1, records
+assert records[0]["员工号"] == "282119", records
+assert errors == [], errors
+`);
+  });
+});
+
+describe("lock entry helper superapp.py concurrent helper", () => {
   it("aligns portal rows that include a visible sequence cell", () => {
     runPythonCheck(String.raw`
 import importlib.util
 import sys
 from pathlib import Path
 
-for name in ["app", "superapp"]:
-    path = Path("public/tool/app/lock-entry-helper") / f"{name}.py"
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module
-    spec.loader.exec_module(module)
+path = Path("public/tool/app/lock-entry-helper/superapp.py")
+spec = importlib.util.spec_from_file_location("superapp", path)
+module = importlib.util.module_from_spec(spec)
+sys.modules["superapp"] = module
+spec.loader.exec_module(module)
 
-    headers = ["锁班结果", "员工号", "姓名", "部门", "开始日期", "结束日期", "锁班天数", "锁班类型", "锁班原因"]
-    values = ["1", "待审批", "282119", "陈坤淋", "(CAN)飞行部", "2026-06-13 08:59:00", "2026-06-20 19:59:00", "8", "探亲假-探父母", "super test"]
-    aligned = module.align_table_values(headers, values)
+headers = ["锁班结果", "员工号", "姓名", "部门", "开始日期", "结束日期", "锁班天数", "锁班类型", "锁班原因"]
+values = ["1", "待审批", "282119", "陈坤淋", "(CAN)飞行部", "2026-06-13 08:59:00", "2026-06-20 19:59:00", "8", "探亲假-探父母", "super test"]
+aligned = module.align_table_values(headers, values)
 
-    assert aligned[0] == "待审批", aligned
-    assert aligned[1] == "282119", aligned
-    assert aligned[2] == "陈坤淋", aligned
+assert aligned[0] == "待审批", aligned
+assert aligned[1] == "282119", aligned
+assert aligned[2] == "陈坤淋", aligned
 `);
   });
 
@@ -42,41 +89,33 @@ import importlib.util
 import sys
 from pathlib import Path
 
-def load_module(name):
-    path = Path("public/tool/app/lock-entry-helper") / f"{name}.py"
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module
-    spec.loader.exec_module(module)
-    return module
+path = Path("public/tool/app/lock-entry-helper/superapp.py")
+spec = importlib.util.spec_from_file_location("superapp", path)
+module = importlib.util.module_from_spec(spec)
+sys.modules["superapp"] = module
+spec.loader.exec_module(module)
+record = module.LockRecord(1, "282119", "陈坤淋", "PARENT_LVE", "2026-06-13", "2026-06-20")
 
-for name in ["app", "superapp"]:
-    module = load_module(name)
-    if name == "app":
-        record = {"员工号": "282119", "姓名": "陈坤淋", "请假类型": "PARENT_LVE", "开始日期": "2026-06-13", "结束日期": "2026-06-20"}
-    else:
-        record = module.LockRecord(1, "282119", "陈坤淋", "PARENT_LVE", "2026-06-13", "2026-06-20")
+good = {
+    "锁班结果": "待审批",
+    "员工号": "282119",
+    "姓名": "陈坤淋",
+    "部门": "(CAN)飞行部",
+    "开始日期": "2026-06-13 08:59:00",
+    "结束日期": "2026-06-20 19:59:00",
+    "锁班天数": "8",
+    "锁班类型": "探亲假-探父母",
+    "锁班原因": "super test",
+    "_text": "待审批 | 282119 | 陈坤淋 | (CAN)飞行部 | 2026-06-13 08:59:00 | 2026-06-20 19:59:00 | 8 | 探亲假-探父母 | super test",
+}
+wrong_name = dict(good, 姓名="别人", _text=good["_text"].replace("陈坤淋", "别人"))
+wrong_type = dict(good, 锁班类型="健康疗养", _text=good["_text"].replace("探亲假-探父母", "健康疗养"))
+wrong_date = dict(good, 开始日期="2026-06-14 08:59:00", _text=good["_text"].replace("2026-06-13", "2026-06-14"))
 
-    good = {
-        "锁班结果": "待审批",
-        "员工号": "282119",
-        "姓名": "陈坤淋",
-        "部门": "(CAN)飞行部",
-        "开始日期": "2026-06-13 08:59:00",
-        "结束日期": "2026-06-20 19:59:00",
-        "锁班天数": "8",
-        "锁班类型": "探亲假-探父母",
-        "锁班原因": "super test",
-        "_text": "待审批 | 282119 | 陈坤淋 | (CAN)飞行部 | 2026-06-13 08:59:00 | 2026-06-20 19:59:00 | 8 | 探亲假-探父母 | super test",
-    }
-    wrong_name = dict(good, 姓名="别人", _text=good["_text"].replace("陈坤淋", "别人"))
-    wrong_type = dict(good, 锁班类型="健康疗养", _text=good["_text"].replace("探亲假-探父母", "健康疗养"))
-    wrong_date = dict(good, 开始日期="2026-06-14 08:59:00", _text=good["_text"].replace("2026-06-13", "2026-06-14"))
-
-    assert module.result_row_matches_record(good, record)
-    assert not module.result_row_matches_record(wrong_name, record)
-    assert not module.result_row_matches_record(wrong_type, record)
-    assert not module.result_row_matches_record(wrong_date, record)
+assert module.result_row_matches_record(good, record)
+assert not module.result_row_matches_record(wrong_name, record)
+assert not module.result_row_matches_record(wrong_type, record)
+assert not module.result_row_matches_record(wrong_date, record)
 `);
   });
 
@@ -162,13 +201,12 @@ expected = [
     "处理时间",
 ]
 
-for name in ["app", "superapp"]:
-    path = Path("public/tool/app/lock-entry-helper") / f"{name}.py"
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module
-    spec.loader.exec_module(module)
-    assert module.RESULT_HEADERS == expected, module.RESULT_HEADERS
+path = Path("public/tool/app/lock-entry-helper/superapp.py")
+spec = importlib.util.spec_from_file_location("superapp", path)
+module = importlib.util.module_from_spec(spec)
+sys.modules["superapp"] = module
+spec.loader.exec_module(module)
+assert module.RESULT_HEADERS == expected, module.RESULT_HEADERS
 `);
   });
 

@@ -91,7 +91,6 @@ LEAVE_CODE_PATTERN = re.compile(
     + r')(?![A-Z0-9_/])'
 )
 
-
 def parse_leave_type(text: str) -> str:
     """解析锁班类型，支持代码或中文名"""
     if not text:
@@ -216,20 +215,11 @@ def parse_whitelist(text: str) -> set:
 
 def normalize_date(date_str: str) -> str:
     """把各种日期格式统一转成YYYY-MM-DD"""
-    if isinstance(date_str, datetime):
-        return date_str.strftime('%Y-%m-%d')
-    if date_str is None:
-        return ""
-    date_str = str(date_str).strip()
     parts = re.split(r'[-/]', date_str)
     if len(parts) == 3:
         year, month, day = parts
         return f"{year}-{month.zfill(2)}-{day.zfill(2)}"
     return date_str
-
-
-def normalize_text(value) -> str:
-    return re.sub(r"\s+", " ", str(value or "")).strip()
 
 
 def parse_single_record(text: str) -> dict:
@@ -297,13 +287,15 @@ def clear_reason_field(page):
     try:
         reason_input.scroll_into_view_if_needed()
         reason_input.click()
+        page.wait_for_timeout(100)
         reason_input.fill("")
+        page.wait_for_timeout(100)
     except Exception:
         pass
 
 
 def fill_reason_field(page, reason_text):
-    """按门户校验要求填写备注。保留先清空再填写，避免沿用上一条备注。"""
+    """按门户校验要求填写备注"""
     if not reason_text:
         return
     try:
@@ -312,8 +304,12 @@ def fill_reason_field(page, reason_text):
         reason_input.wait_for(timeout=5000)
         reason_input.scroll_into_view_if_needed()
         reason_input.click()
+        page.wait_for_timeout(100)
         reason_input.fill("")
-        reason_input.fill(reason_text)
+        page.wait_for_timeout(100)
+        reason_input.click()
+        page.wait_for_timeout(100)
+        reason_input.type(reason_text, delay=120)
     except Exception as error:
         raise RuntimeError(f"填写备注失败: {error}") from error
 
@@ -324,7 +320,7 @@ def fill_form(page, emp_id, leave_type, start_date, end_date, reason_text=None):
     emp_input = page.locator("#showIdshowNonproductionTaskImportPage")
     emp_input.click()
     emp_input.fill("")
-    emp_input.type(str(emp_id), delay=0)
+    emp_input.type(str(emp_id), delay=10)
     page.evaluate("""
         const input = document.querySelector('#showIdshowNonproductionTaskImportPage');
         if (input) {
@@ -332,7 +328,7 @@ def fill_form(page, emp_id, leave_type, start_date, end_date, reason_text=None):
             input.dispatchEvent(new Event('change', { bubbles: true }));
         }
     """)
-    page.wait_for_timeout(250)
+    page.wait_for_timeout(1000)
     # 用JS直接设置下拉框值并触发事件
     page.evaluate("""(leaveType) => {
         const select = document.querySelector('#lockType');
@@ -346,7 +342,7 @@ def fill_form(page, emp_id, leave_type, start_date, end_date, reason_text=None):
             select.dispatchEvent(new Event('blur', { bubbles: true }));
         }
     }""", leave_type)
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(500)
     page.locator("#lockStartTime").fill(start_date)
     page.locator("#lockEndTime").fill(end_date)
     fill_reason_field(page, reason_text)
@@ -483,383 +479,6 @@ def print_failed_records(failed_records):
             print(c_warn(f"保存日志失败: {e}"))
 
 
-RESULT_HEADERS = [
-    "序号",
-    "员工号",
-    "姓名",
-    "锁班类型",
-    "开始日期",
-    "结束日期",
-    "处理状态",
-    "锁班结果",
-    "结果姓名",
-    "结果锁班类型",
-    "结果开始日期",
-    "结果结束日期",
-    "冲突",
-    "备注",
-    "员工号匹配",
-    "姓名匹配",
-    "日期匹配",
-    "类型匹配",
-    "处理时间",
-]
-
-
-def leave_type_name(leave_type: str) -> str:
-    """把锁班类型代码转成页面/Excel里更好读的名称。"""
-    display = LEAVE_CODE_TO_NAME.get(leave_type, leave_type or "")
-    if "-" in display:
-        return display.split("-", 1)[1]
-    return display
-
-
-def same_day(left: str, right: str) -> bool:
-    return normalize_date(str(left or "")[:10]) == normalize_date(str(right or "")[:10])
-
-
-def is_row_number(value: str) -> bool:
-    return bool(re.fullmatch(r"\d{1,4}", normalize_text(value)))
-
-
-def align_table_values(headers: list, values: list) -> list:
-    """门户结果行可能多一个可见序号列，表头没有序号时先剥掉，避免整体错位。"""
-    if headers and values and len(values) == len(headers) + 1 and is_row_number(values[0]) and headers[0] != "序号":
-        return values[1:]
-    return values
-
-
-def record_value(record: dict, key: str) -> str:
-    return normalize_text(record.get(key, ""))
-
-
-def result_row_matches_record(row: dict, record: dict) -> bool:
-    if no_related_info(row):
-        return False
-
-    row_text = row.get("_text", "")
-    employee_id = record_value(record, "员工号")
-    name = record_value(record, "姓名")
-    expected_type = leave_type_name(record_value(record, "请假类型"))
-    start_date = record_value(record, "开始日期")
-    end_date = record_value(record, "结束日期") or start_date
-
-    result_employee_id = row.get("员工号", "")
-    if result_employee_id:
-        if result_employee_id != employee_id:
-            return False
-    elif employee_id not in row_text:
-        return False
-
-    result_name = row.get("姓名", "")
-    if name:
-        if result_name:
-            if result_name != name:
-                return False
-        elif name not in row_text:
-            return False
-
-    result_type = row.get("锁班类型", "")
-    if result_type:
-        if result_type != expected_type:
-            return False
-    elif expected_type not in row_text:
-        return False
-
-    result_start = row.get("开始日期", "")
-    if result_start:
-        if not same_day(result_start, start_date):
-            return False
-    elif start_date not in row_text:
-        return False
-
-    result_end = row.get("结束日期", "")
-    if result_end:
-        if not same_day(result_end, end_date):
-            return False
-    elif end_date not in row_text:
-        return False
-
-    return True
-
-
-def first_matching_row(rows: list, record: dict) -> dict | None:
-    for row in rows:
-        if result_row_matches_record(row, record):
-            return row
-    return None
-
-
-def result_identity_problem(record: dict, row: dict) -> str:
-    result_employee_id = row.get("员工号", "")
-    employee_id = record_value(record, "员工号")
-    if result_employee_id and result_employee_id != employee_id:
-        return f"结果员工号不匹配: 输入{employee_id}, 页面{result_employee_id}"
-
-    result_name = row.get("姓名", "")
-    name = record_value(record, "姓名")
-    if result_name and name and result_name != name:
-        return f"结果姓名不匹配: 输入{name}, 页面{result_name}"
-
-    result_start = row.get("开始日期", "")
-    start_date = record_value(record, "开始日期")
-    if result_start and not same_day(result_start, start_date):
-        return f"结果开始日期不匹配: 输入{start_date}, 页面{result_start}"
-
-    result_end = row.get("结束日期", "")
-    end_date = record_value(record, "结束日期") or start_date
-    if result_end and not same_day(result_end, end_date):
-        return f"结果结束日期不匹配: 输入{end_date}, 页面{result_end}"
-
-    result_type = row.get("锁班类型", "")
-    expected_type = leave_type_name(record_value(record, "请假类型"))
-    if result_type and result_type != expected_type:
-        return f"结果锁班类型不匹配: 输入{expected_type}, 页面{result_type}"
-    return ""
-
-
-def create_result_excel(label: str) -> str:
-    """新建结果 Excel。所有模式都写新文件，不回写原输入表。"""
-    if not HAS_OPENPYXL:
-        print(c_warn("未安装openpyxl，无法生成结果Excel"))
-        return ""
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    safe_label = re.sub(r'[\\/:*?"<>|]+', "_", label or "锁班")
-    output_file = os.path.abspath(f"{safe_label}_处理结果_{timestamp}.xlsx")
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "处理结果"
-    ws.append(RESULT_HEADERS)
-    wb.save(output_file)
-    wb.close()
-    return output_file
-
-
-def table_headers(page, selector: str) -> list:
-    headers = []
-    cells = page.locator(selector)
-    for index in range(cells.count()):
-        try:
-            text = re.sub(r"\s+", " ", cells.nth(index).inner_text(timeout=1000)).strip()
-        except Exception:
-            text = ""
-        if text:
-            headers.append(text)
-    return headers
-
-
-def table_rows(page, selector: str, headers: list) -> list:
-    rows = []
-    row_locs = page.locator(selector)
-    for row_index in range(row_locs.count()):
-        row = row_locs.nth(row_index)
-        cells = row.locator("td")
-        values = []
-        for cell_index in range(cells.count()):
-            try:
-                value = normalize_text(cells.nth(cell_index).inner_text(timeout=1000))
-            except Exception:
-                value = ""
-            values.append(value)
-
-        if not values:
-            try:
-                values = [normalize_text(row.inner_text(timeout=1000))]
-            except Exception:
-                values = []
-        else:
-            values = align_table_values(headers, values)
-
-        row_map = {}
-        for index, value in enumerate(values):
-            key = headers[index] if index < len(headers) else f"列{index + 1}"
-            row_map[key] = value
-        row_map["_text"] = " | ".join(value for value in values if value)
-        rows.append(row_map)
-    return rows
-
-
-def no_related_info(row: dict) -> bool:
-    return "没有相关信息" in row.get("_text", "")
-
-
-def read_submit_result(page, record: dict) -> dict:
-    """读取结果页。冲突表有真实记录时，以冲突表为准。"""
-    result_headers = table_headers(page, "#showNonproductionTaskImportResultPage1 th")
-    conflict_headers = table_headers(page, "#showNonproductionTaskImportResultPage2 th")
-    result_rows = table_rows(page, "#showNonproductionTaskImportResultPage1 tbody.list tr", result_headers)
-    conflict_rows = table_rows(page, "#showNonproductionTaskImportResultPage2 tbody.list tr", conflict_headers)
-
-    real_results = [row for row in result_rows if not no_related_info(row)]
-    real_conflicts = [row for row in conflict_rows if not no_related_info(row)]
-    matching_result = first_matching_row(real_results, record)
-    matching_conflict = first_matching_row(real_conflicts, record)
-
-    if real_conflicts:
-        if not matching_conflict:
-            first_text = real_conflicts[0].get("_text", "") if real_conflicts else ""
-            return {
-                "status": "异常",
-                "row": {},
-                "remark": f"冲突结果未匹配当前人员: {record_value(record, '员工号')} {record_value(record, '姓名')}; 首行{first_text[:120]}",
-            }
-        conflict_text = matching_conflict.get("冲突") or matching_conflict.get("_text", "")
-        return {"status": "冲突", "row": matching_conflict, "remark": conflict_text, "conflict": conflict_text}
-    if real_results and any(no_related_info(row) for row in conflict_rows):
-        if not matching_result:
-            first_text = real_results[0].get("_text", "") if real_results else ""
-            return {
-                "status": "异常",
-                "row": {},
-                "remark": f"提交结果未匹配当前人员: {record_value(record, '员工号')} {record_value(record, '姓名')}; 首行{first_text[:120]}",
-            }
-        return {"status": "成功", "row": matching_result, "remark": ""}
-    if not real_results:
-        return {"status": "失败", "row": {}, "remark": "查询结果为空"}
-
-    if not matching_result:
-        first_text = real_results[0].get("_text", "") if real_results else ""
-        return {
-            "status": "异常",
-            "row": {},
-            "remark": f"提交结果未匹配当前人员: {record_value(record, '员工号')} {record_value(record, '姓名')}; 首行{first_text[:120]}",
-        }
-    conflict_text = "; ".join(row.get("_text", "") for row in conflict_rows if row.get("_text"))
-    return {"status": "失败", "row": matching_result, "remark": conflict_text or "未知结果"}
-
-
-def wait_for_submit_result(page, record: dict, timeout_ms: int = 90000) -> dict:
-    deadline = datetime.now().timestamp() + timeout_ms / 1000
-    last_result = {"status": "失败", "row": {}, "remark": "等待结果超时"}
-
-    while datetime.now().timestamp() < deadline:
-        result = read_submit_result(page, record)
-        last_result = result
-        if result["status"] != "异常" or result.get("row"):
-            return result
-        page.wait_for_timeout(500)
-
-    return last_result
-
-
-def read_info_dialog(page) -> str:
-    dialog = page.locator(".ui-dialog:visible").filter(has=page.locator("#info-dialog")).first
-    try:
-        dialog.wait_for(timeout=1200)
-    except Exception:
-        return ""
-
-    try:
-        content = normalize_text(dialog.locator("#info-dialog").inner_text(timeout=1000))
-        full_text = normalize_text(dialog.inner_text(timeout=1000))
-        text = content or full_text
-    except Exception:
-        text = "提示信息弹窗"
-
-    for locator in [
-        dialog.locator(".ui-dialog-buttonpane button, .ui-dialog-titlebar-close").first,
-        dialog.get_by_role("button", name=re.compile("确定|关闭|OK|Ok|ok")),
-    ]:
-        try:
-            if locator.count() > 0:
-                locator.click(timeout=1000)
-                break
-        except Exception:
-            pass
-    return text or "提示信息弹窗"
-
-
-def has_result_page(page) -> bool:
-    try:
-        return page.get_by_role("button", name="继续录入").count() > 0
-    except Exception:
-        return False
-
-
-def wait_for_result_or_dialog(page, record: dict, timeout_ms: int = 90000) -> dict:
-    deadline = datetime.now().timestamp() + timeout_ms / 1000
-    while datetime.now().timestamp() < deadline:
-        dialog_text = read_info_dialog(page)
-        if dialog_text:
-            return {"status": "异常", "row": {}, "remark": dialog_text}
-        if has_result_page(page):
-            return wait_for_submit_result(page, record)
-        page.wait_for_timeout(300)
-    return {"status": "失败", "row": {}, "remark": "等待结果页或提示信息弹窗超时"}
-
-
-def submit_and_read_result(page, record: dict) -> dict:
-    """点击下一步并读取结果；成功时自动回到录入页。"""
-    page.get_by_role("button", name="下一步").wait_for()
-    page.get_by_role("button", name="下一步").click()
-    result = wait_for_result_or_dialog(page, record)
-    identity_error = result_identity_problem(record, result.get("row") or {})
-    if identity_error:
-        result = {"status": "异常", "row": {}, "remark": identity_error}
-
-    if result["status"] == "成功":
-        page.get_by_role("button", name="继续录入").click()
-        page.locator("#showIdshowNonproductionTaskImportPage").wait_for()
-
-    return result
-
-
-def write_result_excel(output_file: str, sequence: int, record: dict, result: dict, error_message: str = "") -> None:
-    """实时写入单条处理结果。成功备注为空，失败/冲突备注写原因。"""
-    if not output_file or not HAS_OPENPYXL:
-        return
-
-    row = result.get("row") or {}
-    status = result.get("status", "失败")
-    conflict = result.get("conflict") or row.get("冲突", "")
-    remark = "" if status == "成功" else (error_message or result.get("remark") or conflict or status)
-    result_employee_id = row.get("员工号", "")
-    result_name = row.get("姓名", "")
-    result_start = row.get("开始日期", "")
-    result_end = row.get("结束日期", "")
-    result_type = row.get("锁班类型", "")
-    expected_type_name = leave_type_name(record.get("请假类型", ""))
-
-    employee_match = (not result_employee_id) or result_employee_id == record.get("员工号", "")
-    name_match = (not result_name) or (not record.get("姓名", "")) or result_name == record.get("姓名", "")
-    date_match = (not result_start or same_day(result_start, record.get("开始日期", ""))) and (
-        not result_end or same_day(result_end, record.get("结束日期", "") or record.get("开始日期", ""))
-    )
-    type_match = (not result_type) or result_type == expected_type_name
-
-    wb = load_workbook(output_file)
-    ws = wb.active
-    ws.append([
-        sequence,
-        record.get("员工号", ""),
-        record.get("姓名", ""),
-        expected_type_name,
-        record.get("开始日期", ""),
-        record.get("结束日期", ""),
-        status,
-        row.get("锁班结果") or row.get("锁班状态") or status,
-        result_name,
-        result_type,
-        result_start,
-        result_end,
-        conflict,
-        remark,
-        "是" if employee_match else "否",
-        "是" if name_match else "否",
-        "是" if date_match else "否",
-        "是" if type_match else "否",
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-    ])
-    wb.save(output_file)
-    wb.close()
-
-
-def error_result(message: str) -> dict:
-    return {"status": "失败", "row": {}, "remark": message}
-
-
 def batch_mode(page, whitelist, common_reason):
     """批量模式"""
     failed_records = []  # 记录失败的条目
@@ -885,9 +504,6 @@ def batch_mode(page, whitelist, common_reason):
             return
         if confirm != 'y':
             continue
-        output_file = create_result_excel("批量锁班")
-        if output_file:
-            print(c_ok(f"结果Excel已创建: {output_file}"))
         i = 0
         while i < len(records):
             record = records[i]
@@ -895,27 +511,23 @@ def batch_mode(page, whitelist, common_reason):
             try:
                 fill_form(page, record["员工号"], record["请假类型"], record["开始日期"], record["结束日期"], common_reason)
                 print(c_ok("填表完成,提交中..."))
-                result = submit_and_read_result(page, record)
-                write_result_excel(output_file, i + 1, record, result)
-                if result["status"] == "成功":
+                success, conflict_info = submit_and_check(page)
+                if success:
                     print(c_ok("提交成功"))
                     i += 1
                 else:
                     beep_error()
-                    print(c_err(f"{result['status']}!"))
-                    print(c_warn(result.get("remark") or "未知结果"))
-                    failed_records.append((record, result.get("remark") or result["status"]))
+                    print(c_err("有冲突!"))
+                    print(c_warn(conflict_info if conflict_info else "未知冲突"))
+                    failed_records.append((record, "有冲突"))
                     go_back_to_form(page)
                     i += 1
             except Exception as e:
                 beep_error()
                 print(c_err(f"失败: {e}"))
-                write_result_excel(output_file, i + 1, record, error_result(str(e)), str(e))
                 failed_records.append((record, str(e)))
                 i += 1
         print(c_ok("批量处理完成"))
-        if output_file:
-            print(c_ok(f"结果Excel: {output_file}"))
         print_failed_records(failed_records)
         return
 
@@ -947,13 +559,13 @@ def manual_mode(page, whitelist, common_reason):
             try:
                 fill_form(page, record["员工号"], record["请假类型"], record["开始日期"], record["结束日期"], common_reason)
                 print(c_ok("填表完成,提交中..."))
-                result = submit_and_read_result(page, record)
-                if result["status"] == "成功":
+                success, conflict_info = submit_and_check(page)
+                if success:
                     print(c_ok("提交成功"))
                     break
                 else:
-                    print(c_err(f"{result['status']}!"))
-                    print(c_warn(result.get("remark") or "未知结果"))
+                    print(c_err("有冲突!"))
+                    print(c_warn(conflict_info if conflict_info else "未知冲突"))
                     go_back_to_form(page)
                     break
             except Exception as e:
@@ -1002,9 +614,6 @@ def excel_mode(page, whitelist, common_reason):
             return
         if confirm != 'y':
             continue
-        output_file = create_result_excel("Excel锁班")
-        if output_file:
-            print(c_ok(f"结果Excel已创建: {output_file}"))
         
         i = 0
         while i < len(records):
@@ -1013,27 +622,23 @@ def excel_mode(page, whitelist, common_reason):
             try:
                 fill_form(page, record["员工号"], record["请假类型"], record["开始日期"], record["结束日期"], common_reason)
                 print(c_ok("填表完成,提交中..."))
-                result = submit_and_read_result(page, record)
-                write_result_excel(output_file, i + 1, record, result)
-                if result["status"] == "成功":
+                success, conflict_info = submit_and_check(page)
+                if success:
                     print(c_ok("提交成功"))
                     i += 1
                 else:
                     beep_error()
-                    print(c_err(f"{result['status']}!"))
-                    print(c_warn(result.get("remark") or "未知结果"))
-                    failed_records.append((record, result.get("remark") or result["status"]))
+                    print(c_err("有冲突!"))
+                    print(c_warn(conflict_info if conflict_info else "未知冲突"))
+                    failed_records.append((record, "有冲突"))
                     go_back_to_form(page)
                     i += 1
             except Exception as e:
                 beep_error()
                 print(c_err(f"失败: {e}"))
-                write_result_excel(output_file, i + 1, record, error_result(str(e)), str(e))
                 failed_records.append((record, str(e)))
                 i += 1
         print(c_ok("Excel导入完成"))
-        if output_file:
-            print(c_ok(f"结果Excel: {output_file}"))
         print_failed_records(failed_records)
         return
 
