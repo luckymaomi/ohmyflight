@@ -58,6 +58,54 @@ assert records[0]["员工号"] == "282119", records
 assert errors == [], errors
 `);
   });
+
+  it("matches portal results by current record and writes result Excel", () => {
+    runPythonCheck(String.raw`
+import importlib.util
+import sys
+from pathlib import Path
+from openpyxl import load_workbook
+
+path = Path("public/tool/app/lock-entry-helper/app.py")
+spec = importlib.util.spec_from_file_location("lock_app", path)
+module = importlib.util.module_from_spec(spec)
+sys.modules["lock_app"] = module
+spec.loader.exec_module(module)
+
+record = module.parse_single_record("282119 陈坤淋 PARENT_LVE 2026-06-13 2026-06-20")
+good = {
+    "锁班结果": "待审批",
+    "员工号": "282119",
+    "姓名": "陈坤淋",
+    "开始日期": "2026-06-13 08:59:00",
+    "结束日期": "2026-06-20 19:59:00",
+    "锁班类型": "探亲假-探父母",
+    "_text": "待审批 | 282119 | 陈坤淋 | 2026-06-13 08:59:00 | 2026-06-20 19:59:00 | 探亲假-探父母",
+}
+wrong = dict(good, 员工号="186640", 姓名="郭岛")
+
+assert module.result_row_matches_record(good, record)
+assert not module.result_row_matches_record(wrong, record)
+
+output_file = module.create_result_excel("app_test")
+try:
+    module.append_result_excel(output_file, 1, record, "冲突", good, "已有锁班")
+    workbook = load_workbook(output_file)
+    sheet = workbook.active
+    headers = [cell.value for cell in sheet[1]]
+    row = [cell.value for cell in sheet[2]]
+    workbook.close()
+finally:
+    Path(output_file).unlink(missing_ok=True)
+
+assert headers == module.RESULT_HEADERS, headers
+assert row[0] == 1, row
+assert row[1] == "282119", row
+assert row[6] == "冲突", row
+assert row[12] == "已有锁班", row
+assert row[14:18] == ["是", "是", "是", "是"], row
+`);
+  });
 });
 
 describe("lock entry helper superapp.py concurrent helper", () => {

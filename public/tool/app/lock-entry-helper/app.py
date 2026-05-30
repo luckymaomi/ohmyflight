@@ -91,6 +91,28 @@ LEAVE_CODE_PATTERN = re.compile(
     + r')(?![A-Z0-9_/])'
 )
 
+RESULT_HEADERS = [
+    "序号",
+    "员工号",
+    "姓名",
+    "锁班类型",
+    "开始日期",
+    "结束日期",
+    "处理状态",
+    "锁班结果",
+    "结果姓名",
+    "结果锁班类型",
+    "结果开始日期",
+    "结果结束日期",
+    "冲突",
+    "备注",
+    "员工号匹配",
+    "姓名匹配",
+    "日期匹配",
+    "类型匹配",
+    "处理时间",
+]
+
 def parse_leave_type(text: str) -> str:
     """解析锁班类型，支持代码或中文名"""
     if not text:
@@ -213,13 +235,31 @@ def parse_whitelist(text: str) -> set:
     return set(text[i:i+6] for i in range(0, len(text), 6) if len(text[i:i+6]) == 6)
 
 
-def normalize_date(date_str: str) -> str:
+def normalize_text(value) -> str:
+    return re.sub(r'\s+', ' ', str(value or '')).strip()
+
+
+def normalize_date(date_str) -> str:
     """把各种日期格式统一转成YYYY-MM-DD"""
+    if date_str is None:
+        return ""
+    if isinstance(date_str, datetime):
+        return date_str.strftime('%Y-%m-%d')
+    date_str = str(date_str).strip()
     parts = re.split(r'[-/]', date_str)
     if len(parts) == 3:
         year, month, day = parts
         return f"{year}-{month.zfill(2)}-{day.zfill(2)}"
     return date_str
+
+
+def leave_type_name(leave_type: str) -> str:
+    display = LEAVE_CODE_TO_NAME.get(leave_type, leave_type or "")
+    return display.split('-', 1)[1] if '-' in display else display
+
+
+def same_day(left, right) -> bool:
+    return normalize_date(str(left or '')[:10]) == normalize_date(str(right or '')[:10])
 
 
 def parse_single_record(text: str) -> dict:
@@ -346,6 +386,159 @@ def fill_form(page, emp_id, leave_type, start_date, end_date, reason_text=None):
     page.locator("#lockStartTime").fill(start_date)
     page.locator("#lockEndTime").fill(end_date)
     fill_reason_field(page, reason_text)
+
+
+def is_row_number(value: str) -> bool:
+    return bool(re.fullmatch(r'\d{1,4}', normalize_text(value)))
+
+
+def align_table_values(headers: list, values: list) -> list:
+    if headers and values and len(values) == len(headers) + 1 and is_row_number(values[0]) and headers[0] != "序号":
+        return values[1:]
+    return values
+
+
+def table_headers(page, selector: str) -> list:
+    cells = page.locator(selector)
+    headers = []
+    for index in range(cells.count()):
+        try:
+            text = normalize_text(cells.nth(index).inner_text(timeout=1000))
+        except Exception:
+            text = ""
+        if text:
+            headers.append(text)
+    return headers
+
+
+def table_rows(page, selector: str, headers: list) -> list:
+    row_locs = page.locator(selector)
+    rows = []
+    for row_index in range(row_locs.count()):
+        row = row_locs.nth(row_index)
+        cell_locs = row.locator("td")
+        values = []
+        for cell_index in range(cell_locs.count()):
+            try:
+                values.append(normalize_text(cell_locs.nth(cell_index).inner_text(timeout=1000)))
+            except Exception:
+                values.append("")
+        if not values:
+            try:
+                values = [normalize_text(row.inner_text(timeout=1000))]
+            except Exception:
+                values = []
+        else:
+            values = align_table_values(headers, values)
+        row_map = {}
+        for index, value in enumerate(values):
+            key = headers[index] if index < len(headers) else f"列{index + 1}"
+            row_map[key] = value
+        row_map["_text"] = " | ".join(value for value in values if value)
+        rows.append(row_map)
+    return rows
+
+
+def no_related_info(row: dict) -> bool:
+    return "没有相关信息" in row.get("_text", "")
+
+
+def result_row_matches_record(row: dict, record: dict) -> bool:
+    if no_related_info(row):
+        return False
+
+    row_text = row.get("_text", "")
+    employee_id = record.get("员工号", "")
+    name = record.get("姓名", "")
+    start_date = record.get("开始日期", "")
+    end_date = record.get("结束日期", "")
+    expected_type = leave_type_name(record.get("请假类型", ""))
+
+    result_employee_id = row.get("员工号", "")
+    result_name = row.get("姓名", "")
+    result_start = row.get("开始日期", "")
+    result_end = row.get("结束日期", "")
+    result_type = row.get("锁班类型", "")
+
+    if result_employee_id:
+        if result_employee_id != employee_id:
+            return False
+    elif employee_id not in row_text:
+        return False
+
+    if name:
+        if result_name:
+            if result_name != name:
+                return False
+        elif name not in row_text:
+            return False
+
+    if result_type and result_type != expected_type:
+        return False
+    if not result_type and expected_type not in row_text:
+        return False
+
+    if result_start:
+        if not same_day(result_start, start_date):
+            return False
+    elif start_date not in row_text:
+        return False
+
+    if result_end:
+        if not same_day(result_end, end_date):
+            return False
+    elif end_date not in row_text:
+        return False
+
+    return True
+
+
+def first_matching_row(rows: list, record: dict) -> dict | None:
+    for row in rows:
+        if result_row_matches_record(row, record):
+            return row
+    return None
+
+
+def read_submit_result(page, record: dict) -> tuple:
+    result_headers = table_headers(page, "#showNonproductionTaskImportResultPage1 th")
+    conflict_headers = table_headers(page, "#showNonproductionTaskImportResultPage2 th")
+    result_rows = table_rows(page, "#showNonproductionTaskImportResultPage1 tbody.list tr", result_headers)
+    conflict_rows = table_rows(page, "#showNonproductionTaskImportResultPage2 tbody.list tr", conflict_headers)
+    real_results = [row for row in result_rows if not no_related_info(row)]
+    real_conflicts = [row for row in conflict_rows if not no_related_info(row)]
+    matching_result = first_matching_row(real_results, record)
+    matching_conflict = first_matching_row(real_conflicts, record)
+
+    if real_conflicts:
+        if not matching_conflict:
+            first_text = real_conflicts[0].get("_text", "") if real_conflicts else ""
+            return "异常", {}, f"冲突结果未匹配当前人员: {record.get('员工号', '')} {record.get('姓名', '')}; 首行{first_text[:120]}"
+        conflict = matching_conflict.get("冲突") or matching_conflict.get("_text", "")
+        return "冲突", matching_conflict, conflict
+    if real_results and any(no_related_info(row) for row in conflict_rows):
+        if not matching_result:
+            first_text = real_results[0].get("_text", "") if real_results else ""
+            return "异常", {}, f"提交结果未匹配当前人员: {record.get('员工号', '')} {record.get('姓名', '')}; 首行{first_text[:120]}"
+        return "成功", matching_result, ""
+    if not real_results:
+        return "失败", {}, "查询结果为空"
+    if not matching_result:
+        first_text = real_results[0].get("_text", "") if real_results else ""
+        return "异常", {}, f"提交结果未匹配当前人员: {record.get('员工号', '')} {record.get('姓名', '')}; 首行{first_text[:120]}"
+    note = "; ".join(row.get("_text", "") for row in conflict_rows if row.get("_text")) or "未知结果"
+    return "失败", matching_result, note
+
+
+def submit_and_read_result(page, record: dict) -> tuple:
+    page.get_by_role("button", name="下一步").wait_for()
+    page.get_by_role("button", name="下一步").click()
+    page.get_by_role("button", name="继续录入").wait_for()
+    status, row, remark = read_submit_result(page, record)
+    if status == "成功":
+        page.get_by_role("button", name="继续录入").click()
+        page.locator("#showIdshowNonproductionTaskImportPage").wait_for()
+    return status, row, remark
 
 
 def submit_and_check(page):
@@ -479,6 +672,69 @@ def print_failed_records(failed_records):
             print(c_warn(f"保存日志失败: {e}"))
 
 
+def create_result_excel(label: str) -> str | None:
+    if not HAS_OPENPYXL:
+        print(c_warn("未安装openpyxl，跳过结果Excel记录"))
+        return None
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_label = re.sub(r'[\\/:*?"<>|]+', "_", label or "lock")
+    output_file = os.path.abspath(f"{safe_label}_结果_{timestamp}.xlsx")
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "results"
+    ws.append(RESULT_HEADERS)
+    wb.save(output_file)
+    wb.close()
+    print(c_ok(f"结果Excel已创建: {output_file}"))
+    return output_file
+
+
+def append_result_excel(output_file: str | None, sequence: int, record: dict, status: str, row: dict = None, remark: str = ""):
+    if not output_file:
+        return
+    row = row or {}
+    result_employee_id = row.get("员工号", "")
+    result_name = row.get("姓名", "")
+    result_start = row.get("开始日期", "")
+    result_end = row.get("结束日期", "")
+    result_type = row.get("锁班类型", "")
+    expected_type_name = leave_type_name(record.get("请假类型", ""))
+    employee_match = (not result_employee_id) or result_employee_id == record.get("员工号", "")
+    name_match = (not result_name) or (not record.get("姓名")) or result_name == record.get("姓名", "")
+    date_match = (not result_start or same_day(result_start, record.get("开始日期", ""))) and (
+        not result_end or same_day(result_end, record.get("结束日期", ""))
+    )
+    type_match = (not result_type) or result_type == expected_type_name
+    conflict = remark if status == "冲突" else ""
+    note = "" if status == "成功" else remark
+
+    wb = load_workbook(output_file)
+    ws = wb.active
+    ws.append([
+        sequence,
+        record.get("员工号", ""),
+        record.get("姓名", ""),
+        expected_type_name,
+        record.get("开始日期", ""),
+        record.get("结束日期", ""),
+        status,
+        row.get("锁班结果") or row.get("锁班状态") or status,
+        result_name,
+        result_type,
+        result_start,
+        result_end,
+        conflict,
+        note,
+        "是" if employee_match else "否",
+        "是" if name_match else "否",
+        "是" if date_match else "否",
+        "是" if type_match else "否",
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    ])
+    wb.save(output_file)
+    wb.close()
+
+
 def batch_mode(page, whitelist, common_reason):
     """批量模式"""
     failed_records = []  # 记录失败的条目
@@ -504,6 +760,7 @@ def batch_mode(page, whitelist, common_reason):
             return
         if confirm != 'y':
             continue
+        result_file = create_result_excel("原始锁班批量")
         i = 0
         while i < len(records):
             record = records[i]
@@ -511,29 +768,35 @@ def batch_mode(page, whitelist, common_reason):
             try:
                 fill_form(page, record["员工号"], record["请假类型"], record["开始日期"], record["结束日期"], common_reason)
                 print(c_ok("填表完成,提交中..."))
-                success, conflict_info = submit_and_check(page)
-                if success:
+                status, result_row, remark = submit_and_read_result(page, record)
+                append_result_excel(result_file, i + 1, record, status, result_row, remark)
+                if status == "成功":
                     print(c_ok("提交成功"))
                     i += 1
                 else:
                     beep_error()
-                    print(c_err("有冲突!"))
-                    print(c_warn(conflict_info if conflict_info else "未知冲突"))
-                    failed_records.append((record, "有冲突"))
+                    print(c_err(f"{status}!"))
+                    print(c_warn(remark if remark else "未知原因"))
+                    failed_records.append((record, remark or status))
                     go_back_to_form(page)
                     i += 1
             except Exception as e:
                 beep_error()
                 print(c_err(f"失败: {e}"))
                 failed_records.append((record, str(e)))
+                append_result_excel(result_file, i + 1, record, "异常", {}, str(e))
                 i += 1
         print(c_ok("批量处理完成"))
+        if result_file:
+            print(c_ok(f"结果Excel: {result_file}"))
         print_failed_records(failed_records)
         return
 
 
 def manual_mode(page, whitelist, common_reason):
     """手动模式"""
+    result_file = None
+    sequence = 0
     while True:
         print(f"{c_info('[手动模式]')} {whitelist_status(whitelist)} | {reason_status(common_reason)} | {c_hint('粘贴数据,b返回主菜单:')}")
         text = input().strip()
@@ -556,21 +819,26 @@ def manual_mode(page, whitelist, common_reason):
             continue
         while True:
             print(f"填写: {format_record(record)}")
+            if result_file is None:
+                result_file = create_result_excel("原始锁班手动")
+            sequence += 1
             try:
                 fill_form(page, record["员工号"], record["请假类型"], record["开始日期"], record["结束日期"], common_reason)
                 print(c_ok("填表完成,提交中..."))
-                success, conflict_info = submit_and_check(page)
-                if success:
+                status, result_row, remark = submit_and_read_result(page, record)
+                append_result_excel(result_file, sequence, record, status, result_row, remark)
+                if status == "成功":
                     print(c_ok("提交成功"))
                     break
                 else:
-                    print(c_err("有冲突!"))
-                    print(c_warn(conflict_info if conflict_info else "未知冲突"))
+                    print(c_err(f"{status}!"))
+                    print(c_warn(remark if remark else "未知原因"))
                     go_back_to_form(page)
                     break
             except Exception as e:
                 beep_error()
                 print(c_err(f"失败: {e}"))
+                append_result_excel(result_file, sequence, record, "异常", {}, str(e))
                 break
 
 
@@ -614,6 +882,7 @@ def excel_mode(page, whitelist, common_reason):
             return
         if confirm != 'y':
             continue
+        result_file = create_result_excel("原始锁班Excel")
         
         i = 0
         while i < len(records):
@@ -622,23 +891,27 @@ def excel_mode(page, whitelist, common_reason):
             try:
                 fill_form(page, record["员工号"], record["请假类型"], record["开始日期"], record["结束日期"], common_reason)
                 print(c_ok("填表完成,提交中..."))
-                success, conflict_info = submit_and_check(page)
-                if success:
+                status, result_row, remark = submit_and_read_result(page, record)
+                append_result_excel(result_file, i + 1, record, status, result_row, remark)
+                if status == "成功":
                     print(c_ok("提交成功"))
                     i += 1
                 else:
                     beep_error()
-                    print(c_err("有冲突!"))
-                    print(c_warn(conflict_info if conflict_info else "未知冲突"))
-                    failed_records.append((record, "有冲突"))
+                    print(c_err(f"{status}!"))
+                    print(c_warn(remark if remark else "未知原因"))
+                    failed_records.append((record, remark or status))
                     go_back_to_form(page)
                     i += 1
             except Exception as e:
                 beep_error()
                 print(c_err(f"失败: {e}"))
                 failed_records.append((record, str(e)))
+                append_result_excel(result_file, i + 1, record, "异常", {}, str(e))
                 i += 1
         print(c_ok("Excel导入完成"))
+        if result_file:
+            print(c_ok(f"结果Excel: {result_file}"))
         print_failed_records(failed_records)
         return
 
