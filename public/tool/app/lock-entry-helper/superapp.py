@@ -1,4 +1,4 @@
-# 通用锁班助手 - 并发实验版
+# 锁班皇帝 - 并发实验版
 
 from __future__ import annotations
 
@@ -1137,7 +1137,7 @@ async def run(concurrency: int, reason_text: str, browser_path: str | None, whit
 
 
 def main() -> int:
-    print(c_info("通用锁班助手 - 并发实验版"))
+    print(c_info("锁班皇帝 - 并发实验版"))
     print(c_warn("实验版不会替换 app.py。并发越高越需要核对结果Excel里的匹配校验。"))
     browser_path = input(c_hint("浏览器路径(回车用默认): ")).strip() or None
     if browser_path:

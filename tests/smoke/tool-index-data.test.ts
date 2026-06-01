@@ -25,7 +25,7 @@ describe("tool index data", () => {
       .map((tool) => tool.name)
       .sort();
 
-    expect(wipNames).toEqual(["人员结构统计", "培训皇帝"].sort());
+    expect(wipNames).toEqual(["培训皇帝"].sort());
   });
 
   it("ships the done status image used by the tool index", () => {

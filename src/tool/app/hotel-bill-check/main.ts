@@ -1,4 +1,4 @@
-// 酒店账单核对 - JavaScript逻辑
+// 酒店皇帝 - JavaScript逻辑
 
 // 全局变量
 let billWorkbook: WorkbookLike | null = null;
