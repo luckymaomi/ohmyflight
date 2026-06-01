@@ -13,15 +13,31 @@ const searchInput = document.getElementById("searchInput");
 const tableBody = document.getElementById("toolRows");
 const emptyState = document.getElementById("emptyState");
 const versionPanel = document.getElementById("versionPanel");
+const greetingText = document.getElementById("greetingText");
 
 if (
     searchInput instanceof HTMLInputElement
     && tableBody instanceof HTMLTableSectionElement
     && emptyState instanceof HTMLElement
 ) {
+    renderGreeting();
     renderToolRows(allToolRows);
     bindSearch(searchInput);
     renderVersionPanel();
+}
+
+function renderGreeting(): void {
+    if (!(greetingText instanceof HTMLElement)) return;
+
+    const hour = new Date().getHours();
+    const greeting = hour < 11
+        ? "早上好"
+        : hour < 14
+            ? "中午好"
+            : hour < 19
+                ? "下午好"
+                : "晚上好";
+    greetingText.textContent = `${greeting}，皇帝`;
 }
 
 function bindSearch(input: HTMLInputElement): void {
