@@ -26,6 +26,11 @@
       name: "张鹏",
       projects: ["航空安保", "TSA"],
       reason: "自动过滤清单：安保教员不用管航空安保和TSA。"
+    },
+    {
+      name: "王峰",
+      projects: ["航空安保", "TSA"],
+      reason: "自动过滤清单：安保教员不用管航空安保和TSA。"
     }
   ];
 
