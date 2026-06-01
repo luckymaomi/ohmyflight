@@ -30,6 +30,7 @@
 - 涉及页面 UI、表格、卡片、筛选区、结果区、统计摘要或用户指出页面混乱难看时，看 `.agents/skills/ui-clarity/SKILL.md`。
 - 涉及 Playwright 临时脚本、内网页面查询、Excel 批量查询时，看 `.agents/skills/playwright-probe/SKILL.md`。
 - 涉及 docx 读取、分析、修改或生成时，看 `.agents/skills/docx-report/SKILL.md`。
+- 涉及面试人员名单整理成锁班导入模板时，看 `.agents/skills/interview-lock-list/SKILL.md`。
 - 如果 skill 和 owner 当前明确需求冲突，以 owner 当前需求为准，并说明冲突点。
 
 ## Spec、测试与完成标准
