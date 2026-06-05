@@ -25,16 +25,16 @@
       return;
     }
 
-    const commonMonths = selection.getCommonRecordedMonths(state.updateSelectedProjects);
+    const commonMonths = selection.getCommonValidityUpdateMonths(state.updateSelectedProjects);
     if (!commonMonths.length) {
-      elements.updateMonthSelect.innerHTML = '<option value="">所选培训类型没有共同已录入月份</option>';
+      elements.updateMonthSelect.innerHTML = '<option value="">所选培训类型没有共同更新月份</option>';
       elements.updateMonthSelect.disabled = true;
       controls.refreshButtons();
       return;
     }
 
     elements.updateMonthSelect.innerHTML = [
-      '<option value="">请选择已录入月份</option>',
+      '<option value="">请选择更新月份</option>',
       ...commonMonths.map((monthKey) => `<option value="${monthKey}">${monthKey}</option>`)
     ].join("");
 

@@ -150,9 +150,16 @@
   function splitProjectRowsByRecordedStatus(sheetInfo) {
     const recordedRows = [];
     const pendingRows = [];
+    const validityUpdateRows = [];
 
     sheetInfo.rows.forEach((row) => {
       const recordState = TrainingRecordPolicy.classify(row, sheetInfo);
+      const validityState = TrainingRecordPolicy.classifyForValidityUpdate(row, sheetInfo);
+
+      if (validityState.markedForUpdate) {
+        validityUpdateRows.push(row);
+      }
+
       if (recordState.recorded) {
         recordedRows.push(row);
         return;
@@ -163,7 +170,7 @@
       pendingRows.push(row);
     });
 
-    return { recordedRows, pendingRows };
+    return { recordedRows, pendingRows, validityUpdateRows };
   }
 
   function collectPendingDefaults(rows, sheetInfo) {
@@ -235,11 +242,13 @@
     const sheetInfo = readSheetInfo(workbook, sheetName);
     ensureRequiredHeaders(sheetInfo, Config.REQUIRED_PROJECT_HEADERS, `${rule.canonical}项目 sheet`);
 
-    const { recordedRows, pendingRows } = splitProjectRowsByRecordedStatus(sheetInfo);
+    const { recordedRows, pendingRows, validityUpdateRows } = splitProjectRowsByRecordedStatus(sheetInfo);
     const recordedInfo = createSheetSlice(sheetInfo, recordedRows);
     const pendingInfo = createSheetSlice(sheetInfo, pendingRows);
+    const validityUpdateInfo = createSheetSlice(sheetInfo, validityUpdateRows);
     const recordedMonths = extractMonthKeys(recordedInfo);
     const pendingMonths = extractMonthKeys(pendingInfo);
+    const validityUpdateMonths = extractMonthKeys(validityUpdateInfo);
 
     return {
       canonical: rule.canonical,
@@ -250,10 +259,13 @@
       sheetInfo,
       recordedInfo,
       pendingInfo,
+      validityUpdateInfo,
       recordedRowCount: recordedRows.length,
       pendingRowCount: pendingRows.length,
+      validityUpdateRowCount: validityUpdateRows.length,
       recordedMonths,
       pendingMonths,
+      validityUpdateMonths,
       availableMonths: Utils.sortMonthKeys([...recordedMonths, ...pendingMonths]),
       pendingDefaultsByMonth: buildPendingDefaultsByMonth(pendingInfo),
       pendingGlobalDefaults: collectPendingDefaults(pendingInfo.rows, pendingInfo),

@@ -103,7 +103,7 @@
       return null;
     }
     if (!elements.updateMonthSelect.value) {
-      controls.setStatus("请先选择已录入月份。", true);
+      controls.setStatus("请先选择更新月份。", true);
       return null;
     }
     return {

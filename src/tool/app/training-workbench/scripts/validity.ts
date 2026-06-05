@@ -3,9 +3,9 @@
   const RuleEngine = window.TrainingTool.RuleEngine;
   const TrainingRecordPolicy = window.TrainingTool.TrainingRecordPolicy;
 
-  function resolvePeopleRow(recordedRow, recordedInfo, peopleInfo, peopleIndex) {
-    const name = Utils.normalizeText(Utils.getValueByHeader(recordedRow, recordedInfo, "姓名"));
-    const employeeId = Utils.normalizeText(Utils.getValueByHeader(recordedRow, recordedInfo, "员工号"));
+  function resolvePeopleRow(updateRow, updateInfo, peopleInfo, peopleIndex) {
+    const name = Utils.normalizeText(Utils.getValueByHeader(updateRow, updateInfo, "姓名"));
+    const employeeId = Utils.normalizeText(Utils.getValueByHeader(updateRow, updateInfo, "员工号"));
     const nameMatches = name ? (peopleIndex.byName.get(name) || []) : [];
 
     if (nameMatches.length === 1) {
@@ -25,7 +25,7 @@
 
     if (nameMatches.length > 1) {
       if (!employeeId) {
-        return { error: "人员信息表中存在重名，且项目 sheet 的已录入记录缺少员工号，无法唯一定位。" };
+        return { error: "人员信息表中存在重名，且项目 sheet 的更新记录缺少员工号，无法唯一定位。" };
       }
       const narrowed = nameMatches.filter((index) => {
         const targetRow = peopleInfo.rows[index];
@@ -88,21 +88,21 @@
       if (project.peopleColumnIndex < 0) {
         throw new Error(`人员信息表中缺少对应培训类型列：${projectName}`);
       }
-      if (!project.recordedInfo || !project.recordedInfo.rows.length) {
-        throw new Error(`项目 sheet 中没有“培训信息是否录入=是”的已录入记录：${projectName}`);
+      if (!project.validityUpdateInfo || !project.validityUpdateInfo.rows.length) {
+        throw new Error(`项目 sheet 中没有“机器看=Y”的有效期更新记录：${projectName}`);
       }
       return project;
     });
   }
 
   function buildRowsToProcess(project, monthKey) {
-    return project.recordedInfo.rows
+    return project.validityUpdateInfo.rows
       .map((row) => ({
         row,
-        startDate: Utils.parseDate(Utils.getValueByHeader(row, project.recordedInfo, "培训开始日期")),
-        endDate: Utils.parseDate(Utils.getValueByHeader(row, project.recordedInfo, "培训结束日期")),
-        rowMonthKey: Utils.toMonthKey(Utils.getValueByHeader(row, project.recordedInfo, "培训开始日期"))
-          || Utils.toMonthKey(Utils.getValueByHeader(row, project.recordedInfo, "培训结束日期"))
+        startDate: Utils.parseDate(Utils.getValueByHeader(row, project.validityUpdateInfo, "培训开始日期")),
+        endDate: Utils.parseDate(Utils.getValueByHeader(row, project.validityUpdateInfo, "培训结束日期")),
+        rowMonthKey: Utils.toMonthKey(Utils.getValueByHeader(row, project.validityUpdateInfo, "培训开始日期"))
+          || Utils.toMonthKey(Utils.getValueByHeader(row, project.validityUpdateInfo, "培训结束日期"))
       }))
       .filter((item) => item.rowMonthKey === monthKey)
       .sort((left, right) => {
@@ -144,9 +144,9 @@
         matchedRecordedCount += 1;
 
         const row = item.row;
-        const employeeId = Utils.normalizeText(Utils.getValueByHeader(row, project.recordedInfo, "员工号"));
-        const name = Utils.normalizeText(Utils.getValueByHeader(row, project.recordedInfo, "姓名"));
-        const recordState = TrainingRecordPolicy.classify(row, project.recordedInfo);
+        const employeeId = Utils.normalizeText(Utils.getValueByHeader(row, project.validityUpdateInfo, "员工号"));
+        const name = Utils.normalizeText(Utils.getValueByHeader(row, project.validityUpdateInfo, "姓名"));
+        const recordState = TrainingRecordPolicy.classifyForValidityUpdate(row, project.validityUpdateInfo);
 
         if (recordState.abnormal) {
           skippedRows.push(buildSkippedRow(project.canonical, name, "记录异常", recordState.reason));
@@ -154,8 +154,8 @@
           return;
         }
 
-        if (!recordState.recorded) {
-          skippedRows.push(buildSkippedRow(project.canonical, name, "培训未录入", "培训信息是否录入不是“是”，本次跳过。"));
+        if (!recordState.markedForUpdate) {
+          skippedRows.push(buildSkippedRow(project.canonical, name, "不参与更新", "机器看不是“Y”，本次跳过。"));
           skippedCount += 1;
           return;
         }
@@ -166,7 +166,7 @@
           return;
         }
 
-        const target = resolvePeopleRow(row, project.recordedInfo, peopleInfo, analysis.peopleIndex);
+        const target = resolvePeopleRow(row, project.validityUpdateInfo, peopleInfo, analysis.peopleIndex);
         if (target.error) {
           skippedRows.push(buildSkippedRow(project.canonical, name, "匹配失败", target.error));
           skippedCount += 1;
@@ -237,10 +237,10 @@
     const selectedProjectLabel = selectedProjectNames.join("、");
 
     return {
-      summaryText: `已按 ${monthKey} 已录入记录生成预览：覆盖 ${selectedProjectNames.length} 个培训类型（${selectedProjectLabel}），命中 ${matchedRecordedCount} 条，已更新 ${updatedCount} 条，不变 ${unchangedCount} 条，有效期回退 ${rollbackCount} 条，更新无效 ${invalidCount} 条，跳过 ${skippedCount} 条。`,
+      summaryText: `已按 ${monthKey} 机器看Y记录生成预览：覆盖 ${selectedProjectNames.length} 个培训类型（${selectedProjectLabel}），命中 ${matchedRecordedCount} 条，已更新 ${updatedCount} 条，不变 ${unchangedCount} 条，有效期回退 ${rollbackCount} 条，更新无效 ${invalidCount} 条，跳过 ${skippedCount} 条。`,
       statsCards: [
         { label: "培训类型", value: selectedProjectNames.length },
-        { label: "命中已录入记录", value: matchedRecordedCount },
+        { label: "命中机器看Y", value: matchedRecordedCount },
         { label: "已更新", value: updatedCount },
         { label: "不变", value: unchangedCount },
         { label: "有效期回退", value: rollbackCount },

@@ -14,11 +14,14 @@ interface TrainingToolProjectAnalysis {
   peopleColumnIndex: number;
   sheetInfo?: any;
   recordedInfo?: TrainingToolRecordedInfo | null;
+  validityUpdateInfo?: TrainingToolRecordedInfo | null;
   recordedMonths: string[];
+  validityUpdateMonths: string[];
   pendingMonths: string[];
   availableMonths: string[];
   pendingRowCount: number;
   recordedRowCount: number;
+  validityUpdateRowCount: number;
   peopleHeader?: string;
   sheetName?: string;
 }

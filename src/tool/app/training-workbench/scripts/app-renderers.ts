@@ -201,6 +201,7 @@
     elements.projectCards.innerHTML = state.analysis.projects.map((project) => {
       const recordedMonths = project.recordedMonths.length ? project.recordedMonths.join("、") : "无";
       const pendingMonths = project.pendingMonths.length ? project.pendingMonths.join("、") : "无";
+      const validityUpdateMonths = project.validityUpdateMonths.length ? project.validityUpdateMonths.join("、") : "无";
       const monthBadges = project.availableMonths.length
         ? project.availableMonths.map((month) => `<span>${Utils.escapeHtml(month)}</span>`).join("")
         : "<span>暂无月份</span>";
@@ -213,8 +214,10 @@
             <li>项目 sheet：${project.sheetName ? Utils.escapeHtml(project.sheetName) : "未识别"}</li>
             <li>已录入行数：${Utils.escapeHtml(project.recordedRowCount)}</li>
             <li>未录入行数：${Utils.escapeHtml(project.pendingRowCount)}</li>
+            <li>机器看Y行数：${Utils.escapeHtml(project.validityUpdateRowCount)}</li>
             <li>已录入月份：${Utils.escapeHtml(recordedMonths)}</li>
             <li>未录入月份：${Utils.escapeHtml(pendingMonths)}</li>
+            <li>更新月份：${Utils.escapeHtml(validityUpdateMonths)}</li>
           </ul>
           <div class="month-badges">${monthBadges}</div>
         </article>

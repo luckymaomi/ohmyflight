@@ -18,7 +18,7 @@
   function getUpdateProjects() {
     if (!state.analysis) return [];
     return state.analysis.projects.filter(
-      (project) => project.peopleColumnIndex >= 0 && project.recordedInfo && project.recordedInfo.rows.length
+      (project) => project.peopleColumnIndex >= 0 && project.validityUpdateInfo && project.validityUpdateInfo.rows.length
     );
   }
 
@@ -28,7 +28,7 @@
       .filter(Boolean);
   }
 
-  function getCommonRecordedMonths(projectNames) {
+  function getCommonValidityUpdateMonths(projectNames) {
     if (!state.analysis || !projectNames.length) return [];
 
     const selectedProjects = projectNames
@@ -37,9 +37,9 @@
 
     if (!selectedProjects.length) return [];
 
-    let commonMonths = [...selectedProjects[0].recordedMonths];
+    let commonMonths = [...selectedProjects[0].validityUpdateMonths];
     for (let index = 1; index < selectedProjects.length; index += 1) {
-      const monthSet = new Set(selectedProjects[index].recordedMonths);
+      const monthSet = new Set(selectedProjects[index].validityUpdateMonths);
       commonMonths = commonMonths.filter((monthKey) => monthSet.has(monthKey));
     }
     return Utils.sortMonthKeys(commonMonths);
@@ -68,7 +68,7 @@
     normalizeSelectedProjects,
     getUpdateProjects,
     getCheckedProjectValues,
-    getCommonRecordedMonths,
+    getCommonValidityUpdateMonths,
     getWorkbenchFilters,
     getWorkbenchRange
   };

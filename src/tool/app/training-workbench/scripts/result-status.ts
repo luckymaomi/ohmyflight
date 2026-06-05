@@ -42,10 +42,12 @@
     switch (value) {
       case "日期异常":
       case "匹配失败":
+      case "记录异常":
         return "danger";
       case "有效期异常":
         return "danger";
       case "培训未录入":
+      case "不参与更新":
       case "缺少旧有效期":
         return "info";
       case "有效未到窗口":
