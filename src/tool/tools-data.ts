@@ -2,6 +2,7 @@
 // 添加新工具时，优先为每个工具创建独立目录，并在这里填写目录名 entry
 
 const tools: ToolItem[] = [
+    { name: '健康宣教海报', desc: '填写健康宣教内容，选择模板，一键导出PNG/JPG/WebP海报图片', entry: 'health-poster', status: 'done' },
     { name: '培训皇帝', desc: '一键排/核/预估培训，皇帝御用', entry: 'training-workbench', status: 'wip' },
     { name: '姓名匹配员工号', desc: '一键识别姓名，匹配对应员工号', entry: 'crew-match-name-id', status: 'done' },
     { name: '锁班皇帝', desc: 'Python脚本，一键批量录入锁班信息', entry: 'lock-entry-helper', status: 'done' },

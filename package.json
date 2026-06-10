@@ -15,5 +15,8 @@
     "typescript": "^5.9.3",
     "vitest": "^4.1.0",
     "xlsx-js-style": "^1.2.0"
+  },
+  "dependencies": {
+    "html2canvas": "^1.4.1"
   }
 }
