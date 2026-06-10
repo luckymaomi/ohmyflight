@@ -252,6 +252,28 @@ def leave_type_name(leave_type: str) -> str:
     return display.split("-", 1)[1] if "-" in display else display
 
 
+def normalize_person_name(name: str) -> str:
+    text = normalize_text(name).upper()
+    text = re.sub(r"[（(][^）)]*[）)]", "", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def names_match(expected: str, actual: str) -> bool:
+    if not expected or not actual:
+        return True
+    return normalize_person_name(expected) == normalize_person_name(actual)
+
+
+def leave_types_match(expected_code: str, actual_text: str) -> bool:
+    if not actual_text:
+        return True
+    actual_code = parse_leave_type(actual_text)
+    if actual_code:
+        return actual_code == expected_code
+    expected_name = leave_type_name(expected_code)
+    return bool(expected_name and expected_name in normalize_text(actual_text))
+
+
 def same_day(left: str, right: str) -> bool:
     return normalize_date(left[:10]) == normalize_date(right[:10])
 
@@ -273,7 +295,7 @@ def result_identity_problem(record: "LockRecord", row: dict) -> str:
         return f"结果员工号不匹配: 输入{record.employee_id}, 页面{result_employee_id}"
 
     result_name = row.get("姓名", "")
-    if result_name and record.name and result_name != record.name:
+    if result_name and record.name and not names_match(record.name, result_name):
         return f"结果姓名不匹配: 输入{record.name}, 页面{result_name}"
 
     result_start = row.get("开始日期", "")
@@ -285,7 +307,7 @@ def result_identity_problem(record: "LockRecord", row: dict) -> str:
 
     result_type = row.get("锁班类型", "")
     expected_type = leave_type_name(record.leave_type)
-    if result_type and result_type != expected_type:
+    if not leave_types_match(record.leave_type, result_type):
         return f"结果锁班类型不匹配: 输入{expected_type}, 页面{result_type}"
     return ""
 
@@ -310,12 +332,12 @@ def result_row_matches_record(row: dict, record: "LockRecord") -> bool:
 
     if record.name:
         if result_name:
-            if result_name != record.name:
+            if not names_match(record.name, result_name):
                 return False
         elif record.name not in row_text:
             return False
 
-    if result_type and result_type != expected_type:
+    if not leave_types_match(record.leave_type, result_type):
         return False
     if not result_type and expected_type not in row_text:
         return False
@@ -445,11 +467,11 @@ def append_result_excel(output_file: str, result: LockResult) -> None:
     expected_type_name = leave_type_name(record.leave_type)
 
     employee_match = (not result_employee_id) or result_employee_id == record.employee_id
-    name_match = (not result_name) or (not record.name) or result_name == record.name
+    name_match = names_match(record.name, result_name)
     date_match = (not result_start or same_day(result_start, record.start_date)) and (
         not result_end or same_day(result_end, record.end_date)
     )
-    type_match = (not result_type) or result_type == expected_type_name
+    type_match = leave_types_match(record.leave_type, result_type)
 
     wb = load_workbook(output_file)
     ws = wb.active

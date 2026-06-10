@@ -106,6 +106,38 @@ assert row[12] == "已有锁班", row
 assert row[14:18] == ["是", "是", "是", "是"], row
 `);
   });
+
+  it("accepts portal medical check display suffix and trimmed name notes", () => {
+    runPythonCheck(String.raw`
+import importlib.util
+import sys
+from pathlib import Path
+
+path = Path("public/tool/app/lock-entry-helper/app.py")
+spec = importlib.util.spec_from_file_location("lock_app", path)
+module = importlib.util.module_from_spec(spec)
+sys.modules["lock_app"] = module
+spec.loader.exec_module(module)
+
+record = module.parse_single_record("901785 张宇强(09.16转入) MEDL_CHK 2026-07-06 2026-07-06")
+row = {
+    "锁班结果": "待审批",
+    "员工号": "901785",
+    "姓名": "张宇强",
+    "部门": "(CAN)飞行部",
+    "开始日期": "2026-07-06 08:59:00",
+    "结束日期": "2026-07-06 19:59:00",
+    "锁班天数": "1",
+    "锁班类型": "体检_临床(占值勤期类别)",
+    "锁班原因": "张峻哲(295494):体检_临床(占值勤期类别)",
+    "_text": "待审批 | 901785 | 张宇强 | (CAN)飞行部 | 2026-07-06 08:59:00 | 2026-07-06 19:59:00 | 1 | 体检_临床(占值勤期类别)",
+}
+
+assert module.result_row_matches_record(row, record)
+assert module.names_match("张宇强(09.16转入)", "张宇强")
+assert module.leave_types_match("MEDL_CHK", "体检_临床(占值勤期类别)")
+`);
+  });
 });
 
 describe("lock entry helper superapp.py concurrent helper", () => {
@@ -198,6 +230,39 @@ assert module.result_row_matches_record(good, record)
 assert not module.result_row_matches_record(wrong_name, record)
 assert not module.result_row_matches_record(wrong_type, record)
 assert not module.result_row_matches_record(wrong_date, record)
+`);
+  });
+
+  it("accepts portal medical check display suffix and trimmed name notes", () => {
+    runPythonCheck(String.raw`
+import importlib.util
+import sys
+from pathlib import Path
+
+path = Path("public/tool/app/lock-entry-helper/superapp.py")
+spec = importlib.util.spec_from_file_location("superapp", path)
+module = importlib.util.module_from_spec(spec)
+sys.modules["superapp"] = module
+spec.loader.exec_module(module)
+
+record = module.LockRecord(1, "901785", "张宇强(09.16转入)", "MEDL_CHK", "2026-07-06", "2026-07-06")
+row = {
+    "锁班结果": "待审批",
+    "员工号": "901785",
+    "姓名": "张宇强",
+    "部门": "(CAN)飞行部",
+    "开始日期": "2026-07-06 08:59:00",
+    "结束日期": "2026-07-06 19:59:00",
+    "锁班天数": "1",
+    "锁班类型": "体检_临床(占值勤期类别)",
+    "锁班原因": "张峻哲(295494):体检_临床(占值勤期类别)",
+    "_text": "待审批 | 901785 | 张宇强 | (CAN)飞行部 | 2026-07-06 08:59:00 | 2026-07-06 19:59:00 | 1 | 体检_临床(占值勤期类别)",
+}
+
+assert module.result_row_matches_record(row, record)
+assert module.result_identity_problem(record, row) == ""
+assert module.names_match("张宇强(09.16转入)", "张宇强")
+assert module.leave_types_match("MEDL_CHK", "体检_临床(占值勤期类别)")
 `);
   });
 

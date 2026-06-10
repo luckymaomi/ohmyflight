@@ -258,6 +258,28 @@ def leave_type_name(leave_type: str) -> str:
     return display.split('-', 1)[1] if '-' in display else display
 
 
+def normalize_person_name(name: str) -> str:
+    text = normalize_text(name).upper()
+    text = re.sub(r'[（(][^）)]*[）)]', '', text)
+    return re.sub(r'\s+', ' ', text).strip()
+
+
+def names_match(expected: str, actual: str) -> bool:
+    if not expected or not actual:
+        return True
+    return normalize_person_name(expected) == normalize_person_name(actual)
+
+
+def leave_types_match(expected_code: str, actual_text: str) -> bool:
+    if not actual_text:
+        return True
+    actual_code = parse_leave_type(actual_text)
+    if actual_code:
+        return actual_code == expected_code
+    expected_name = leave_type_name(expected_code)
+    return bool(expected_name and expected_name in normalize_text(actual_text))
+
+
 def same_day(left, right) -> bool:
     return normalize_date(str(left or '')[:10]) == normalize_date(str(right or '')[:10])
 
@@ -452,7 +474,7 @@ def result_row_matches_record(row: dict, record: dict) -> bool:
     name = record.get("姓名", "")
     start_date = record.get("开始日期", "")
     end_date = record.get("结束日期", "")
-    expected_type = leave_type_name(record.get("请假类型", ""))
+    expected_type = record.get("请假类型", "")
 
     result_employee_id = row.get("员工号", "")
     result_name = row.get("姓名", "")
@@ -468,14 +490,14 @@ def result_row_matches_record(row: dict, record: dict) -> bool:
 
     if name:
         if result_name:
-            if result_name != name:
+            if not names_match(name, result_name):
                 return False
         elif name not in row_text:
             return False
 
-    if result_type and result_type != expected_type:
+    if not leave_types_match(expected_type, result_type):
         return False
-    if not result_type and expected_type not in row_text:
+    if not result_type and leave_type_name(expected_type) not in row_text:
         return False
 
     if result_start:
@@ -700,11 +722,11 @@ def append_result_excel(output_file: str | None, sequence: int, record: dict, st
     result_type = row.get("锁班类型", "")
     expected_type_name = leave_type_name(record.get("请假类型", ""))
     employee_match = (not result_employee_id) or result_employee_id == record.get("员工号", "")
-    name_match = (not result_name) or (not record.get("姓名")) or result_name == record.get("姓名", "")
+    name_match = names_match(record.get("姓名", ""), result_name)
     date_match = (not result_start or same_day(result_start, record.get("开始日期", ""))) and (
         not result_end or same_day(result_end, record.get("结束日期", ""))
     )
-    type_match = (not result_type) or result_type == expected_type_name
+    type_match = leave_types_match(record.get("请假类型", ""), result_type)
     conflict = remark if status == "冲突" else ""
     note = "" if status == "成功" else remark
 
