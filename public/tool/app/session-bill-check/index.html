@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>场次皇帝</title>
+    <script src="../../../theme.js"></script>
+    <link rel="stylesheet" href="../../../libs/bootstrap.min.css">
+    <style>
+        body { background: transparent; padding: 20px; }
+        .page-shell { width: min(1440px, 100%); margin: 0 auto; }
+        .page-title-card .card-body { min-height: 52px; }
+        .section-card { margin-bottom: 16px; }
+        .section-card > .card-body { padding: 18px; }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 12px;
+        }
+        .summary-card {
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 12px 14px;
+            background: #fff;
+        }
+        .summary-card span {
+            display: block;
+            color: #6c757d;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        .summary-card strong {
+            display: block;
+            color: #212529;
+            font-size: 28px;
+            line-height: 1.1;
+        }
+        .chart-panel { min-height: 280px; }
+        #statusChart {
+            height: 260px;
+        }
+        .table-shell {
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            overflow: auto;
+            max-height: 560px;
+        }
+        .result-table {
+            min-width: 1180px;
+            margin: 0;
+            font-size: 13px;
+        }
+        .result-table th,
+        .result-table td {
+            padding: 9px 10px;
+        }
+        .result-table tbody tr {
+            cursor: pointer;
+        }
+        .result-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: #f8f9fa;
+            white-space: nowrap;
+        }
+        .name-cell {
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .number-cell {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .refs-cell {
+            max-width: 230px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #495057;
+        }
+        .empty-block {
+            color: #6c757d;
+            padding: 20px;
+            text-align: center;
+        }
+        .empty-block.compact {
+            padding: 12px;
+            text-align: left;
+            border: 1px dashed #dee2e6;
+            border-radius: 6px;
+        }
+        .selected-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .selected-title strong {
+            display: block;
+            font-size: 18px;
+        }
+        .source-heading {
+            margin: 0 0 8px;
+            color: #495057;
+            font-size: 14px;
+        }
+        .source-list {
+            max-height: 320px;
+            overflow: auto;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background: #fff;
+        }
+        .source-list li {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f1f3f5;
+        }
+        .source-list li:last-child {
+            border-bottom: 0;
+        }
+        .source-entry-head {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .source-entry-name {
+            font-weight: 700;
+            color: #212529;
+        }
+        .source-entry-ref {
+            color: #6c757d;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .source-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .source-chip {
+            display: inline-flex;
+            align-items: center;
+            min-height: 24px;
+            padding: 2px 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            color: #495057;
+            background: #f8f9fa;
+            font-size: 12px;
+            line-height: 1.3;
+        }
+        .detail-panel {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #dee2e6;
+        }
+        @media (max-width: 992px) {
+            .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 576px) {
+            body { padding: 12px; }
+            .summary-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+    <link rel="stylesheet" href="../../../theme.css">
+</head>
+<body>
+<main class="page-shell">
+    <div class="card section-card page-title-card">
+        <div class="card-body text-center position-relative py-2">
+            <a href="../../../index.html" class="position-absolute start-0 top-50 translate-middle-y ms-3 text-decoration-none">返回</a>
+            <h5 class="card-title mb-0">场次皇帝</h5>
+        </div>
+    </div>
+
+    <div class="card section-card">
+        <div class="card-body">
+            <h6 class="card-title border-bottom pb-2 mb-3">上传文件</h6>
+            <div class="row g-3">
+                <div class="col-12 col-lg-6">
+                    <label class="form-label" for="sessionFile">场次表（.xls / .xlsx）</label>
+                    <input id="sessionFile" class="form-control" type="file" accept=".xls,.xlsx">
+                    <div class="form-text">读取学员、教员、检查员三列，逗号拆分姓名。</div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <label class="form-label" for="billFile">账单表（.xls / .xlsx）</label>
+                    <input id="billFile" class="form-control" type="file" accept=".xls,.xlsx">
+                    <div class="form-text">只读取全动和理论两个 sheet，按姓名表头定位。</div>
+                </div>
+            </div>
+            <div id="statusLine" class="small mt-2 text-muted"></div>
+            <div id="fileInfo" class="small text-muted mt-2"></div>
+        </div>
+    </div>
+
+    <div class="summary-grid section-card" id="summaryGrid"></div>
+
+    <div class="card section-card">
+        <div class="card-body chart-panel">
+            <h6 class="card-title border-bottom pb-2 mb-3">状态分布</h6>
+            <div id="statusChart"></div>
+        </div>
+    </div>
+
+    <div class="card section-card">
+        <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap border-bottom pb-2 mb-3">
+                <div>
+                    <h6 class="card-title mb-1">姓名人次明细</h6>
+                    <div class="text-muted small">当前显示 <span id="rowCount">0</span> 条</div>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <select id="statusFilter" class="form-select form-select-sm" style="width: 160px;">
+                        <option value="diff" selected>只看差异</option>
+                        <option value="all">全部</option>
+                        <option value="场次多">场次多</option>
+                        <option value="账单多">账单多</option>
+                        <option value="仅场次有">仅场次有</option>
+                        <option value="仅账单有">仅账单有</option>
+                        <option value="一致">一致</option>
+                    </select>
+                    <button id="exportButton" type="button" class="btn btn-outline-primary btn-sm" disabled>导出 Excel</button>
+                </div>
+            </div>
+            <div class="table-shell">
+                <table class="table table-hover align-middle result-table">
+                    <thead>
+                    <tr>
+                        <th>状态</th>
+                        <th>姓名</th>
+                        <th class="text-end">场次人次</th>
+                        <th class="text-end">账单人次</th>
+                        <th class="text-end">差异</th>
+                        <th>场次来源</th>
+                        <th>账单来源</th>
+                        <th>说明</th>
+                    </tr>
+                    </thead>
+                    <tbody id="resultBody"></tbody>
+                </table>
+            </div>
+            <div class="detail-panel">
+                <h6 class="card-title border-bottom pb-2 mb-3">来源明细</h6>
+                <div id="selectedDetail"></div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="../../../libs/bootstrap.bundle.min.js"></script>
+<script src="../../../libs/xlsx.bundle.js"></script>
+<script src="../../../libs/echarts.min.js"></script>
+<script src="logic.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
