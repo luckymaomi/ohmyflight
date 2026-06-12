@@ -72,27 +72,27 @@ describe("crm annual check", () => {
     const result = CrmAnnual.buildAnnualCheck(workbook, analysis, Scanner, 2026);
 
     expect(result.hasCrmSheet).toBe(true);
-    expect(result.requiredPeople.map((person: any) => person.name)).toEqual(["张三", "李四", "王五", "钱七", "孙八", "周九"]);
+    expect(result.requiredPeople.map((person: any) => person.name)).toEqual(["张三", "李四", "王五", "赵六", "钱七", "孙八", "周九"]);
     expect(result.attendedPeople.map((person: any) => person.name)).toEqual(["张三", "李四", "钱七", "周九"]);
-    expect(result.missingPeople.map((person: any) => person.name)).toEqual(["王五", "孙八"]);
+    expect(result.missingPeople.map((person: any) => person.name)).toEqual(["王五", "赵六", "孙八"]);
     expect(result.stats).toMatchObject({
-      required: 6,
+      required: 7,
       attended: 4,
-      missing: 2
+      missing: 3
     });
     expect(result.participationRows).toEqual([
       { name: "已参加", value: 4, kind: "attended" },
-      { name: "未参加", value: 2, kind: "missing" }
+      { name: "未参加", value: 3, kind: "missing" }
     ]);
     expect(result.monthlyRows[1]).toEqual({ label: "2月", count: 1, kind: "attended" });
     expect(result.monthlyRows[2]).toEqual({ label: "3月", count: 1, kind: "attended" });
     expect(result.monthlyRows[3]).toEqual({ label: "4月", count: 1, kind: "attended" });
     expect(result.monthlyRows[11]).toEqual({ label: "12月", count: 1, kind: "attended" });
-    expect(result.monthlyRows[12]).toEqual({ label: "未参加", count: 2, kind: "missing" });
+    expect(result.monthlyRows[12]).toEqual({ label: "未参加", count: 3, kind: "missing" });
     expect(result.roleRows).toEqual([
       { role: "教员", required: 1, attended: 1, missing: 0, attendedRate: 1 },
       { role: "机长", required: 2, attended: 1, missing: 1, attendedRate: 0.5 },
-      { role: "副驾驶", required: 2, attended: 1, missing: 1, attendedRate: 0.5 },
+      { role: "副驾驶", required: 3, attended: 1, missing: 2, attendedRate: 1 / 3 },
       { role: "未识别", required: 1, attended: 1, missing: 0, attendedRate: 1 }
     ]);
   });

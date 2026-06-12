@@ -27,10 +27,6 @@
     };
   }
 
-  function isOperatingPerson(person) {
-    return person.operation !== "否";
-  }
-
   function classifyRole(techInfo) {
     const text = Utils.normalizeText(techInfo);
     if (text.includes("飞行教员") || text.includes("教员")) return "教员";
@@ -49,7 +45,6 @@
     return analysis.peopleInfo.rows
       .map((row) => getPersonBasics(row, analysis.peopleInfo))
       .filter((person) => person.employeeId || person.name)
-      .filter(isOperatingPerson)
       .filter((person) => !instructorSet.has(person.name));
   }
 
