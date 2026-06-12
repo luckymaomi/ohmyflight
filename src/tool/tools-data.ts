@@ -7,7 +7,7 @@ const tools: ToolItem[] = [
     { name: '姓名匹配员工号', desc: '一键识别姓名，匹配对应员工号', entry: 'crew-match-name-id', status: 'done' },
     { name: '锁班皇帝', desc: 'Python脚本，一键批量录入锁班信息', entry: 'lock-entry-helper', status: 'done' },
     { name: '飞行经历/左座经历起落数按天统计', desc: 'Python脚本，一键批量飞行经历/左座经历起落数', entry: 'flight-stats-helper', status: 'done' },
-    { name: '场次皇帝', desc: '一键核对场次表与账单表姓名人次', entry: 'session-bill-check', status: 'done' },
+    { name: '珠海皇帝', desc: '一键核对场次表与账单表姓名人次', entry: 'session-bill-check', status: 'done' },
     { name: '酒店皇帝', desc: '一键对比酒店账单与入住登记表', entry: 'hotel-bill-check', status: 'done' },
     { name: '重点人员标注', desc: '一键标注审班表', entry: 'focus-crew', status: 'done' },
     { name: '航线班次统计', desc: '根据排班表，一键统计每人各航线班次', entry: 'crew-flight-stats', status: 'done' },
