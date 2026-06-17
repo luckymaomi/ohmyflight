@@ -77,6 +77,21 @@ a {
     background: #fff;
 }
 
+.text-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    background: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
 .icon-link svg {
     display: block;
     width: 20px;
