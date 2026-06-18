@@ -10,9 +10,14 @@
     <main class="page-shell">
         <section class="greeting-panel" aria-label="问候">
             <span id="greetingText">皇帝</span>
+            <button class="menu-button" type="button" id="menuButton" aria-expanded="false" aria-controls="homeToolbar" aria-label="打开菜单">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
         </section>
 
-        <section class="toolbar" aria-label="工具搜索和链接">
+        <section class="toolbar" id="homeToolbar" aria-label="工具搜索和链接">
             <label class="sr-only" for="searchInput">搜索工具</label>
             <input id="searchInput" class="search-input" type="search" placeholder="搜索工具名称或简介" autocomplete="off" spellcheck="false">
             <div class="head-links">

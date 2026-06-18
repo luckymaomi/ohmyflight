@@ -42,11 +42,39 @@ a {
 }
 
 .greeting-panel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     margin: 0 0 12px;
     color: var(--text);
     font-size: 22px;
     font-weight: 800;
     line-height: 1.3;
+}
+
+.menu-button {
+    display: none;
+    flex: 0 0 auto;
+    width: 42px;
+    height: 42px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 5px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.menu-button span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
 }
 
 .toolbar {
@@ -247,29 +275,104 @@ a {
 @media (max-width: 760px) {
     .page-shell {
         width: min(100% - 24px, 1440px);
-        padding-top: 14px;
+        padding-top: 12px;
     }
 
     .greeting-panel {
+        margin-bottom: 10px;
         font-size: 20px;
     }
 
+    .menu-button {
+        display: inline-flex;
+    }
+
     .toolbar {
+        display: none;
         align-items: stretch;
         flex-direction: column;
-        gap: 10px;
+        gap: 12px;
+        margin-bottom: 12px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: #fff;
+    }
+
+    .toolbar.is-open {
+        display: flex;
+    }
+
+    .search-input {
+        width: 100%;
+        flex: 0 0 auto;
     }
 
     .head-links {
-        justify-content: flex-start;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        justify-content: stretch;
+        gap: 8px;
+    }
+
+    .text-link,
+    .icon-link {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .text-link {
+        padding: 0 8px;
     }
 
     .tool-table {
-        min-width: 760px;
+        min-width: 0;
+        table-layout: auto;
+    }
+
+    .tool-table thead {
+        display: none;
+    }
+
+    .tool-table,
+    .tool-table tbody,
+    .tool-table tr,
+    .tool-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .tool-table tr {
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .tool-table tr:last-child {
+        border-bottom: 0;
     }
 
     .tool-table th,
     .tool-table td {
-        padding: 12px;
+        padding: 0;
+        border: 0;
+    }
+
+    .tool-table td + td {
+        margin-top: 6px;
+    }
+
+    .tool-table td:nth-child(2) {
+        color: var(--text-muted);
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .tool-table td.status-cell {
+        text-align: left;
+    }
+
+    .status-done-img {
+        width: 22px;
+        height: 22px;
     }
 }

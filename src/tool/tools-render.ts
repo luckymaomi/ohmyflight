@@ -14,6 +14,8 @@ const tableBody = document.getElementById("toolRows");
 const emptyState = document.getElementById("emptyState");
 const versionPanel = document.getElementById("versionPanel");
 const greetingText = document.getElementById("greetingText");
+const menuButton = document.getElementById("menuButton");
+const homeToolbar = document.getElementById("homeToolbar");
 
 if (
     searchInput instanceof HTMLInputElement
@@ -23,6 +25,7 @@ if (
     renderGreeting();
     renderToolRows(allToolRows);
     bindSearch(searchInput);
+    bindMenu();
     renderVersionPanel();
 }
 
@@ -47,6 +50,15 @@ function bindSearch(input: HTMLInputElement): void {
             ? allToolRows.filter((item) => `${item.name} ${item.desc}`.toLowerCase().includes(query))
             : allToolRows;
         renderToolRows(rows);
+    });
+}
+
+function bindMenu(): void {
+    if (!(menuButton instanceof HTMLButtonElement) || !(homeToolbar instanceof HTMLElement)) return;
+
+    menuButton.addEventListener("click", () => {
+        const isOpen = homeToolbar.classList.toggle("is-open");
+        menuButton.setAttribute("aria-expanded", String(isOpen));
     });
 }
 
