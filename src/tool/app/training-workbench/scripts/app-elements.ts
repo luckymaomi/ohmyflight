@@ -45,6 +45,8 @@
     crmParticipationChart: requireElement("crmParticipationChart", HTMLElement),
     crmMonthlyChart: requireElement("crmMonthlyChart", HTMLElement),
     crmRoleChart: requireElement("crmRoleChart", HTMLElement),
+    crmDuplicateSummary: requireElement("crmDuplicateSummary", HTMLElement),
+    crmDuplicateBody: requireElement("crmDuplicateBody", HTMLTableSectionElement),
     crmMissingBody: requireElement("crmMissingBody", HTMLTableSectionElement),
     exportCrmMissingButton: requireElement("exportCrmMissingButton", HTMLButtonElement),
     exportWorkbenchSelectionButton: requireElement("exportWorkbenchSelectionButton", HTMLButtonElement),

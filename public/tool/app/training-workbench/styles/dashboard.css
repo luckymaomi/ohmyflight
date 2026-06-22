@@ -200,27 +200,34 @@
     height: 280px;
 }
 
+.crm-duplicate-panel,
 .crm-missing-panel {
     min-width: 0;
     margin-top: 12px;
 }
 
+.crm-duplicate-table,
 .crm-missing-table {
     min-width: 680px;
 }
 
+.crm-duplicate-table :is(th, td),
 .crm-missing-table :is(th, td) {
     padding: 10px 12px;
     font-size: 13px;
     line-height: 1.45;
 }
 
+.crm-duplicate-table :is(th, td):nth-child(1),
+.crm-duplicate-table :is(th, td):nth-child(2),
+.crm-duplicate-table :is(th, td):nth-child(3),
 .crm-missing-table :is(th, td):nth-child(1),
 .crm-missing-table :is(th, td):nth-child(2),
 .crm-missing-table :is(th, td):nth-child(3) {
     white-space: nowrap;
 }
 
+.crm-duplicate-shell,
 .crm-missing-shell {
     max-height: 420px;
     overflow: auto;

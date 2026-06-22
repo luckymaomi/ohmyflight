@@ -112,6 +112,8 @@ interface TrainingToolAppElements {
   crmParticipationChart: HTMLElement;
   crmMonthlyChart: HTMLElement;
   crmRoleChart: HTMLElement;
+  crmDuplicateSummary: HTMLElement;
+  crmDuplicateBody: HTMLTableSectionElement;
   crmMissingBody: HTMLTableSectionElement;
   exportCrmMissingButton: HTMLButtonElement;
   exportWorkbenchSelectionButton: HTMLButtonElement;

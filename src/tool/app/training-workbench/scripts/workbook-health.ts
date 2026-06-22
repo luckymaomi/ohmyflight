@@ -164,6 +164,18 @@
     if (unrecognized && unrecognized.required) {
       addItem(result, "warning", "CRM", `有 ${unrecognized.required} 名 CRM 应参加人员技术等级未识别。`);
     }
+    if (crmResult.duplicateRows && crmResult.duplicateRows.length) {
+      addItem(
+        result,
+        "warning",
+        "CRM",
+        `${year} 年 CRM 有 ${crmResult.duplicateRows.length} 人重复安排。`,
+        crmResult.duplicateRows
+          .slice(0, 8)
+          .map((row) => `${row.name || row.employeeId}：${row.count} 次（行号：${row.rowNumbers.join("、")}）`)
+          .join("；")
+      );
+    }
   }
 
   function checkIgnoredSheets(result, workbook, analysis) {

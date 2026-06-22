@@ -301,6 +301,7 @@
       { label: "应参加", value: result.stats.required, tone: "info" },
       { label: "已参加", value: result.stats.attended, tone: "ok" },
       { label: "未参加", value: result.stats.missing, tone: "danger" },
+      { label: "重复安排", value: result.stats.duplicates || 0, tone: result.stats.duplicates ? "warning" : "muted" },
       { label: "CRM教员", value: result.stats.instructors, tone: "muted" }
     ];
 
@@ -312,6 +313,39 @@
     `).join("");
   }
 
+  function renderCrmDuplicates(result) {
+    if (!result) {
+      elements.crmDuplicateSummary.textContent = "导入总表后显示当前年份 CRM 重复安排人员。";
+      elements.crmDuplicateBody.innerHTML = `<tr><td class="empty-block" colspan="6">导入总表后显示 CRM 重复安排人员。</td></tr>`;
+      return;
+    }
+
+    if (!result.hasCrmSheet) {
+      elements.crmDuplicateSummary.textContent = "未找到精确名为 CRM 的工作表，无法检查重复安排。";
+      elements.crmDuplicateBody.innerHTML = `<tr><td class="empty-block" colspan="6">未找到精确名为 CRM 的工作表。</td></tr>`;
+      return;
+    }
+
+    const duplicates = result.duplicateRows || [];
+    if (!duplicates.length) {
+      elements.crmDuplicateSummary.textContent = `${result.year} 年 CRM 当前没有重复安排人员。`;
+      elements.crmDuplicateBody.innerHTML = `<tr><td class="empty-block" colspan="6">当前年份没有重复安排人员。</td></tr>`;
+      return;
+    }
+
+    elements.crmDuplicateSummary.textContent = `${result.year} 年 CRM 发现 ${duplicates.length} 人存在重复安排，CRM 年度只需参加一次。`;
+    elements.crmDuplicateBody.innerHTML = duplicates.map((row) => `
+      <tr>
+        <td class="person-name">${Utils.escapeHtml(row.name || "-")}</td>
+        <td>${Utils.escapeHtml(row.employeeId || "-")}</td>
+        <td>${Utils.escapeHtml(row.count)}</td>
+        <td>${Utils.escapeHtml((row.dates || []).join("、") || "-")}</td>
+        <td>${Utils.escapeHtml((row.rowNumbers || []).map((value) => `第${value}行`).join("、") || "-")}</td>
+        <td>${Utils.escapeHtml((row.instructors || []).join("、") || "-")}</td>
+      </tr>
+    `).join("");
+  }
+
   function renderCrmAnnual() {
     if (!state.workbook || !state.analysis) {
       state.crmAnnualResult = null;
@@ -319,6 +353,7 @@
       elements.crmYearInput.value = String(new Date().getFullYear());
       elements.crmSummary.textContent = "导入总表后显示 CRM 年度核对结果。";
       elements.crmMissingBody.innerHTML = `<tr><td class="empty-block" colspan="4">导入总表后显示未参加 CRM 人员。</td></tr>`;
+      renderCrmDuplicates(null);
       renderCrmStats(null);
       charts.renderCrmCharts(null);
       return;
@@ -338,6 +373,7 @@
 
     state.crmAnnualResult = result;
     renderCrmStats(result);
+    renderCrmDuplicates(result);
     charts.renderCrmCharts(result);
     elements.crmSummary.textContent = result.hasCrmSheet
       ? `${result.year} 年 CRM：应参加 ${result.stats.required} 人，已参加 ${result.stats.attended} 人，未参加 ${result.stats.missing} 人。`

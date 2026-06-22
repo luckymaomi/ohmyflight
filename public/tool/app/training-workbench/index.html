@@ -303,6 +303,33 @@
                     <div class="chart-title">按技术等级参加比例</div>
                     <div class="chart-box" id="crmRoleChart"></div>
                 </div>
+                <div class="crm-duplicate-panel">
+                    <div class="section-head">
+                        <div>
+                            <h2 class="section-title">重复安排提示</h2>
+                            <p class="section-intro" id="crmDuplicateSummary">导入总表后显示当前年份 CRM 重复安排人员。</p>
+                        </div>
+                    </div>
+                    <div class="table-shell table-responsive overflow-auto crm-duplicate-shell">
+                        <table class="table table-hover align-middle result-table crm-duplicate-table">
+                            <thead>
+                                <tr>
+                                    <th>姓名</th>
+                                    <th>员工号</th>
+                                    <th>次数</th>
+                                    <th>日期</th>
+                                    <th>行号</th>
+                                    <th>教员</th>
+                                </tr>
+                            </thead>
+                            <tbody id="crmDuplicateBody">
+                                <tr>
+                                    <td class="empty-block" colspan="6">导入总表后显示 CRM 重复安排人员。</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
                 <div class="crm-missing-panel">
                     <div class="section-head">
                         <div>

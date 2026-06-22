@@ -106,6 +106,60 @@
       .sort((left, right) => left.trainingDate - right.trainingDate)[0] || null;
   }
 
+  function findRecordsForPerson(person, records) {
+    const keys = new Set(collectPersonKeys(person));
+    return (records || [])
+      .filter((record) => collectPersonKeys(record).some((key) => keys.has(key)))
+      .sort((left, right) => {
+        const leftTime = left.trainingDate ? left.trainingDate.getTime() : 0;
+        const rightTime = right.trainingDate ? right.trainingDate.getTime() : 0;
+        return leftTime - rightTime || left.rowNumber - right.rowNumber;
+      });
+  }
+
+  function buildDuplicateRows(requiredPeople, records) {
+    const peopleByKey = new Map();
+    (requiredPeople || []).forEach((person) => {
+      collectPersonKeys(person).forEach((key) => {
+        if (!peopleByKey.has(key)) {
+          peopleByKey.set(key, person);
+        }
+      });
+    });
+
+    const recordGroups = new Map();
+    (records || []).forEach((record) => {
+      const key = record.employeeId || record.name;
+      if (!key) return;
+      const bucket = recordGroups.get(key) || [];
+      bucket.push(record);
+      recordGroups.set(key, bucket);
+    });
+
+    return [...recordGroups.entries()]
+      .map(([key, personRecords]) => {
+        const person = peopleByKey.get(key) || personRecords[0] || {};
+        const sortedRecords = [...personRecords].sort((left, right) => {
+          const leftTime = left.trainingDate ? left.trainingDate.getTime() : 0;
+          const rightTime = right.trainingDate ? right.trainingDate.getTime() : 0;
+          return leftTime - rightTime || left.rowNumber - right.rowNumber;
+        });
+        return {
+          employeeId: person.employeeId || personRecords[0].employeeId,
+          name: person.name || personRecords[0].name,
+          department: person.department || "",
+          techInfo: person.techInfo || "",
+          count: sortedRecords.length,
+          records: sortedRecords,
+          rowNumbers: sortedRecords.map((record) => record.rowNumber),
+          dates: [...new Set(sortedRecords.map((record) => record.trainingDateText).filter(Boolean))],
+          instructors: [...new Set(sortedRecords.map((record) => record.instructor).filter(Boolean))]
+        };
+      })
+      .filter((row) => row.count > 1)
+      .sort((left, right) => right.count - left.count || left.name.localeCompare(right.name, "zh-Hans-CN"));
+  }
+
   function buildMonthlyRows(records, missingCount, attendedPeople = []) {
     const monthlyCounts = Array.from({ length: 12 }, (_, index) => ({
       label: `${index + 1}月`,
@@ -171,6 +225,7 @@
     const participationRows = buildParticipationRows(attendedPeople.length, missingPeople.length);
     const monthlyRows = buildMonthlyRows(records, missingPeople.length, attendedPeople);
     const roleRows = buildRoleRows(requiredPeople, attendedPeople, missingPeople);
+    const duplicateRows = buildDuplicateRows(requiredPeople, records);
 
     return {
       year,
@@ -182,11 +237,13 @@
       participationRows,
       monthlyRows,
       roleRows,
+      duplicateRows,
       stats: {
         required: requiredPeople.length,
         attended: attendedPeople.length,
         missing: missingPeople.length,
-        instructors: buildInstructorSet().size
+        instructors: buildInstructorSet().size,
+        duplicates: duplicateRows.length
       }
     };
   }
@@ -197,6 +254,7 @@
     classifyRole,
     buildRequiredPeople,
     buildValidRecords,
+    buildDuplicateRows,
     buildParticipationRows,
     buildMonthlyRows,
     buildRoleRows,

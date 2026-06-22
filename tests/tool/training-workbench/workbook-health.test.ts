@@ -26,7 +26,8 @@ function buildWorkbook() {
   ], { cellDates: true });
   const crmSheet = XLSX.utils.aoa_to_sheet([
     ["员工号", "姓名", "培训开始日期", "培训结束日期", "培训信息是否录入", "教员", "备注"],
-    ["1001", "张三", makeDate(2026, 3, 1), makeDate(2026, 3, 1), "否", "张雨", ""]
+    ["1001", "张三", makeDate(2026, 3, 1), makeDate(2026, 3, 1), "否", "张雨", ""],
+    ["1001", "张三", makeDate(2026, 9, 1), makeDate(2026, 9, 1), "否", "田鹏", ""]
   ], { cellDates: true });
   const ignoredSheet = XLSX.utils.aoa_to_sheet([
     ["随便写"],
@@ -86,6 +87,7 @@ describe("workbook health", () => {
     expect(messages.some((message: string) => message.includes("培训日期无法解析"))).toBe(true);
     expect(messages.some((message: string) => message.includes("发现工作表“CRM2025(不参与统计)”，系统不会作为当年 CRM 核对来源。"))).toBe(true);
     expect(messages.some((message: string) => message.includes("2026 年 CRM 核对可生成。"))).toBe(true);
+    expect(messages.some((message: string) => message.includes("2026 年 CRM 有 1 人重复安排。"))).toBe(true);
     expect(messages.some((message: string) => message.includes("工作表“新雇员培训”当前不参与培训皇帝监控。"))).toBe(true);
   });
 });
