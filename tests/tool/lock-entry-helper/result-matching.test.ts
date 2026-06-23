@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
-import { resolveFromRoot } from "../helpers/paths";
+import { resolveFromRoot } from "../../helpers/paths";
 
 function runPythonCheck(script: string) {
   expect(() =>

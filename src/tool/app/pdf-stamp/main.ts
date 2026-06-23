@@ -1,6 +1,6 @@
 // PDF 加水印 - 多规则版
 const { PDFDocument } = PDFLib;
-const MM2PT = 72 / 25.4;
+const stampLogic = (window as typeof window & { PdfStampLogic: PdfStampLogicApi }).PdfStampLogic;
 
 type StampRule = {
     id: number;
@@ -29,6 +29,21 @@ type StampState = {
     activeRuleId: number | null;
     nextRuleId: number;
     previewMode: boolean;
+};
+
+type PdfStampLogicApi = {
+    MM2PT: number;
+    createRule: (id: number, imgAspect: number, overrides?: Partial<StampRule>) => StampRule;
+    parsePageRange: (rangeStr: string, maxPage: number) => number[];
+    ruleMatchesPage: (rule: Pick<StampRule, 'mode' | 'rangeStr'>, pageNum: number, maxPage: number) => boolean;
+    getRulesForPage: (rules: StampRule[], pageNum: number, maxPage: number) => StampRule[];
+    buildStampDrawOptions: (rule: StampRule, pageHeightPt: number) => {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        opacity: number;
+    };
 };
 
 function getElement<T extends HTMLElement>(id: string) {
@@ -172,18 +187,7 @@ function readAsDataUrl(file) {
 // ==================== Rules ====================
 
 function createRule(overrides?: Partial<StampRule>) {
-    const defaults: StampRule = {
-        id: state.nextRuleId++,
-        mode: 'all',       // 'all' | 'odd' | 'even' | 'range'
-        rangeStr: '',
-        xMm: 10,
-        yMm: 10,
-        wMm: 30,
-        hMm: state.imgAspect ? Math.round(30 / state.imgAspect * 10) / 10 : 30,
-        opacity: 1,
-        lockRatio: true
-    };
-    return Object.assign(defaults, overrides || {});
+    return stampLogic.createRule(state.nextRuleId++, state.imgAspect, overrides);
 }
 
 function addRule(overrides?: Partial<StampRule>) {
@@ -354,7 +358,7 @@ function updateOverlay() {
     const img = getElement<HTMLImageElement>('overlayImg');
     if (img.src !== state.imgDataUrl) img.src = state.imgDataUrl;
 
-    const s = state.renderScale * MM2PT;
+    const s = state.renderScale * stampLogic.MM2PT;
     overlay.style.left = (rule.xMm * s) + 'px';
     overlay.style.top = (rule.yMm * s) + 'px';
     overlay.style.width = (rule.wMm * s) + 'px';
@@ -395,7 +399,7 @@ function renderPreviewOverlays() {
     clearPreviewOverlays();
     if (!state.imgDataUrl) return;
     const wrap = document.getElementById('canvasWrap');
-    const s = state.renderScale * MM2PT;
+    const s = state.renderScale * stampLogic.MM2PT;
     const pageNum = state.currentPage;
 
     for (const rule of state.rules) {
@@ -473,7 +477,7 @@ function setupDrag() {
         const pos = getEventPos(e);
         const dx = pos.x - startX;
         const dy = pos.y - startY;
-        const s = state.renderScale * MM2PT;
+        const s = state.renderScale * stampLogic.MM2PT;
 
         if (mode === 'move') {
             const canvas = getElement<HTMLCanvasElement>('pdfCanvas');
@@ -517,35 +521,15 @@ function setupDrag() {
 // ==================== Rule Matching ====================
 
 function ruleMatchesPage(rule, pageNum) {
-    if (rule.mode === 'all') return true;
-    if (rule.mode === 'odd') return pageNum % 2 === 1;
-    if (rule.mode === 'even') return pageNum % 2 === 0;
-    if (rule.mode === 'range') {
-        const pages = parseRange(rule.rangeStr, state.pageCount);
-        return pages.includes(pageNum);
-    }
-    return false;
+    return stampLogic.ruleMatchesPage(rule, pageNum, state.pageCount);
 }
 
 function getRulesForPage(pageNum) {
-    return state.rules.filter(r => ruleMatchesPage(r, pageNum));
+    return stampLogic.getRulesForPage(state.rules, pageNum, state.pageCount);
 }
 
 function parseRange(str, max) {
-    if (!str || !str.trim()) return [];
-    const pages = new Set<number>();
-    for (const part of str.split(',')) {
-        const t = part.trim();
-        if (!t) continue;
-        if (t.includes('-')) {
-            const [a, b] = t.split('-').map(s => parseInt(s.trim()));
-            if (!isNaN(a) && !isNaN(b)) { for (let i = Math.max(1, a); i <= Math.min(max, b); i++) pages.add(i); }
-        } else {
-            const n = parseInt(t);
-            if (!isNaN(n) && n >= 1 && n <= max) pages.add(n);
-        }
-    }
-    return Array.from(pages).sort((a, b) => a - b);
+    return stampLogic.parsePageRange(str, max);
 }
 
 // ==================== Export ====================
@@ -574,14 +558,7 @@ async function doExport() {
             const { height } = page.getSize();
 
             for (const rule of matchingRules) {
-                const xPt = rule.xMm * MM2PT;
-                const wPt = rule.wMm * MM2PT;
-                const hPt = rule.hMm * MM2PT;
-                const yPt = height - rule.yMm * MM2PT - hPt;
-
-                page.drawImage(embeddedImg, {
-                    x: xPt, y: yPt, width: wPt, height: hPt, opacity: rule.opacity
-                });
+                page.drawImage(embeddedImg, stampLogic.buildStampDrawOptions(rule, height));
                 stampCount++;
             }
 

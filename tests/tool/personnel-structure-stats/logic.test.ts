@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import * as XLSX from "xlsx-js-style";
 
-import { loadBrowserScripts } from "../helpers/browser-context";
+import { loadBrowserScripts } from "../../helpers/browser-context";
 
 describe("personnel structure stats", () => {
   let logic: any;

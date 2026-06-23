@@ -6,7 +6,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import * as XLSX from "xlsx-js-style";
 
-import { resolveFromRoot } from "../helpers/paths";
+import { resolveFromRoot } from "../../helpers/paths";
 
 const appPath = resolveFromRoot("src", "tool", "app", "personnel-structure-stats", "app.py");
 

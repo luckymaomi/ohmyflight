@@ -1,8 +1,6 @@
 type FocusCrewWorkbook = import("xlsx-js-style").WorkBook;
-type FocusCrewWorksheet = import("xlsx-js-style").WorkSheet;
 type FocusCrewCategory = '重点关注' | '一般关注' | '预防性关注' | '三新人员（不上会）' | '长期关注';
 type FocusCrewJsonRow = unknown[];
-type FocusCrewCategoryTotals = Partial<Record<FocusCrewCategory, number>>;
 
 interface FocusSheetInfo {
     name: string;
@@ -52,13 +50,8 @@ const elements: FocusCrewElements = {
     resultStats: requireElement('resultStats', HTMLElement)
 };
 
-const CATEGORY_CONFIG: Record<FocusCrewCategory, FocusCrewCategoryConfigEntry> = {
-    '重点关注': { priority: 1, color: 'FFE5CC', label: '重点' },
-    '一般关注': { priority: 2, color: 'FFF3CD', label: '一般' },
-    '预防性关注': { priority: 3, color: '5b84f9', label: '预防' },
-    '三新人员（不上会）': { priority: 4, color: '65c53f', label: '三新' },
-    '长期关注': { priority: 5, color: 'a584ed', label: '长期' }
-};
+const logic = window.FocusCrewLogic;
+const CATEGORY_CONFIG = logic.CATEGORY_CONFIG;
 const view = window.FocusCrewView;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -140,35 +133,7 @@ function loadSchedulePreview() {
 function loadFocusPreview() {
     if (!focusWorkbook) return;
     
-    const sheetNames = focusWorkbook.SheetNames;
-    focusSheets = [];
-    
-    for (const sheetName of sheetNames) {
-        let category = null;
-        
-        for (const cat of Object.keys(CATEGORY_CONFIG)) {
-            if (sheetName.includes(cat) || cat.includes(sheetName)) {
-                category = cat;
-                break;
-            }
-        }
-        
-        if (!category) continue;
-        
-        const sheet = focusWorkbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json<FocusCrewJsonRow>(sheet, {header: 1, raw: false});
-        
-        if (json.length < 2) continue;
-        
-        const columns = (json[1] || []).map((c, i) => c ? String(c) : '列' + (i+1));
-        
-        focusSheets.push({
-            name: sheetName,
-            category: category,
-            columns: columns,
-            data: json
-        });
-    }
+    focusSheets = logic.parseFocusWorkbook(focusWorkbook);
     
     if (focusSheets.length === 0) {
         showStatus('focusStatus', '未找到有效的关注类别工作表', 'error');
@@ -196,40 +161,34 @@ function doHighlight() {
         alert('请选择审班表的姓名列');
         return;
     }
+    if (!scheduleWorkbook) {
+        alert('请先上传审班表');
+        return;
+    }
     
-    const focusData: Record<string, FocusCrewCategory[]> = {};
+    const nameColumnBySheetIndex: Record<number, number> = {};
     
     for (let sheetIdx = 0; sheetIdx < focusSheets.length; sheetIdx++) {
         const sheetInfo = focusSheets[sheetIdx];
-            const nameColSelect = document.getElementById('focusNameCol_' + sheetIdx);
-            
-            if (!(nameColSelect instanceof HTMLSelectElement)) {
-                console.warn('未找到工作表 [' + sheetInfo.name + '] 的姓名列选择器');
-                continue;
-            }
-            
-            const nameCol = Number.parseInt(nameColSelect.value, 10);
+        const nameColSelect = document.getElementById('focusNameCol_' + sheetIdx);
+        
+        if (!(nameColSelect instanceof HTMLSelectElement)) {
+            console.warn('未找到工作表 [' + sheetInfo.name + '] 的姓名列选择器');
+            continue;
+        }
+        
+        const nameCol = Number.parseInt(nameColSelect.value, 10);
         
         if (isNaN(nameCol)) {
             alert('请选择 [' + sheetInfo.name + '] 的姓名列');
             return;
         }
-        
-        for (let i = 2; i < sheetInfo.data.length; i++) {
-            const row = sheetInfo.data[i];
-            if (!row || row.length === 0) continue;
-            
-            const name = String(row[nameCol] || '').trim();
-            if (!name) continue;
-            
-            if (!focusData[name]) {
-                focusData[name] = [];
-            }
-            focusData[name].push(sheetInfo.category);
-        }
+
+        nameColumnBySheetIndex[sheetIdx] = nameCol;
     }
     
-    const focusNames = Object.keys(focusData);
+    const focusResult = logic.collectFocusData(focusSheets, nameColumnBySheetIndex);
+    const focusNames = focusResult.focusNames;
     console.log('重点人员总数:', focusNames.length);
     console.log('重点人员示例:', focusNames.slice(0, 10));
     
@@ -238,82 +197,13 @@ function doHighlight() {
         return;
     }
     
-    resultWorkbook = XLSX.utils.book_new();
-    const matchedCategories: FocusCrewCategoryTotals = {};
+    const highlightResult = logic.buildHighlightedWorkbook(scheduleWorkbook, scheduleNameCol, focusResult.focusData);
+    resultWorkbook = highlightResult.workbook;
+    Object.keys(highlightResult.sheetMatchCounts).forEach(sheetName => {
+        console.log('工作表 [' + sheetName + '] 匹配到 ' + highlightResult.sheetMatchCounts[sheetName] + ' 人');
+    });
     
-    for (const sheetName of scheduleWorkbook.SheetNames) {
-        const sourceSheet = scheduleWorkbook.Sheets[sheetName];
-        const range = XLSX.utils.decode_range(sourceSheet['!ref'] || 'A1');
-        
-        const newSheet = {};
-        let matchCount = 0;
-        
-        for (let R = 0; R <= range.e.r; R++) {
-            for (let C = 0; C <= range.e.c; C++) {
-                const addr = XLSX.utils.encode_cell({r: R, c: C});
-                const sourceCell = sourceSheet[addr];
-                
-                if (!sourceCell) {
-                    continue;
-                }
-                
-                let cellValue = sourceCell.v;
-                let cellStyle = sourceCell.s || {};
-                
-                if (R > 0 && C === scheduleNameCol) {
-                    const name = String(cellValue || '').trim();
-                    
-                    if (name && focusData[name]) {
-                        const categories = focusData[name];
-                        const uniqueCategories = Array.from(new Set(categories));
-                        
-                        uniqueCategories.sort((a, b) => {
-                            return CATEGORY_CONFIG[a].priority - CATEGORY_CONFIG[b].priority;
-                        });
-                        
-                        const topCategory = uniqueCategories[0];
-                        const color = CATEGORY_CONFIG[topCategory].color;
-                        
-                        const labels = uniqueCategories.map(cat => '[' + CATEGORY_CONFIG[cat].label + ']').join('');
-                        cellValue = name + labels;
-                        
-                        cellStyle = {
-                            fill: { patternType: "solid", fgColor: { rgb: color } },
-                            alignment: { horizontal: "left", vertical: "center" },
-                            border: {
-                                top: {style: "thin", color: {rgb: "000000"}},
-                                bottom: {style: "thin", color: {rgb: "000000"}},
-                                left: {style: "thin", color: {rgb: "000000"}},
-                                right: {style: "thin", color: {rgb: "000000"}}
-                            }
-                        };
-                        
-                        matchCount++;
-                        
-                        uniqueCategories.forEach(cat => {
-                            matchedCategories[cat] = (matchedCategories[cat] || 0) + 1;
-                        });
-                    }
-                }
-                
-                newSheet[addr] = {
-                    v: cellValue,
-                    t: sourceCell.t || 's',
-                    s: cellStyle
-                };
-            }
-        }
-        
-        newSheet['!ref'] = sourceSheet['!ref'];
-        if (sourceSheet['!cols']) newSheet['!cols'] = sourceSheet['!cols'];
-        if (sourceSheet['!rows']) newSheet['!rows'] = sourceSheet['!rows'];
-        
-        XLSX.utils.book_append_sheet(resultWorkbook, newSheet, sheetName);
-        
-        console.log('工作表 [' + sheetName + '] 匹配到 ' + matchCount + ' 人');
-    }
-    
-    view.displayStats(elements.resultStats, focusNames.length, matchedCategories, CATEGORY_CONFIG);
+    view.displayStats(elements.resultStats, focusNames.length, highlightResult.matchedCategories, CATEGORY_CONFIG);
     elements.exportBtn.disabled = false;
 }
 

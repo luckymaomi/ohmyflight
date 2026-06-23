@@ -1,6 +1,16 @@
 const ROSTER_PATH = '../../../template/机组花名册.xlsx';
 type CrewFlightWorkbook = import("xlsx-js-style").WorkBook;
 type CrewFlightStatsMap = Record<string, Record<string, number>>;
+type CrewFlightStatsLogicApi = {
+    parseRosterRows(rows: unknown[][]): string[];
+    analyzeScheduleRows(
+        sheets: Array<{ sheetName: string; rows: unknown[][] }>,
+        rosterNames: string[]
+    ): { statsResult: CrewFlightStatsMap; routes: string[]; unmatchedCells: string[] };
+    getPeopleInRosterOrder(statsResult: CrewFlightStatsMap | null, rosterNames: string[]): string[];
+    buildCrewFlightExportRows(statsResult: CrewFlightStatsMap, routes: string[], rosterNames: string[]): Array<Array<string | number>>;
+    extractNamesInTextOrder(text: unknown, rosterNames: string[]): string[];
+};
 
 interface CrewFlightStatsElements {
     scheduleFile: HTMLInputElement;
@@ -53,6 +63,7 @@ const elements: CrewFlightStatsElements = {
     clearAllBtn: requireElement('clearAllBtn', HTMLButtonElement),
     addRowBtn: requireElement('addRowBtn', HTMLButtonElement)
 };
+const crewFlightLogic = (window as typeof window & { CrewFlightStatsLogic: CrewFlightStatsLogicApi }).CrewFlightStatsLogic;
 
 // 页面加载时自动加载默认花名册
 document.addEventListener('DOMContentLoaded', loadDefaultRoster);
@@ -85,13 +96,7 @@ function parseRosterData(data: Uint8Array, fileName: string) {
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json<unknown[]>(sheet, {header: 1});
         
-        rosterNames = [];
-        for (let i = 1; i < json.length; i++) {
-            const row = json[i];
-            if (row && row[1]) {
-                rosterNames.push(String(row[1]).trim());
-            }
-        }
+        rosterNames = crewFlightLogic.parseRosterRows(json);
         
         showStatus('rosterStatus', `已加载: ${fileName}（${rosterNames.length} 人）`, 'success');
         checkReady();
@@ -205,97 +210,21 @@ function checkReady() {
 }
 
 function getPeopleInRosterOrder() {
-    if (!statsResult) return [];
-
-    const people = [];
-    const added = new Set();
-
-    for (const name of rosterNames) {
-        if (statsResult[name] && !added.has(name)) {
-            people.push(name);
-            added.add(name);
-        }
-    }
-
-    for (const name of Object.keys(statsResult).sort()) {
-        if (!added.has(name)) {
-            people.push(name);
-        }
-    }
-
-    return people;
-}
-
-// 从单元格内容中匹配花名册里的名字
-function matchNames(cellContent) {
-    if (!cellContent) return [];
-    
-    const content = String(cellContent);
-    const matched = [];
-    
-    // 用花名册里的名字去匹配
-    for (const name of rosterNames) {
-        if (content.includes(name)) {
-            matched.push(name);
-        }
-    }
-    
-    return matched;
+    return crewFlightLogic.getPeopleInRosterOrder(statsResult, rosterNames);
 }
 
 // 开始统计
 elements.analyzeBtn.addEventListener('click', function() {
     if (!scheduleWorkbook || rosterNames.length === 0 || selectedSheets.length === 0) return;
     
-    // 初始化统计结果
-    statsResult = {};
-    routes = [];
-    const unmatchedCells: string[] = [];
-    
-    // 遍历选中的每个工作表
-    for (const sheetName of selectedSheets) {
-        const sheet = scheduleWorkbook.Sheets[sheetName];
-        const sheetData = XLSX.utils.sheet_to_json<unknown[]>(sheet, {header: 1});
-        
-        // 遍历排班表，从第2行开始（第1行是日期）
-        for (let rowIdx = 1; rowIdx < sheetData.length; rowIdx++) {
-            const row = sheetData[rowIdx];
-            if (!row || !row[0]) continue;
-            
-            const routeName = String(row[0]).trim();
-            if (!routeName) continue;
-            
-            // 记录航线（动态读取A列）
-            if (!routes.includes(routeName)) {
-                routes.push(routeName);
-            }
-            
-            // 遍历该行的每个单元格（从第2列开始，第1列是航线名）
-            for (let colIdx = 1; colIdx < row.length; colIdx++) {
-                const cellContent = row[colIdx];
-                if (!cellContent) continue;
-                
-                const matched = matchNames(cellContent);
-                
-                // 统计每个匹配到的人
-                for (const name of matched) {
-                    if (!statsResult[name]) {
-                        statsResult[name] = {};
-                    }
-                    if (!statsResult[name][routeName]) {
-                        statsResult[name][routeName] = 0;
-                    }
-                    statsResult[name][routeName]++;
-                }
-                
-                // 检查是否有未匹配的内容
-                const content = String(cellContent).trim();
-                if (content && matched.length === 0) {
-                    unmatchedCells.push(`[${sheetName}] 行${rowIdx + 1} ${routeName}: ${content.substring(0, 50)}`);
-                }
-            }
-        }
-    }
+    const sheetRows = selectedSheets.map(sheetName => ({
+        sheetName,
+        rows: XLSX.utils.sheet_to_json<unknown[]>(scheduleWorkbook.Sheets[sheetName], {header: 1})
+    }));
+    const analyzeResult = crewFlightLogic.analyzeScheduleRows(sheetRows, rosterNames);
+    statsResult = analyzeResult.statsResult;
+    routes = analyzeResult.routes;
+    const unmatchedCells = analyzeResult.unmatchedCells;
     
     // 显示未匹配警告
     if (unmatchedCells.length > 0) {
@@ -344,23 +273,7 @@ function displayResult() {
 elements.exportBtn.addEventListener('click', function() {
     if (!statsResult || routes.length === 0) return;
     
-    const people = getPeopleInRosterOrder();
-    
-    // 构建数据
-    const data = [];
-    
-    // 表头
-    const header = ['加分项', ...routes];
-    data.push(header);
-    
-    // 数据行
-    for (const name of people) {
-        const row: Array<string | number> = [name];
-        for (const route of routes) {
-            row.push(statsResult[name]?.[route] || '');
-        }
-        data.push(row);
-    }
+    const data = crewFlightLogic.buildCrewFlightExportRows(statsResult, routes, rosterNames);
     
     // 创建工作簿
     const ws = XLSX.utils.aoa_to_sheet(data);
@@ -401,18 +314,7 @@ initCrewTable();
 
 // 按出现顺序识别姓名
 function extractNamesInOrder(text) {
-    if (!text || rosterNames.length === 0) return [];
-    
-    const found = [];
-    for (const name of rosterNames) {
-        const idx = text.indexOf(name);
-        if (idx !== -1) {
-            found.push({ name, idx });
-        }
-    }
-    // 按出现位置排序
-    found.sort((a, b) => a.idx - b.idx);
-    return found.map(f => f.name);
+    return crewFlightLogic.extractNamesInTextOrder(text, rosterNames);
 }
 
 // 识别全部

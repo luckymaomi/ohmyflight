@@ -25,6 +25,7 @@
 
 - 项目级 skill 放在 `.agents/skills/`。
 - 任务命中 skill 描述时，必须先读对应 `SKILL.md`。
+- 中大型开发、跨模块重构、工具下线、测试结构整理或生产级验收闭环时，看 `.agents/skills/plan/SKILL.md`，并维护根目录 `plan.md`。
 - 新增或修改工具、业务规则、spec、测试、构建时，看 `.agents/skills/ohmyflight-dev/SKILL.md`。
 - 涉及培训皇帝/培训工作台/培训 Excel/培训规则时，看 `.agents/skills/training-workbench/SKILL.md`。
 - 涉及页面 UI、表格、卡片、筛选区、结果区、统计摘要或用户指出页面混乱难看时，看 `.agents/skills/ui-clarity/SKILL.md`。

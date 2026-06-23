@@ -26,6 +26,35 @@ type MatchResult = {
     checkinRow: WorkbookRow | null;
     checkinIdx: number;
 };
+type ProofLinkColumn = {
+    header: string;
+    link: HyperlinkInfo | null;
+};
+type HotelBillLogicApi = {
+    parseDate: (value: unknown) => Date | null;
+    matchRows: (input: {
+        billData: WorkbookRow[];
+        checkinData: WorkbookRow[];
+        billNameCol: number;
+        billDateCol: number;
+        checkinNameCol: number;
+        checkinDateCol: number;
+        tolerance: number;
+    }) => {
+        results: MatchResult[];
+        skippedBillLogs: Array<Record<string, unknown>>;
+        candidateLogs: Array<Record<string, unknown>>;
+    };
+    getProofLinks: (result: MatchResult, checkinColumns: string[], checkinHyperlinks: HyperlinkMap) => HyperlinkInfo[];
+    getProofColumnCount: (results: MatchResult[], checkinColumns: string[], checkinHyperlinks: HyperlinkMap) => number;
+    buildProofLinkColumns: (
+        result: MatchResult,
+        columnCount: number,
+        checkinColumns: string[],
+        checkinHyperlinks: HyperlinkMap
+    ) => ProofLinkColumn[];
+};
+const hotelLogic = (window as typeof window & { HotelBillLogic: HotelBillLogicApi }).HotelBillLogic;
 
 function getInput(id: string) {
     return document.getElementById(id) as HTMLInputElement;
@@ -246,40 +275,7 @@ function checkAllReady() {
 
 
 // 日期解析
-function parseDate(str) {
-    if (!str) return null;
-    
-    let d = null;
-    const s = String(str).trim();
-    
-    if (str instanceof Date) {
-        d = str;
-    } else if (/^\d{8}$/.test(s)) {
-        d = new Date(s.slice(0,4) + '-' + s.slice(4,6) + '-' + s.slice(6,8));
-    } else if (/^\d+$/.test(s) && parseInt(s) > 40000) {
-        d = new Date((parseInt(s) - 25569) * 86400 * 1000);
-    } else if (/^\d{2}\/\d{2}\/\d{2}$/.test(s)) {
-        const parts = s.split('/');
-        d = new Date(2000 + parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    } else if (/^\d{1,2}\/\d{1,2}\/\d{2}\s+\d{1,2}:\d{2}/.test(s)) {
-        const parts = s.split(/[\s\/]+/);
-        d = new Date(2000 + parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
-    } else if (/^\d{1,2}\/\d{1,2}\/\d{2}$/.test(s)) {
-        const parts = s.split('/');
-        d = new Date(2000 + parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
-    } else if (/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}/.test(s)) {
-        const parts = s.split(/[-\/\s:]+/);
-        d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    } else {
-        d = new Date(s);
-    }
-    
-    if (d && !isNaN(d.getTime())) {
-        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    }
-    console.log('parseDate failed', str);
-    return null;
-}
+const parseDate = hotelLogic.parseDate;
 
 // 开始匹配
 function doMatch() {
@@ -299,62 +295,18 @@ function doMatch() {
         billRows: billData.length, checkinRows: checkinData.length
     });
     
-    matchResults = [];
-    const matchedCheckinIdx = new Set<number>();
-    const skippedBillLogs = [];
-    const candidateLogs = [];
-    
-    billData.forEach((billRow, billIdx) => {
-        const billName = String(billRow[billNameCol] || '').trim();
-        const billDate = parseDate(billRow[billDateCol]);
-        
-        if (!billName || !billDate) {
-            skippedBillLogs.push({
-                billIdx,
-                billName,
-                billDateRaw: billRow[billDateCol],
-                parsed: billDate
-            });
-            return;
-        }
-        
-        let bestMatch = null, bestMatchIdx = -1, bestDiff = Infinity;
-        
-        checkinData.forEach((checkinRow, checkinIdx) => {
-            const checkinName = String(checkinRow[checkinNameCol] || '').trim();
-            if (checkinName !== billName) return;
-            
-            const checkinDate = parseDate(checkinRow[checkinDateCol]);
-            
-            if (billDate && checkinDate) {
-                const diff = Math.abs((billDate.getTime() - checkinDate.getTime()) / (1000 * 60 * 60 * 24));
-                if (candidateLogs.length < 30) {
-                    candidateLogs.push({
-                        billIdx, checkinIdx, name: billName,
-                        billDate, billDateRaw: billRow[billDateCol],
-                        checkinDate, checkinDateRaw: checkinRow[checkinDateCol],
-                        diff
-                    });
-                }
-                if (diff <= tolerance && diff < bestDiff) {
-                    bestMatch = checkinRow;
-                    bestMatchIdx = checkinIdx;
-                    bestDiff = diff;
-                }
-            }
-        });
-        
-        let status: MatchResult['status'] = 'unmatched';
-        if (bestMatch) {
-            status = matchedCheckinIdx.has(bestMatchIdx) ? 'duplicate' : 'matched';
-            matchedCheckinIdx.add(bestMatchIdx);
-        }
-        
-        matchResults.push({
-            status,
-            billRow, billIdx, checkinRow: bestMatch, checkinIdx: bestMatchIdx
-        });
+    const matchOutput = hotelLogic.matchRows({
+        billData,
+        checkinData,
+        billNameCol,
+        billDateCol,
+        checkinNameCol,
+        checkinDateCol,
+        tolerance
     });
+    matchResults = matchOutput.results;
+    const skippedBillLogs = matchOutput.skippedBillLogs;
+    const candidateLogs = matchOutput.candidateLogs;
     
     const matchedCount = matchResults.filter(r => r.status === 'matched').length;
     const unmatched = matchResults.filter(r => r.status === 'unmatched');
@@ -419,15 +371,9 @@ function displayResults() {
         }
         
         bodyHtml += '<td>';
-        if (result.checkinRow && checkinHyperlinks[result.checkinIdx]) {
-            Object.keys(checkinHyperlinks[result.checkinIdx]).forEach(colIdx => {
-                const colName = checkinColumns[colIdx] || '';
-                if (colName.includes('证明') || colName.includes('文件')) {
-                    const link = checkinHyperlinks[result.checkinIdx][colIdx];
-                    bodyHtml += '<a href="' + link.url + '" target="_blank" class="proof-link">' + link.display + '</a> ';
-                }
-            });
-        }
+        getProofLinks(result).forEach(link => {
+            bodyHtml += '<a href="' + link.url + '" target="_blank" class="proof-link">' + link.display + '</a> ';
+        });
         bodyHtml += '</td></tr>';
     });
     
@@ -440,6 +386,17 @@ function getSelectedCols(type) {
         .map(cb => parseInt(cb.value, 10));
 }
 
+function getProofLinks(result: MatchResult): HyperlinkInfo[] {
+    return hotelLogic.getProofLinks(result, checkinColumns, checkinHyperlinks);
+}
+
+function getProofColumnCount(results: MatchResult[]): number {
+    return hotelLogic.getProofColumnCount(results, checkinColumns, checkinHyperlinks);
+}
+
+function buildProofLinkColumns(result: MatchResult, columnCount: number): ProofLinkColumn[] {
+    return hotelLogic.buildProofLinkColumns(result, columnCount, checkinColumns, checkinHyperlinks);
+}
 
 // 超链接单元格样式（蓝色+下划线）
 const hyperlinkStyle = {
@@ -461,9 +418,10 @@ function exportExcel() {
     
     const billDisplayCols = getSelectedCols('bill');
     const checkinDisplayCols = getSelectedCols('checkin');
+    const proofColumnCount = getProofColumnCount(matchResults);
     
     const ws = {};
-    const colCount = 1 + billDisplayCols.length + checkinDisplayCols.length + 1;
+    const colCount = 1 + billDisplayCols.length + checkinDisplayCols.length + proofColumnCount;
     
     // 表头
     let col = 0;
@@ -474,7 +432,9 @@ function exportExcel() {
     checkinDisplayCols.forEach(i => {
         ws[XLSX.utils.encode_cell({r: 0, c: col++})] = {v: '[登记] ' + checkinColumns[i], t: 's'};
     });
-    ws[XLSX.utils.encode_cell({r: 0, c: col++})] = {v: '入住证明', t: 's'};
+    buildProofLinkColumns(matchResults[0], proofColumnCount).forEach(proofColumn => {
+        ws[XLSX.utils.encode_cell({r: 0, c: col++})] = {v: proofColumn.header, t: 's'};
+    });
     
     // 数据行
     matchResults.forEach((result, rowIdx) => {
@@ -507,25 +467,13 @@ function exportExcel() {
             });
         }
         
-        // 入住证明
-        if (result.checkinRow && checkinHyperlinks[result.checkinIdx]) {
-            const proofLinks = [];
-            Object.keys(checkinHyperlinks[result.checkinIdx]).forEach(colIdx => {
-                const colName = checkinColumns[colIdx] || '';
-                if (colName.includes('证明') || colName.includes('文件')) {
-                    proofLinks.push(checkinHyperlinks[result.checkinIdx][colIdx]);
-                }
-            });
-            if (proofLinks.length === 1) {
-                ws[XLSX.utils.encode_cell({r, c: c++})] = makeHyperlinkCell(proofLinks[0].url, proofLinks[0].display);
-            } else if (proofLinks.length > 1) {
-                ws[XLSX.utils.encode_cell({r, c: c++})] = {v: proofLinks.map(l => l.display).join(', '), t: 's'};
+        buildProofLinkColumns(result, proofColumnCount).forEach(proofColumn => {
+            if (proofColumn.link) {
+                ws[XLSX.utils.encode_cell({r, c: c++})] = makeHyperlinkCell(proofColumn.link.url, proofColumn.link.display);
             } else {
                 ws[XLSX.utils.encode_cell({r, c: c++})] = {v: '', t: 's'};
             }
-        } else {
-            ws[XLSX.utils.encode_cell({r, c: c++})] = {v: '', t: 's'};
-        }
+        });
     });
     
     ws['!ref'] = XLSX.utils.encode_range({s: {r: 0, c: 0}, e: {r: matchResults.length, c: colCount - 1}});

@@ -39,6 +39,33 @@ interface FocusCrewViewApi {
     ): void;
 }
 
+interface FocusCrewCollectResult {
+    focusData: Record<string, FocusCrewCategory[]>;
+    focusNames: string[];
+}
+
+interface FocusCrewHighlightResult {
+    workbook: import("xlsx-js-style").WorkBook;
+    matchedCategories: FocusCrewCategoryTotals;
+    sheetMatchCounts: Record<string, number>;
+}
+
+interface FocusCrewLogicApi {
+    CATEGORY_CONFIG: Record<FocusCrewCategory, FocusCrewCategoryConfigEntry>;
+    detectCategory(sheetName: string): FocusCrewCategory | null;
+    parseFocusWorkbook(workbook: import("xlsx-js-style").WorkBook): FocusSheetInfo[];
+    collectFocusData(
+        focusSheets: FocusSheetInfo[],
+        nameColumnBySheetIndex: Record<number, number>
+    ): FocusCrewCollectResult;
+    buildHighlightedWorkbook(
+        scheduleWorkbook: import("xlsx-js-style").WorkBook,
+        scheduleNameCol: number,
+        focusData: Record<string, FocusCrewCategory[]>
+    ): FocusCrewHighlightResult;
+}
+
 interface Window {
     FocusCrewView: FocusCrewViewApi;
+    FocusCrewLogic: FocusCrewLogicApi;
 }

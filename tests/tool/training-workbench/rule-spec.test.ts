@@ -8,7 +8,7 @@ import {
   type RenewalSpecJudgement,
   type ScheduleSpecStatus,
   type TrainingRuleDefinition
-} from "../training-rule-spec-cases";
+} from "./rule-spec-cases";
 
 function normalizeRuleType(value: string): TrainingRuleDefinition["ruleType"] {
   if (value === "基准月") return "基准月";

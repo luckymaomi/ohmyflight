@@ -22,6 +22,10 @@ function downloadConfigTemplate() {
         ['多选', '可选多个选项', '{字段名_选项值}', '每个选项一个占位符，选中=☑，未选=□'],
         ['列表', '可添加多行数据', '{#字段名}...{/字段名}', '需要创建子表定义子字段'],
         ['', '', '', ''],
+        ['=== 批量生成说明 ===', '', '', ''],
+        ['生成后的应用会提供批量导入模板', '一行生成一份Word', '第一列"文件标题"用于控制导出文件名', '留空时自动使用应用名称和序号'],
+        ['批量导入第一版暂不支持列表/循环字段', '如果配置里包含列表字段', '批量区域会提示暂不支持', '单份填写仍可正常使用'],
+        ['', '', '', ''],
         ['=== 列名说明 ===', '', '', ''],
         ['列名', '是否必填', '说明', '示例'],
         ['字段名', '必填', '对应Word模板中的占位符，建议用英文', 'name, date, content'],
@@ -216,39 +220,4 @@ function downloadConfigTemplate() {
 
     // 导出文件
     XLSX.writeFile(wb, 'Word模板配置.xlsx');
-}
-
-
-// 下载示例文件（打包成zip）
-async function downloadSample() {
-    try {
-        const zip = new JSZip();
-        
-        // 加载示例文件
-        const [excelResp, docxResp] = await Promise.all([
-            fetch('../../../template/word-filler-sample/excel.xlsx'),
-            fetch('../../../template/word-filler-sample/document.docx')
-        ]);
-        
-        if (!excelResp.ok || !docxResp.ok) {
-            throw new Error('示例文件加载失败');
-        }
-        
-        const excelData = await excelResp.arrayBuffer();
-        const docxData = await docxResp.arrayBuffer();
-        
-        zip.file('示例配置.xlsx', excelData);
-        zip.file('示例模板.docx', docxData);
-        
-        const blob = await zip.generateAsync({ type: 'blob' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'Word模板填充器示例.zip';
-        a.click();
-        URL.revokeObjectURL(url);
-    } catch (e) {
-        console.error(e);
-        alert('下载失败: ' + e.message);
-    }
 }

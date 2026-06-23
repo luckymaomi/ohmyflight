@@ -4,8 +4,6 @@
 
 - `crew-flight-stats.md`
   按航线统计个人班次并输出结果
-- `flight-filter.md`
-  从历史任务中筛指定航班并做标色统计
 - `focus-crew.md`
   在审班表中标注重点人员和类别
 - `hotel-bill-check.md`
@@ -38,6 +36,3 @@
   批量录入锁班信息
 - `oa-read-helper.md`
   自动批量点 OA 已阅
-- `seasonal-learning-check-test.md`
-  批量查询换季学习记录并输出核对表
-
