@@ -120,12 +120,13 @@ async function readGitText(args) {
 async function generateVersionFile() {
   const commit = await readGitText(["rev-parse", "--short", "HEAD"]);
   const branch = await readGitText(["branch", "--show-current"]);
-  const rawLog = await readGitText(["log", "-5", "--pretty=format:%h%x09%s"]);
+  const rawLog = await readGitText(["log", "--pretty=format:%h%x09%cI%x09%s"]);
   const commits = rawLog
     ? rawLog.split(/\r?\n/).map((line) => {
-        const [hash = "", ...messageParts] = line.split("\t");
+        const [hash = "", date = "", ...messageParts] = line.split("\t");
         return {
           hash,
+          date,
           message: messageParts.join("\t")
         };
       }).filter((item) => item.hash || item.message)

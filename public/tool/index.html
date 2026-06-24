@@ -4,54 +4,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>打工皇帝</title>
+    <link rel="stylesheet" href="../libs/bootstrap.min.css">
     <link rel="stylesheet" href="./index.css">
 </head>
 <body>
-    <main class="page-shell">
-        <section class="greeting-panel" aria-label="问候">
-            <span id="greetingText">皇帝</span>
-            <button class="menu-button" type="button" id="menuButton" aria-expanded="false" aria-controls="homeToolbar" aria-label="打开菜单">
-                <span></span>
-                <span></span>
-                <span></span>
+    <nav class="navbar navbar-expand-lg bg-body border-bottom sticky-top">
+        <div class="container-xxl">
+            <span></span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#homeNav" aria-controls="homeNav" aria-expanded="false" aria-label="展开导航">
+                <span class="navbar-toggler-icon"></span>
             </button>
-        </section>
+            <div class="collapse navbar-collapse" id="homeNav">
+                <div class="ms-lg-auto d-flex flex-row gap-2 mt-3 mt-lg-0">
+                    <a class="btn btn-sm btn-outline-secondary icon-btn" href="https://agentjz.github.io/jobskill/" target="_blank" rel="noopener noreferrer" aria-label="skill" title="skill">技</a>
+                    <a class="btn btn-sm btn-outline-secondary icon-btn" href="https://github.com/agentjz/ohmyflight" target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="GitHub">
+                        <svg viewBox="0 0 16 16" aria-hidden="true">
+                            <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.65 7.65 0 0 1 8 3.86c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
+                        </svg>
+                    </a>
+                    <a class="btn btn-sm btn-outline-secondary icon-btn" href="../downloads/ohmyflight-source.zip" download aria-label="下载源码" title="下载源码">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-        <section class="toolbar" id="homeToolbar" aria-label="工具搜索和链接">
-            <label class="sr-only" for="searchInput">搜索工具</label>
-            <input id="searchInput" class="search-input" type="search" placeholder="搜索工具名称或简介" autocomplete="off" spellcheck="false">
-            <div class="head-links">
-                <a class="text-link" href="https://agentjz.github.io/jobskill/" target="_blank" rel="noopener noreferrer" title="打开 jobskill">skill</a>
-                <a class="icon-link" href="https://github.com/agentjz/ohmyflight" target="_blank" rel="noopener noreferrer" aria-label="GitHub 项目地址" title="GitHub 项目地址">
-                    <svg viewBox="0 0 16 16" aria-hidden="true">
-                        <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.65 7.65 0 0 1 8 3.86c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
-                    </svg>
-                </a>
-                <a class="icon-link" href="../downloads/ohmyflight-source.zip" download aria-label="下载源码" title="下载源码">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/>
-                    </svg>
-                </a>
+    <main class="container-xxl py-4 py-lg-5">
+        <section class="home-head mb-4">
+            <div class="row g-3 justify-content-center">
+                <div class="col-12 text-center">
+                    <p class="text-secondary mb-0" id="greetingText">皇帝</p>
+                </div>
+                <div class="col-md-8 col-lg-6">
+                    <label class="form-label visually-hidden" for="searchInput">搜索工具</label>
+                    <input id="searchInput" class="form-control form-control-lg" type="search" placeholder="搜索工具" autocomplete="off" spellcheck="false">
+                </div>
             </div>
         </section>
 
-        <section class="version-panel" id="versionPanel" aria-label="更新信息"></section>
+        <section class="mb-5" aria-label="工具清单">
+            <div class="row g-3" id="toolGrid"></div>
+            <div id="emptyState" class="empty-state" hidden>未找到。</div>
+        </section>
 
-        <section class="table-shell" aria-label="工具清单">
-            <table class="tool-table">
-                <thead>
-                    <tr>
-                        <th class="name-col">工具</th>
-                        <th>功能</th>
-                        <th class="status-col">状态</th>
-                    </tr>
-                </thead>
-                <tbody id="toolRows"></tbody>
-            </table>
-            <div id="emptyState" class="empty-state" hidden>未找到匹配工具。</div>
+        <section class="log-section" aria-label="开发日志">
+            <div class="log-head">
+                <div>
+                    <h2>开发日志</h2>
+                    <div class="log-meta" id="versionMeta"></div>
+                </div>
+                <a class="log-toggle" href="#commitLogWrap" id="logToggle" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="commitLogWrap">展开</a>
+            </div>
+            <div class="collapse" id="commitLogWrap">
+                <div class="log-list" id="commitLog"></div>
+            </div>
         </section>
     </main>
 
+    <script src="../libs/bootstrap.bundle.min.js"></script>
     <script src="./tools-data.js"></script>
     <script src="./tools-render.js"></script>
 </body>

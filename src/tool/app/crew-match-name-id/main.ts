@@ -1,9 +1,10 @@
 const ROSTER_PATH = "../../../template/机组花名册.xlsx";
-const RESULT_COL_COUNT = 5;
+const RESULT_COL_COUNT = 6;
 
 type CrewRosterEntry = {
     id: string;
     name: string;
+    department: string;
     techInfo: string;
     techLevel: string;
 };
@@ -14,6 +15,7 @@ type CrewMatchResult = CrewRosterEntry & {
 
 type CrewMatchNameIdLogicApi = {
     parseRosterRows: (rows: unknown[][]) => CrewRosterEntry[];
+    buildExportRows: (entries: CrewRosterEntry[]) => string[][];
 };
 
 let employeeData: CrewRosterEntry[] = [];
@@ -147,6 +149,8 @@ requireElement("searchBtn", HTMLButtonElement).addEventListener("click", functio
                     "</td><td>" +
                     escapeHtml(emp.id) +
                     "</td><td>" +
+                    escapeHtml(emp.department) +
+                    "</td><td>" +
                     escapeHtml(emp.techInfo) +
                     "</td><td>" +
                     escapeHtml(emp.techLevel) +
@@ -192,6 +196,18 @@ requireElement("copyIdBtn", HTMLButtonElement).addEventListener("click", functio
     copyToClipboard(ids, this, "复制员工号列");
 });
 
+requireElement("copyDepartmentBtn", HTMLButtonElement).addEventListener("click", function () {
+    if (!(this instanceof HTMLButtonElement)) return;
+    if (matchedResults.length === 0) {
+        alert("没有可复制的数据，请先查询匹配。");
+        return;
+    }
+    const departments = getCopySourceData()
+        .map((emp) => emp.department)
+        .join("\n");
+    copyToClipboard(departments, this, "复制分部列");
+});
+
 requireElement("copyTechInfoBtn", HTMLButtonElement).addEventListener("click", function () {
     if (!(this instanceof HTMLButtonElement)) return;
     if (matchedResults.length === 0) {
@@ -214,6 +230,27 @@ requireElement("copyTechLevelBtn", HTMLButtonElement).addEventListener("click", 
         .map((emp) => emp.techLevel)
         .join("\n");
     copyToClipboard(techLevels, this, "复制技术等级列");
+});
+
+requireElement("exportExcelBtn", HTMLButtonElement).addEventListener("click", function () {
+    if (matchedResults.length === 0) {
+        alert("没有可导出的数据，请先查询匹配。");
+        return;
+    }
+
+    const rows = getLogicApi().buildExportRows(getCopySourceData());
+    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    worksheet["!cols"] = [
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 14 },
+        { wch: 24 },
+        { wch: 12 }
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "匹配结果");
+    XLSX.writeFile(workbook, `姓名匹配员工号_${formatLocalDate(new Date())}.xlsx`);
 });
 
 function getCopySourceData() {
@@ -273,4 +310,11 @@ function escapeHtml(value: string): string {
         .replace(/>/g, "&gt;")
         .replace(/\"/g, "&quot;")
         .replace(/'/g, "&#39;");
+}
+
+function formatLocalDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
 }

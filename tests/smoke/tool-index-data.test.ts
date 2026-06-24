@@ -18,14 +18,14 @@ describe("tool index data", () => {
     });
   });
 
-  it("keeps only the confirmed work-in-progress tools", () => {
+  it("has no work-in-progress tools after training workbench is marked done", () => {
     const tools = loadToolsData() || [];
     const wipNames = tools
       .filter((tool) => tool.status === "wip")
       .map((tool) => tool.name)
       .sort();
 
-    expect(wipNames).toEqual(["培训皇帝"].sort());
+    expect(wipNames).toEqual([]);
   });
 
   it("ships the done status image used by the tool index", () => {

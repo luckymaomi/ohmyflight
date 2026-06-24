@@ -1,6 +1,7 @@
 type CrewRosterEntry = {
     id: string;
     name: string;
+    department: string;
     techInfo: string;
     techLevel: string;
 };
@@ -8,6 +9,7 @@ type CrewRosterEntry = {
 type CrewMatchNameIdLogicApi = {
     parseRosterRows: (rows: unknown[][]) => CrewRosterEntry[];
     extractTechLevel: (techInfo: unknown) => string;
+    buildExportRows: (entries: CrewRosterEntry[]) => string[][];
 };
 
 function normalizeText(value: unknown): string {
@@ -25,6 +27,14 @@ function findHeaderIndex(headers: unknown[], keyword: string, fallbackIndex: num
         return normalized === keyword || normalized.includes(keyword);
     });
     return hitIndex >= 0 ? hitIndex : fallbackIndex;
+}
+
+function findRequiredHeaderIndex(headers: unknown[], keyword: string): number {
+    const index = findHeaderIndex(headers, keyword, -1);
+    if (index < 0) {
+        throw new Error(`花名册缺少必需列：${keyword}`);
+    }
+    return index;
 }
 
 function extractTechLevel(techInfo: unknown): string {
@@ -58,12 +68,18 @@ function parseRosterRows(rows: unknown[][]): CrewRosterEntry[] {
 
     const headerRow = Array.isArray(rows[0]) ? rows[0] : [];
     const hasNamedHeader = headerRow.some((cell) => normalizeHeader(cell).includes("员工号"))
-        && headerRow.some((cell) => normalizeHeader(cell).includes("姓名"));
+        && headerRow.some((cell) => normalizeHeader(cell).includes("姓名"))
+        && headerRow.some((cell) => normalizeHeader(cell).includes("分部"));
 
-    const idIndex = hasNamedHeader ? findHeaderIndex(headerRow, "员工号", 0) : 0;
-    const nameIndex = hasNamedHeader ? findHeaderIndex(headerRow, "姓名", 1) : 1;
-    const techInfoIndex = hasNamedHeader ? findHeaderIndex(headerRow, "技术信息", -1) : 2;
-    const startRowIndex = hasNamedHeader ? 1 : 0;
+    if (!hasNamedHeader) {
+        throw new Error("花名册表头必须包含：员工号、姓名、分部");
+    }
+
+    const idIndex = findRequiredHeaderIndex(headerRow, "员工号");
+    const nameIndex = findRequiredHeaderIndex(headerRow, "姓名");
+    const departmentIndex = findRequiredHeaderIndex(headerRow, "分部");
+    const techInfoIndex = findHeaderIndex(headerRow, "技术信息", -1);
+    const startRowIndex = 1;
 
     const parsed: CrewRosterEntry[] = [];
 
@@ -79,6 +95,7 @@ function parseRosterRows(rows: unknown[][]): CrewRosterEntry[] {
         parsed.push({
             id,
             name,
+            department: normalizeText(row[departmentIndex]),
             techInfo,
             techLevel: extractTechLevel(techInfo)
         });
@@ -87,9 +104,22 @@ function parseRosterRows(rows: unknown[][]): CrewRosterEntry[] {
     return parsed;
 }
 
+function buildExportRows(entries: CrewRosterEntry[]): string[][] {
+    const rows = entries.map((entry) => [
+        entry.name,
+        entry.id,
+        entry.department,
+        entry.techInfo,
+        entry.techLevel
+    ]);
+
+    return [["姓名", "员工号", "分部", "技术信息", "技术等级"], ...rows];
+}
+
 const CrewMatchNameIdLogic: CrewMatchNameIdLogicApi = {
     parseRosterRows,
-    extractTechLevel
+    extractTechLevel,
+    buildExportRows
 };
 
 const runtime = globalThis as typeof globalThis & {

@@ -2,7 +2,7 @@
 // 添加新工具时，优先为每个工具创建独立目录，并在这里填写目录名 entry
 
 const tools: ToolItem[] = [
-    { name: '培训皇帝', desc: '一键排/核/预估培训，皇帝御用', entry: 'training-workbench', status: 'wip' },
+    { name: '培训皇帝', desc: '一键排/核/预估培训，皇帝御用', entry: 'training-workbench', status: 'done' },
     { name: '姓名匹配员工号', desc: '一键识别姓名，匹配对应员工号', entry: 'crew-match-name-id', status: 'done' },
     { name: '锁班皇帝', desc: 'Python脚本，一键批量录入锁班信息', entry: 'lock-entry-helper', status: 'done' },
     { name: '飞行经历/左座经历起落数按天统计', desc: 'Python脚本，一键批量飞行经历/左座经历起落数', entry: 'flight-stats-helper', status: 'done' },
