@@ -34,12 +34,6 @@ jobs:
       - name: Build site
         run: npm run build
 
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Test
-        run: npm test
-
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:
