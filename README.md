@@ -23,7 +23,7 @@
 | 重点人员标注 | ✅ | 一键标注审班表。 |
 | 航线班次统计 | ✅ | 根据排班表，一键统计每人各航线班次。 |
 | 自动点OA助手 | ✅ | Python脚本，自动打开 OA 待办页并自动点击“已阅”；自动点击百分之95以上oa，部分类型（如督办）需人工处理，自动点击失败时手动完成后等待刷新即可。 |
-| Word模板填充器 | ✅ | 通用文档模板填充工具，上传配置和模板，自动生成表单并导出。 |
+| Word模板填充器 | ✅ | 通用文档模板填充工具，上传配置和模板，自动生成可单份填写、Excel批量导入并批量导出的应用。 |
 | PDF工具 | ✅ | PDF预览、页面提取、转图片、合并、图片转PDF，支持旋转和批量操作。 |
 | PDF加水印 | ✅ | 手册工作使用，在PDF每页的相同位置添加图片，支持拖拽定位和精确数值调整。 |
 | 图片工具 | ✅ | 图片格式转换、压缩、调整尺寸、裁剪、Base64互转，支持批量操作。 |
@@ -33,10 +33,15 @@
 ## 本地开发
 
 ```bash
-npm install
-npm run build
-npm test
+npm.cmd install
+npm.cmd run build
+npm.cmd run typecheck
+npm.cmd test
 ```
+
+`tests/helpers/browser-context.ts` 会在局部测试读取 `dist/` 前自动检查构建产物；如果 `src/` 或 `public/` 更新过，会先触发一次构建，避免测试读到旧脚本。
+
+GitHub Actions 会在 Pull Request、非 `master` 分支 push、`master` 部署前运行构建、类型检查和测试。
 
 ## 开源协议与贡献
 

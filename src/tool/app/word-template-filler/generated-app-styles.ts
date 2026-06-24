@@ -164,6 +164,22 @@ const GeneratedAppStyles = {
             background: #f0fff4;
             color: #1a7f37;
         }
+        .batch-preview-toggle {
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            background: #ffffff;
+            color: #2563eb;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 6px 10px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        .batch-preview-toggle:hover {
+            background: #f6f8fa;
+        }
         .batch-preview {
             width: 100%;
             border-collapse: collapse;

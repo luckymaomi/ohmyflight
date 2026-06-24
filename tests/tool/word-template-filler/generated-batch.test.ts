@@ -5,10 +5,22 @@ import * as XLSX from "xlsx-js-style";
 
 import { createBrowserContext, runBrowserScript } from "../../helpers/browser-context";
 
+const generatedRuntimeScriptPaths = [
+  "tool/app/word-template-filler/generated-app-runtime-state.js",
+  "tool/app/word-template-filler/generated-app-runtime-template.js",
+  "tool/app/word-template-filler/generated-app-runtime-loop.js",
+  "tool/app/word-template-filler/generated-app-runtime-form.js",
+  "tool/app/word-template-filler/generated-app-runtime-date.js",
+  "tool/app/word-template-filler/generated-app-runtime-batch.js",
+  "tool/app/word-template-filler/generated-app-runtime-export.js",
+  "tool/app/word-template-filler/generated-app-runtime-events.js",
+  "tool/app/word-template-filler/generated-app-script.js"
+];
+
 function loadGeneratedHtml(config: unknown) {
   const context = createBrowserContext();
   runBrowserScript("tool/app/word-template-filler/generated-app-styles.js", context);
-  runBrowserScript("tool/app/word-template-filler/generated-app-script.js", context);
+  generatedRuntimeScriptPaths.forEach((scriptPath) => runBrowserScript(scriptPath, context));
   runBrowserScript("tool/app/word-template-filler/generated-app-shell.js", context);
   runBrowserScript(
     "tool/app/word-template-filler/html-generator.js",
@@ -40,11 +52,13 @@ function buildPackagedBatchTemplate(config: unknown) {
 
 function loadGeneratedRuntime(config: unknown) {
   const generatorContext = createBrowserContext();
-  runBrowserScript(
-    "tool/app/word-template-filler/generated-app-script.js",
+  generatedRuntimeScriptPaths.forEach((scriptPath, index) => runBrowserScript(
+    scriptPath,
     generatorContext,
-    `globalThis.__runtimeCode = GeneratedAppScript.generate(${JSON.stringify(config)}, "template.docx");`
-  );
+    index === generatedRuntimeScriptPaths.length - 1
+      ? `globalThis.__runtimeCode = GeneratedAppScript.generate(${JSON.stringify(config)}, "template.docx");`
+      : ""
+  ));
 
   const elements = new Map<string, any>();
   const getElement = (id: string) => {
@@ -53,10 +67,19 @@ function loadGeneratedRuntime(config: unknown) {
         id,
         style: {},
         textContent: "",
+        innerHTML: "",
         className: "",
         disabled: false,
         value: "",
-        addEventListener() {}
+        title: "",
+        attributes: new Map<string, string>(),
+        addEventListener() {},
+        setAttribute(name: string, value: string) {
+          this.attributes.set(name, value);
+        },
+        getAttribute(name: string) {
+          return this.attributes.get(name);
+        }
       });
     }
     return elements.get(id);
@@ -75,6 +98,7 @@ function loadGeneratedRuntime(config: unknown) {
     }
   };
   const runtimeContext = createBrowserContext({
+    XLSX,
     document,
     alert() {},
     confirm() {
@@ -85,7 +109,16 @@ function loadGeneratedRuntime(config: unknown) {
 
   vm.runInContext(
     `${generatorContext.__runtimeCode}
-globalThis.__runtime = { buildBatchRow, formatDate, sanitizeFileName };`,
+globalThis.__runtime = {
+  buildBatchRow,
+  formatDate,
+  formatLocalDateStamp,
+  renderBatchPreview,
+  sanitizeFileName,
+  setBatchRows(rows) { batchRows = rows; },
+  setBatchPreviewExpanded(value) { batchPreviewExpanded = value; },
+  getElement: document.getElementById
+};`,
     runtimeContext
   );
 
@@ -109,6 +142,7 @@ describe("word template filler generated batch app", () => {
     expect(html).not.toContain("downloadBatchTemplateBtn");
     expect(html).not.toContain("downloadBatchTemplate");
     expect(html).toContain("const BATCH_TITLE_COLUMN = '文件标题'");
+    expect(html).toContain('id="batchPreviewToggle"');
     expect(html).toContain("downloadBlob(blob, document.title + '_批量导出_' + timestamp + '.zip')");
     expect(html).toContain('<script src="libs/xlsx.full.min.js">');
     expect(html).toContain('<script src="libs/jszip.min.js">');
@@ -206,5 +240,129 @@ describe("word template filler generated batch app", () => {
     expect(invalid.errors).toContain("姓名不能为空");
     expect(invalid.errors).toContain("等级选项无效：不合格");
     expect(invalid.errors).toContain("标签包含无效选项：D");
+  });
+
+  it("collapses batch preview by default and expands to show all rows", () => {
+    const runtime = loadGeneratedRuntime({
+      fields: [
+        { name: "name", label: "姓名", type: "text" }
+      ],
+      loopFields: {}
+    });
+    const rows = Array.from({ length: 39 }, (_, index) => ({
+      rowNumber: index + 2,
+      title: `标题${index + 1}`,
+      fileName: `标题${index + 1}.docx`,
+      data: {},
+      errors: []
+    }));
+
+    runtime.setBatchRows(rows);
+    runtime.renderBatchPreview();
+
+    const preview = runtime.getElement("batchPreview");
+    const toggle = runtime.getElement("batchPreviewToggle");
+    expect(preview.innerHTML.match(/<tbody><tr>/g)).toHaveLength(1);
+    expect(preview.innerHTML.match(/<\/tr><tr>/g)).toHaveLength(19);
+    expect(toggle.style.display).toBe("inline-flex");
+    expect(toggle.textContent).toBe("展开");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+
+    runtime.setBatchPreviewExpanded(true);
+    runtime.renderBatchPreview();
+
+    expect(preview.innerHTML.match(/<tbody><tr>/g)).toHaveLength(1);
+    expect(preview.innerHTML.match(/<\/tr><tr>/g)).toHaveLength(38);
+    expect(toggle.textContent).toBe("收起");
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("normalizes Excel date-like values without leaking JavaScript Date text", () => {
+    const runtime = loadGeneratedRuntime({
+      fields: [
+        { name: "name", label: "姓名", type: "text" },
+        { name: "plainDate", label: "文本日期", type: "text" },
+        { name: "date", label: "日期", type: "date", format: "YYYY年MM月DD日" },
+        { name: "serialDate", label: "序列日期", type: "date", format: "YYYY-MM-DD" },
+        { name: "compactDate", label: "紧凑日期", type: "date", format: "YYYY-MM-DD" }
+      ],
+      loopFields: {}
+    });
+
+    const row = runtime.buildBatchRow({
+      文件标题: "日期测试",
+      姓名: "张三",
+      文本日期: new Date(2026, 4, 11),
+      日期: new Date(2026, 4, 11),
+      序列日期: 46153,
+      紧凑日期: "20260511"
+    }, 2, 0);
+
+    expect(row.errors).toEqual([]);
+    expect(row.data.plainDate).toBe("2026-05-11");
+    expect(row.data.plainDate).not.toContain("GMT");
+    expect(row.data.date).toBe("2026年05月11日");
+    expect(row.data.serialDate).toBe("2026-05-11");
+    expect(row.data.compactDate).toBe("2026-05-11");
+  });
+
+  it("does not coerce plain numeric text fields into dates", () => {
+    const runtime = loadGeneratedRuntime({
+      fields: [
+        { name: "code", label: "编号", type: "text" }
+      ],
+      loopFields: {}
+    });
+
+    const row = runtime.buildBatchRow({
+      文件标题: "编号测试",
+      编号: 46153
+    }, 2, 0);
+
+    expect(row.errors).toEqual([]);
+    expect(row.data.code).toBe("46153");
+  });
+
+  it("uses local calendar dates for generated file name stamps", () => {
+    const runtime = loadGeneratedRuntime({
+      fields: [],
+      loopFields: {}
+    });
+
+    expect(runtime.formatLocalDateStamp(new Date(2026, 4, 11, 1, 30, 0, 0))).toBe("2026-05-11");
+  });
+
+  it("rounds SheetJS date objects near midnight back to the intended Excel day", () => {
+    const runtime = loadGeneratedRuntime({
+      fields: [
+        { name: "date", label: "日期", type: "date", format: "YYYY-MM-DD" }
+      ],
+      loopFields: {}
+    });
+
+    const row = runtime.buildBatchRow({
+      文件标题: "日期边界",
+      日期: new Date(2026, 4, 10, 23, 59, 59, 999)
+    }, 2, 0);
+
+    expect(row.errors).toEqual([]);
+    expect(row.data.date).toBe("2026-05-11");
+  });
+
+  it("keeps ambiguous short slash dates invalid for batch date fields", () => {
+    const runtime = loadGeneratedRuntime({
+      fields: [
+        { name: "date", label: "日期", type: "date", format: "YYYY-MM-DD" }
+      ],
+      loopFields: {}
+    });
+
+    const row = runtime.buildBatchRow({
+      文件标题: "歧义日期",
+      日期: "5/11/26"
+    }, 2, 0);
+
+    expect(row.data.date).toBe("");
+    expect(row.errors).toContain("日期不是有效日期");
   });
 });

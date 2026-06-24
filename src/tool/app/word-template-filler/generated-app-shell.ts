@@ -48,6 +48,7 @@ ${formHtml}
                         <button class="btn btn-primary" id="exportBatchBtn" type="button" disabled>批量导出Word ZIP</button>
                     </div>
                     <div id="batchStatus" class="batch-status">尚未导入批量 Excel。</div>
+                    <button class="batch-preview-toggle" id="batchPreviewToggle" type="button" style="display:none;" aria-expanded="false">展开</button>
                     <table class="batch-preview" id="batchPreview" style="display:none;"></table>
                 </div>
             </div>
