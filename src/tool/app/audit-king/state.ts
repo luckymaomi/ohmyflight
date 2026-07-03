@@ -19,9 +19,14 @@
     }
 
     function rebuildDocumentIndex(state: AuditKingStateModel): void {
+        const enabledDocuments = getEnabledDocuments(state);
         state.documentIndex = runtime.SearchEngine?.buildDocumentIndex
-            ? runtime.SearchEngine.buildDocumentIndex(state.documents)
+            ? runtime.SearchEngine.buildDocumentIndex(enabledDocuments)
             : null;
+    }
+
+    function getEnabledDocuments(state: AuditKingStateModel): AuditKingDocument[] {
+        return state.documents.filter((documentItem) => documentItem.enabled !== false);
     }
 
     function addKeyword(state: AuditKingStateModel, text: string, source?: AuditKingKeywordSource): AuditKingKeyword {
@@ -53,6 +58,7 @@
     function replaceKeywords(state: AuditKingStateModel, importedKeywords: AuditKingImportedKeyword[]): void {
         state.keywords = importedKeywords
             .map((item, index) => runtime.KeywordStore.createKeyword(item.text, index, {
+                label: item.label,
                 color: item.color,
                 enabled: item.enabled,
                 source: item.source
@@ -78,6 +84,21 @@
         keyword.source = source;
     }
 
+    function updateKeywordLabel(state: AuditKingStateModel, keywordId: string, label: string): void {
+        const keyword = state.keywords.find((item) => item.id === keywordId);
+        if (!keyword) return;
+        keyword.label = label.trim();
+    }
+
+    function moveKeywordToPosition(state: AuditKingStateModel, keywordId: string, targetPosition: number): void {
+        if (!keywordId || !Number.isFinite(targetPosition) || !state.keywords.length) return;
+        const sourceIndex = state.keywords.findIndex((keyword) => keyword.id === keywordId);
+        if (sourceIndex < 0) return;
+        const [keyword] = state.keywords.splice(sourceIndex, 1);
+        const insertIndex = Math.max(0, Math.min(state.keywords.length, Math.trunc(targetPosition) - 1));
+        state.keywords.splice(insertIndex, 0, keyword);
+    }
+
     function setChecklistBlocks(state: AuditKingStateModel, blocks: AuditKingTextBlock[]): void {
         state.checklistBlocks = [...blocks];
         if (runtime.SourceLocator?.resolveKeywordSources) {
@@ -86,9 +107,12 @@
     }
 
     function setDocuments(state: AuditKingStateModel, documents: AuditKingDocument[]): void {
-        state.documents = [...documents];
+        state.documents = documents.map((documentItem) => ({
+            ...documentItem,
+            enabled: documentItem.enabled !== false
+        }));
         rebuildDocumentIndex(state);
-        if (state.documentFilterId !== "all" && !documents.some((documentItem) => documentItem.id === state.documentFilterId)) {
+        if (state.documentFilterId !== "all" && !getEnabledDocuments(state).some((documentItem) => documentItem.id === state.documentFilterId)) {
             state.documentFilterId = "all";
         }
     }
@@ -99,6 +123,17 @@
 
     function removeDocument(state: AuditKingStateModel, documentId: string): void {
         setDocuments(state, state.documents.filter((documentItem) => documentItem.id !== documentId));
+    }
+
+    function setDocumentEnabled(state: AuditKingStateModel, documentId: string, enabled: boolean): void {
+        const documentItem = state.documents.find((item) => item.id === documentId);
+        if (!documentItem) return;
+        documentItem.enabled = enabled;
+        rebuildDocumentIndex(state);
+        if (state.documentFilterId === documentId && !enabled) {
+            state.documentFilterId = "all";
+        }
+        state.currentMatchIndex = 0;
     }
 
     function setCurrentKeyword(state: AuditKingStateModel, keywordId: string): void {
@@ -189,11 +224,15 @@
         removeKeyword,
         setKeywordEnabled,
         updateKeywordSource,
+        updateKeywordLabel,
+        moveKeywordToPosition,
         replaceKeywords,
         setChecklistBlocks,
         setDocuments,
         appendDocuments,
         removeDocument,
+        setDocumentEnabled,
+        getEnabledDocuments,
         setCurrentKeyword,
         setDocumentFilter,
         setSearchResult,

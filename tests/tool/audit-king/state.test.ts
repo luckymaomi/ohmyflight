@@ -54,6 +54,36 @@ describe("audit-king state", () => {
     expect(state.keywords[0].enabled).toBe(true);
   });
 
+  it("moves keywords to a target position without changing their content", () => {
+    const state = stateApi.createState();
+    const first = stateApi.addKeyword(state, "训练要求", { blockId: "checklist-b1", start: 0, end: 4 });
+    const second = stateApi.addKeyword(state, "证件携带");
+    const third = stateApi.addKeyword(state, "机长资格");
+    stateApi.setCurrentKeyword(state, second.id);
+
+    stateApi.moveKeywordToPosition(state, third.id, 1);
+
+    expect(state.keywords.map((keyword: any) => keyword.text)).toEqual(["机长资格", "训练要求", "证件携带"]);
+    expect(state.keywords.find((keyword: any) => keyword.id === first.id).source).toEqual({ blockId: "checklist-b1", start: 0, end: 4 });
+    expect(state.currentKeywordId).toBe(second.id);
+  });
+
+  it("clamps keyword target positions to the available range", () => {
+    const state = stateApi.createState();
+    const first = stateApi.addKeyword(state, "训练要求");
+    const second = stateApi.addKeyword(state, "证件携带");
+    const third = stateApi.addKeyword(state, "机长资格");
+
+    stateApi.moveKeywordToPosition(state, first.id, 99);
+
+    expect(state.keywords.map((keyword: any) => keyword.text)).toEqual(["证件携带", "机长资格", "训练要求"]);
+
+    stateApi.moveKeywordToPosition(state, third.id, 0);
+
+    expect(state.keywords.map((keyword: any) => keyword.text)).toEqual(["机长资格", "证件携带", "训练要求"]);
+    expect(state.keywords.map((keyword: any) => keyword.id).sort()).toEqual([first.id, second.id, third.id].sort());
+  });
+
   it("appends and removes manuals without replacing unrelated manuals", () => {
     const state = stateApi.createState();
     const first = { id: "manual-1", name: "运行手册.docx", blocks: [] };
@@ -69,6 +99,25 @@ describe("audit-king state", () => {
 
     expect(state.documents.map((documentItem: any) => documentItem.id)).toEqual(["manual-1"]);
     expect(state.documentFilterId).toBe("all");
+  });
+
+  it("enables and disables manuals as the searchable document scope", () => {
+    const state = stateApi.createState();
+    stateApi.appendDocuments(state, [
+      { id: "manual-1", name: "运行手册.docx", blocks: [] },
+      { id: "manual-2", name: "训练大纲.docx", blocks: [] }
+    ]);
+    stateApi.setDocumentFilter(state, "manual-2");
+
+    stateApi.setDocumentEnabled(state, "manual-2", false);
+
+    expect(state.documents.find((documentItem: any) => documentItem.id === "manual-2").enabled).toBe(false);
+    expect(stateApi.getEnabledDocuments(state).map((documentItem: any) => documentItem.id)).toEqual(["manual-1"]);
+    expect(state.documentFilterId).toBe("all");
+
+    stateApi.setDocumentEnabled(state, "manual-2", true);
+
+    expect(stateApi.getEnabledDocuments(state).map((documentItem: any) => documentItem.id)).toEqual(["manual-1", "manual-2"]);
   });
 
   it("stores checklist source when a keyword is created from selected checklist text", () => {
@@ -135,6 +184,16 @@ describe("audit-king state", () => {
       end: 13,
       text: "进入机长训练"
     });
+  });
+
+  it("updates a keyword label without changing the keyword text", () => {
+    const state = stateApi.createState();
+    const keyword = stateApi.addKeyword(state, "机长训练");
+
+    stateApi.updateKeywordLabel(state, keyword.id, "1.1 机组资格");
+
+    expect(state.keywords[0].text).toBe("机长训练");
+    expect(state.keywords[0].label).toBe("1.1 机组资格");
   });
 
   it("creates and edits audit basket groups independently", () => {

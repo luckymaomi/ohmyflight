@@ -7,9 +7,12 @@
     }
 
     function recomputeSearch(): void {
+        const enabledDocuments = runtime.State.getEnabledDocuments
+            ? runtime.State.getEnabledDocuments(state)
+            : state.documents.filter((documentItem) => documentItem.enabled !== false);
         const result = state.documentIndex
             ? runtime.SearchEngine.searchIndex(state.documentIndex, state.keywords)
-            : runtime.SearchEngine.searchDocuments(state.documents, state.keywords);
+            : runtime.SearchEngine.searchDocuments(enabledDocuments, state.keywords);
         runtime.State.setSearchResult(state, result);
     }
 
@@ -109,6 +112,31 @@
             const input = event.currentTarget as HTMLInputElement;
             addKeyword(input.value);
             input.value = "";
+        });
+
+        document.addEventListener("input", (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLInputElement)) return;
+            if (target.dataset.action !== "edit-keyword-label") return;
+            runtime.State.updateKeywordLabel(state, target.dataset.keywordId || "", target.value);
+        });
+
+        document.addEventListener("change", (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLInputElement)) return;
+            if (target.dataset.action !== "edit-keyword-order") return;
+            if (!target.value.trim()) {
+                runtime.View.renderKeywords(state);
+                return;
+            }
+            const targetPosition = Number(target.value);
+            if (!Number.isFinite(targetPosition) || targetPosition < 1) {
+                runtime.View.renderKeywords(state);
+                return;
+            }
+            runtime.State.moveKeywordToPosition(state, target.dataset.keywordId || "", targetPosition);
+            runtime.View.renderKeywords(state);
+            runtime.View.renderStatus("关键词顺序已调整。", "success");
         });
     }
 
@@ -231,6 +259,13 @@
                 runtime.State.removeDocument(state, actionTarget.dataset.documentId || "");
                 recomputeSearch();
                 refresh("手册已删除。", "info");
+            } else if (action === "toggle-document") {
+                const documentId = actionTarget.dataset.documentId || "";
+                const documentItem = state.documents.find((item) => item.id === documentId);
+                if (!documentItem) return;
+                runtime.State.setDocumentEnabled(state, documentId, documentItem.enabled === false);
+                recomputeSearch();
+                refresh(documentItem.enabled === false ? "手册已停用。" : "手册已启用。", "info");
             } else if (action === "remove-evidence") {
                 const groupIndex = Number(actionTarget.dataset.groupIndex || -1);
                 const itemIndex = Number(actionTarget.dataset.itemIndex || -1);

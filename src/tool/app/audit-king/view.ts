@@ -102,20 +102,24 @@
             return;
         }
 
+        const enabledDocuments = state.documents.filter((documentItem) => documentItem.enabled !== false);
         list.innerHTML = state.documents.map((documentItem) => `
-            <div class="manual-chip">
+            <div class="manual-chip ${documentItem.enabled === false ? "muted" : ""}">
                 <span class="manual-name">${escapeHtml(documentItem.name)}</span>
                 <span class="manual-actions">
-                    <small>${documentItem.blocks.length} 段</small>
+                    <small>${documentItem.blocks.length} 段${documentItem.enabled === false ? " / 已停用" : ""}</small>
+                    <button class="manual-toggle" data-action="toggle-document" data-document-id="${escapeHtml(documentItem.id)}">${documentItem.enabled === false ? "启用" : "停用"}</button>
                     <button class="manual-delete" data-action="remove-document" data-document-id="${escapeHtml(documentItem.id)}">删除</button>
                 </span>
             </div>
         `).join("");
         filter.innerHTML = [
             `<option value="all">全部手册</option>`,
-            ...state.documents.map((documentItem) => `<option value="${escapeHtml(documentItem.id)}">${escapeHtml(documentItem.name)}</option>`)
+            ...enabledDocuments.map((documentItem) => `<option value="${escapeHtml(documentItem.id)}">${escapeHtml(documentItem.name)}</option>`)
         ].join("");
-        filter.value = state.documentFilterId;
+        filter.value = enabledDocuments.some((documentItem) => documentItem.id === state.documentFilterId)
+            ? state.documentFilterId
+            : "all";
     }
 
     function renderKeywords(state: AuditKingStateModel): void {
@@ -125,13 +129,14 @@
             return;
         }
 
-        container.innerHTML = state.keywords.map((keyword) => {
+        container.innerHTML = state.keywords.map((keyword, index) => {
             const count = state.searchResult.countsByKeyword[keyword.id] ?? 0;
             const active = state.currentKeywordId === keyword.id ? "active" : "";
             const disabled = keyword.enabled === false ? "muted" : "";
             const sourceStatus = getKeywordSourceStatus(keyword, state.checklistBlocks);
             return `
                 <div class="keyword-item ${active} ${disabled}" data-keyword-id="${escapeHtml(keyword.id)}">
+                    <input class="form-control form-control-sm keyword-order-input" type="number" min="1" value="${index + 1}" data-action="edit-keyword-order" data-keyword-id="${escapeHtml(keyword.id)}" aria-label="关键词序号">
                     <button class="keyword-select" data-action="select-keyword" data-keyword-id="${escapeHtml(keyword.id)}">
                         <span class="keyword-color" style="background:${escapeHtml(keyword.color)}"></span>
                         <span class="keyword-main">
@@ -140,6 +145,7 @@
                         </span>
                         <span class="keyword-count">${count}</span>
                     </button>
+                    <input class="form-control form-control-sm keyword-label-input" value="${escapeHtml(keyword.label || "")}" placeholder="条款标记" data-action="edit-keyword-label" data-keyword-id="${escapeHtml(keyword.id)}" aria-label="关键词标记">
                     <button class="keyword-toggle" data-action="toggle-keyword" data-keyword-id="${escapeHtml(keyword.id)}">${keyword.enabled === false ? "启用" : "停用"}</button>
                     <button class="keyword-delete" data-action="delete-keyword" data-keyword-id="${escapeHtml(keyword.id)}">×</button>
                 </div>
@@ -318,6 +324,7 @@
         renderAll,
         renderChecklist,
         focusChecklistHighlight,
+        renderDocuments,
         renderKeywords,
         renderMatches,
         renderMatchDetail,

@@ -23,12 +23,17 @@
         .checklist-text p.active-source { outline: 2px solid rgba(13, 110, 253, 0.22); background: #f8fbff; border-radius: 4px; padding: 4px; }
         .empty-panel { color: #6c757d; font-size: 13px; padding: 18px; text-align: center; border: 1px dashed #dee2e6; border-radius: 6px; background: #f8f9fa; }
         .manual-chip { display: flex; justify-content: space-between; gap: 8px; padding: 8px 10px; border: 1px solid #dee2e6; border-radius: 6px; margin-bottom: 8px; background: #f8f9fa; font-size: 13px; }
+        .manual-chip.muted { opacity: 0.62; }
         .manual-name { overflow-wrap: anywhere; }
         .manual-actions { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
-        .manual-delete { border: 0; background: transparent; color: #dc3545; padding: 0; font-size: 12px; }
+        .manual-toggle, .manual-delete { border: 0; background: transparent; padding: 0; font-size: 12px; }
+        .manual-toggle { color: #495057; }
+        .manual-delete { color: #dc3545; }
         .keyword-item { display: flex; align-items: stretch; border: 1px solid #dee2e6; border-radius: 6px; overflow: hidden; margin-bottom: 8px; background: #fff; }
         .keyword-item.active { border-color: #0d6efd; box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.12); }
         .keyword-item.muted { opacity: 0.58; }
+        .keyword-order-input { width: 48px; border: 0; border-right: 1px solid #dee2e6; border-radius: 0; text-align: center; font-size: 12px; }
+        .keyword-order-input:focus { box-shadow: inset 0 0 0 1px rgba(13, 110, 253, 0.35); }
         .keyword-select { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 100%; border: 0; background: transparent; padding: 8px 10px; text-align: left; }
         .keyword-color { width: 12px; height: 12px; border-radius: 999px; }
         .keyword-main { min-width: 0; display: grid; gap: 3px; }
@@ -37,6 +42,8 @@
         .keyword-source-status { width: fit-content; border-radius: 999px; padding: 1px 7px; font-size: 11px; line-height: 1.5; border: 1px solid #dee2e6; color: #6c757d; background: #f8f9fa; }
         .keyword-source-status.located { border-color: #badbcc; color: #0f5132; background: #d1e7dd; }
         .keyword-source-status.review { border-color: #ffecb5; color: #664d03; background: #fff3cd; }
+        .keyword-label-input { width: 132px; border: 0; border-left: 1px solid #dee2e6; border-radius: 0; font-size: 12px; }
+        .keyword-label-input:focus { box-shadow: inset 0 0 0 1px rgba(13, 110, 253, 0.35); }
         .keyword-toggle { width: 44px; border: 0; border-left: 1px solid #dee2e6; background: #fff; color: #495057; font-size: 12px; }
         .keyword-delete { width: 34px; border: 0; border-left: 1px solid #dee2e6; background: #fff; color: #dc3545; }
         .match-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }

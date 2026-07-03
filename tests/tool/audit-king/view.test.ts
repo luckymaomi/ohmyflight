@@ -74,6 +74,8 @@ describe("audit-king view", () => {
       evidenceList: createElement(),
       evidenceCount: createElement(),
       keywordList: createElement(),
+      manualList: createElement(),
+      manualFilter: createElement(),
       matchList: createElement(),
       matchCount: createElement(),
       matchDetail: createElement()
@@ -213,6 +215,7 @@ describe("audit-king view", () => {
         {
           id: "keyword-1",
           text: "机长训练",
+          label: "1.1 机组资格",
           color: "#ffd666",
           enabled: true,
           source: {
@@ -248,5 +251,27 @@ describe("audit-king view", () => {
     expect(elements.keywordList.innerHTML).toContain("已定位");
     expect(elements.keywordList.innerHTML).toContain("需人工确认");
     expect(elements.keywordList.innerHTML).toContain("无来源");
+    expect(elements.keywordList.innerHTML).toContain("data-action=\"edit-keyword-order\"");
+    expect(elements.keywordList.innerHTML).toContain("value=\"1\"");
+    expect(elements.keywordList.innerHTML).toContain("data-action=\"edit-keyword-label\"");
+    expect(elements.keywordList.innerHTML).toContain("1.1 机组资格");
+  });
+
+  it("renders disabled manuals in the manual list but excludes them from the result filter", () => {
+    viewApi.renderDocuments({
+      documentFilterId: "manual-disabled",
+      documents: [
+        { id: "manual-enabled", name: "运行手册.docx", enabled: true, blocks: [{ id: "b1" }] },
+        { id: "manual-disabled", name: "训练大纲.docx", enabled: false, blocks: [{ id: "b2" }, { id: "b3" }] }
+      ]
+    });
+
+    expect(elements.manualList.innerHTML).toContain("运行手册.docx");
+    expect(elements.manualList.innerHTML).toContain("训练大纲.docx");
+    expect(elements.manualList.innerHTML).toContain("已停用");
+    expect(elements.manualList.innerHTML).toContain("data-action=\"toggle-document\"");
+    expect(elements.manualFilter.innerHTML).toContain("运行手册.docx");
+    expect(elements.manualFilter.innerHTML).not.toContain("训练大纲.docx");
+    expect((elements.manualFilter as any).value).toBe("all");
   });
 });

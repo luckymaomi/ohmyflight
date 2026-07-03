@@ -11,11 +11,13 @@ interface AuditKingDocument {
     id: string;
     name: string;
     blocks: AuditKingTextBlock[];
+    enabled?: boolean;
 }
 
 interface AuditKingKeyword {
     id: string;
     text: string;
+    label?: string;
     color: string;
     enabled: boolean;
     source?: AuditKingKeywordSource;
@@ -33,6 +35,8 @@ interface AuditKingKeywordSource {
 
 interface AuditKingImportedKeyword {
     text: string;
+    order?: number;
+    label?: string;
     color?: string;
     enabled?: boolean;
     source?: AuditKingKeywordSource;

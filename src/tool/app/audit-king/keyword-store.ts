@@ -11,10 +11,11 @@
         "#64748b"
     ];
 
-    function createKeyword(text: string, index: number, options: { color?: string; enabled?: boolean; source?: AuditKingKeywordSource } = {}): AuditKingKeyword {
+    function createKeyword(text: string, index: number, options: { label?: string; color?: string; enabled?: boolean; source?: AuditKingKeywordSource } = {}): AuditKingKeyword {
         return {
             id: `kw-${Date.now()}-${index}-${Math.random().toString(16).slice(2)}`,
             text: text.trim(),
+            label: options.label?.trim() || "",
             color: options.color || palette[index % palette.length],
             enabled: options.enabled !== false,
             source: options.source
