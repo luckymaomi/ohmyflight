@@ -263,6 +263,25 @@ describe("audit-king state", () => {
     ]);
   });
 
+  it("moves audit basket groups as complete clause units", () => {
+    const state = stateApi.createState();
+
+    stateApi.addEvidenceGroup(state, "1.1 训练资格");
+    stateApi.addEvidenceEntry(state, 0, "依据内容 A", "备注 A");
+    stateApi.addEvidenceGroup(state, "1.2 检查要求");
+    stateApi.addEvidenceEntry(state, 1, "依据内容 B", "备注 B");
+    stateApi.addEvidenceGroup(state, "1.3 运行程序");
+
+    stateApi.moveEvidenceGroupToPosition(state, 0, 3);
+
+    expect(state.evidenceGroups.map((group: any) => group.title)).toEqual(["1.2 检查要求", "1.3 运行程序", "1.1 训练资格"]);
+    expect(state.evidenceGroups[2].items).toEqual([{ content: "依据内容 A", note: "备注 A" }]);
+
+    stateApi.moveEvidenceGroupToPosition(state, 2, 1);
+
+    expect(state.evidenceGroups.map((group: any) => group.title)).toEqual(["1.1 训练资格", "1.2 检查要求", "1.3 运行程序"]);
+  });
+
   it("adds and edits audit basket content manually", () => {
     const state = stateApi.createState();
 

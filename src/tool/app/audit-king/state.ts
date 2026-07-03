@@ -193,6 +193,14 @@
         group.title = title.trim();
     }
 
+    function moveEvidenceGroupToPosition(state: AuditKingStateModel, groupIndex: number, targetPosition: number): void {
+        if (!Number.isInteger(groupIndex) || groupIndex < 0 || groupIndex >= state.evidenceGroups.length) return;
+        if (!Number.isFinite(targetPosition) || !state.evidenceGroups.length) return;
+        const [group] = state.evidenceGroups.splice(groupIndex, 1);
+        const insertIndex = Math.max(0, Math.min(state.evidenceGroups.length, Math.trunc(targetPosition) - 1));
+        state.evidenceGroups.splice(insertIndex, 0, group);
+    }
+
     function removeEvidenceGroup(state: AuditKingStateModel, groupIndex: number): void {
         if (groupIndex < 0 || groupIndex >= state.evidenceGroups.length) return;
         state.evidenceGroups.splice(groupIndex, 1);
@@ -261,6 +269,7 @@
         setSearchResult,
         addEvidenceGroup,
         updateEvidenceGroupTitle,
+        moveEvidenceGroupToPosition,
         removeEvidenceGroup,
         addEvidenceEntry,
         updateEvidenceEntry,

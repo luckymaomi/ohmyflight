@@ -274,6 +274,9 @@
         container.innerHTML = state.evidenceGroups.map((group, groupIndex) => `
             <section class="audit-clause">
                 <div class="row g-2 align-items-center audit-clause-head">
+                    <div class="col-auto">
+                        <input class="form-control form-control-sm evidence-order-input" type="number" min="1" value="${groupIndex + 1}" data-action="edit-evidence-group-order" data-group-index="${groupIndex}" aria-label="条款序号">
+                    </div>
                     <div class="col">
                         <input class="form-control form-control-sm fw-semibold" value="${escapeHtml(group.title)}" data-action="edit-evidence-group-title" data-group-index="${groupIndex}" aria-label="条款名称">
                     </div>

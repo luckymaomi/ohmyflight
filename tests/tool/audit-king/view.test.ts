@@ -94,6 +94,8 @@ describe("audit-king view", () => {
     expect(elements.evidenceCount.textContent).toBe("2 个条款 / 0 条依据");
     expect(elements.evidenceList.innerHTML).toContain("1.1 训练资格");
     expect(elements.evidenceList.innerHTML).toContain("1.2 检查要求");
+    expect(elements.evidenceList.innerHTML).toContain("data-action=\"edit-evidence-group-order\"");
+    expect(elements.evidenceList.innerHTML).toContain("value=\"1\"");
     expect(elements.evidenceList.innerHTML).toContain("新增依据");
     expect(elements.evidenceList.innerHTML).not.toContain("人工选中的依据会放在这里");
   });

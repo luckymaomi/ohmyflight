@@ -350,6 +350,24 @@
                 runtime.State.updateEvidenceEntry(state, groupIndex, itemIndex, { note: target.value });
             }
         });
+        document.addEventListener("change", (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLInputElement)) return;
+            if (target.dataset.action !== "edit-evidence-group-order") return;
+            if (!target.value.trim()) {
+                runtime.View.renderEvidence(state);
+                return;
+            }
+            const groupIndex = Number(target.dataset.groupIndex || -1);
+            const targetPosition = Number(target.value);
+            if (!Number.isInteger(groupIndex) || groupIndex < 0 || !Number.isFinite(targetPosition) || targetPosition < 1) {
+                runtime.View.renderEvidence(state);
+                return;
+            }
+            runtime.State.moveEvidenceGroupToPosition(state, groupIndex, targetPosition);
+            runtime.View.renderEvidence(state);
+            runtime.View.renderStatus("审计篮子条款顺序已调整。", "success");
+        });
     }
 
     function addEvidenceEntryFromGroup(groupIndex: number): void {
