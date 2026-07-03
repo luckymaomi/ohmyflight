@@ -19,11 +19,6 @@
         .panel-scroll { min-height: 320px; max-height: 56vh; overflow: auto; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; padding: 12px; }
         .checklist-text p { margin: 0 0 10px; line-height: 1.7; font-size: 14px; }
         .checklist-text p.active-source { outline: 2px solid rgba(13, 110, 253, 0.22); background: #f8fbff; border-radius: 4px; padding: 4px; }
-        .evidence-draft { border: 1px solid #dee2e6; border-radius: 6px; background: #f8fbff; padding: 8px 10px; margin-bottom: 10px; font-size: 13px; }
-        .evidence-draft.empty { color: #6c757d; background: #f8f9fa; border-style: dashed; }
-        .evidence-draft-label { color: #57606a; margin-bottom: 3px; }
-        .evidence-draft-text { line-height: 1.6; overflow-wrap: anywhere; }
-        .evidence-draft-actions { display: flex; justify-content: flex-end; margin-top: 6px; }
         .empty-panel { color: #6c757d; font-size: 13px; padding: 18px; text-align: center; border: 1px dashed #dee2e6; border-radius: 6px; background: #f8f9fa; }
         .manual-chip { display: flex; justify-content: space-between; gap: 8px; padding: 8px 10px; border: 1px solid #dee2e6; border-radius: 6px; margin-bottom: 8px; background: #f8f9fa; font-size: 13px; }
         .manual-name { overflow-wrap: anywhere; }
@@ -51,15 +46,19 @@
         .detail-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; margin-bottom: 10px; }
         .detail-text { line-height: 1.8; font-size: 14px; overflow-wrap: anywhere; white-space: pre-wrap; }
         .ak-highlight { padding: 0 2px; border-radius: 2px; color: inherit; }
-        .evidence-item { border: 1px solid #dee2e6; border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; background: #fff; font-size: 13px; }
-        .evidence-title { font-weight: 600; margin-bottom: 4px; }
-        .evidence-meta { color: #57606a; line-height: 1.6; }
-        .evidence-excerpt { color: #57606a; margin: 4px 0 6px; line-height: 1.6; }
+        .audit-clause { border: 1px solid #dee2e6; border-radius: 6px; margin-bottom: 12px; background: #fff; overflow: hidden; }
+        .audit-clause-head { padding: 10px 12px; border-bottom: 1px solid #dee2e6; background: #f8f9fa; }
+        .audit-evidence-head { padding: 8px 12px; color: #57606a; font-size: 12px; background: #fbfbfc; border-bottom: 1px solid #eef0f2; }
+        .audit-evidence-row { border-bottom: 1px solid #eef0f2; }
+        .audit-evidence-row:last-child { border-bottom: 0; }
+        .audit-evidence-content { line-height: 1.6; min-height: 70px; }
+        .audit-clause-empty { padding: 14px 12px; color: #6c757d; font-size: 13px; background: #fff; }
         @media (max-width: 900px) {
             .upload-grid, .top-work-grid, .result-grid { grid-template-columns: 1fr; }
             .upload-status { grid-column: auto; }
             .detail-toolbar { grid-template-columns: 1fr; }
             .panel-scroll { max-height: 480px; }
+            .audit-evidence-head { display: none; }
         }
     </style>
     <link rel="stylesheet" href="../../../theme.css">
@@ -139,12 +138,9 @@
                 <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                     <h6 class="card-title mb-0">检查单参考</h6>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-outline-secondary" id="setEvidenceTitleBtn">设为依据名称</button>
                         <button class="btn btn-sm btn-outline-primary" id="addSelectedKeywordBtn">选中加入关键词</button>
                     </div>
                 </div>
-                <input type="text" class="form-control form-control-sm mb-2" id="evidenceTitleInput" placeholder="先从检查单选中对应条款/依据名称">
-                <div id="evidenceDraft" class="evidence-draft empty">尚未选择要绑定的检查单条款。</div>
                 <div id="checklistText" class="panel-scroll checklist-text"></div>
             </div>
         </section>
@@ -153,7 +149,6 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                     <h6 class="card-title mb-0">全部详情</h6>
-                    <button class="btn btn-sm btn-outline-primary" id="addDetailEvidenceBtn">选中原文加入依据</button>
                 </div>
                 <div id="matchDetail" class="panel-scroll"></div>
             </div>
@@ -164,7 +159,7 @@
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                 <div>
-                    <h6 class="card-title mb-0">依据篮子</h6>
+                    <h6 class="card-title mb-0">审计篮子</h6>
                     <small class="text-muted" id="evidenceCount">0 条依据</small>
                 </div>
                 <div class="d-flex gap-2">
@@ -173,6 +168,14 @@
                 </div>
             </div>
             <input class="d-none" type="file" id="evidenceImportInput" accept=".xlsx,.xls">
+            <div class="row g-2 align-items-center mb-3">
+                <div class="col">
+                    <input class="form-control form-control-sm" id="evidenceGroupTitleInput" placeholder="新增条款名称">
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-sm btn-outline-primary" id="addEvidenceGroupBtn">新增条款</button>
+                </div>
+            </div>
             <div id="evidenceList"></div>
         </div>
     </section>

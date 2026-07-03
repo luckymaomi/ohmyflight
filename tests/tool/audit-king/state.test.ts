@@ -85,4 +85,50 @@ describe("audit-king state", () => {
       end: 12
     });
   });
+
+  it("creates and edits audit basket groups independently", () => {
+    const state = stateApi.createState();
+
+    stateApi.addEvidenceGroup(state, "1.1 训练资格");
+    stateApi.updateEvidenceGroupTitle(state, 0, "1.1 机组训练资格");
+
+    expect(state.evidenceGroups).toEqual([
+      {
+        id: "evidence-group-1",
+        title: "1.1 机组训练资格",
+        items: []
+      }
+    ]);
+  });
+
+  it("adds and edits audit basket content manually", () => {
+    const state = stateApi.createState();
+
+    stateApi.addEvidenceGroup(state, "1.1 训练资格");
+    stateApi.addEvidenceEntry(state, 0, "依据内容 A", "备注 A");
+    stateApi.addEvidenceEntry(state, 0, "依据内容 B", "");
+    stateApi.updateEvidenceEntry(state, 0, 1, { content: "依据内容 B 修订", note: "备注 B" });
+
+    expect(state.evidenceGroups[0].items).toEqual([
+      { content: "依据内容 A", note: "备注 A" },
+      { content: "依据内容 B 修订", note: "备注 B" }
+    ]);
+  });
+
+  it("removes audit basket content and groups explicitly", () => {
+    const state = stateApi.createState();
+
+    stateApi.addEvidenceGroup(state, "1.1 训练资格");
+    stateApi.addEvidenceGroup(state, "1.2 检查要求");
+    stateApi.addEvidenceEntry(state, 0, "依据内容 A", "");
+    stateApi.addEvidenceEntry(state, 0, "依据内容 B", "");
+
+    stateApi.removeEvidenceEntry(state, 0, 0);
+
+    expect(state.evidenceGroups[0].items).toEqual([{ content: "依据内容 B", note: "" }]);
+
+    stateApi.removeEvidenceGroup(state, 0);
+
+    expect(state.evidenceGroups.map((group: any) => group.title)).toEqual(["1.2 检查要求"]);
+  });
 });

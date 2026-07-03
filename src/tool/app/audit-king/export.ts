@@ -1,37 +1,36 @@
 (function () {
     const runtime = window.AuditKing || (window.AuditKing = {});
 
-    function buildEvidenceRows(items: AuditKingEvidenceItem[]): string[][] {
+    function buildEvidenceRows(groups: AuditKingEvidenceGroup[]): Array<Array<string | number>> {
         if (runtime.EvidenceBasket?.buildEvidenceRows) {
-            return runtime.EvidenceBasket.buildEvidenceRows(items);
+            return runtime.EvidenceBasket.buildEvidenceRows(groups);
         }
         return [
-            ["关键词", "依据名称", "检查单条款", "手册", "位置", "手册原文摘录", "备注"],
-            ...items.map((item) => [
-                item.keywordText,
-                item.title,
-                item.checklistClause,
-                item.documentName,
-                item.locationLabel,
-                item.excerpt,
-                item.note
-            ])
+            ["条款名称", "依据序号", "依据内容", "备注"],
+            ...groups.flatMap((group) => {
+                if (!group.items.length) {
+                    return [[group.title, 0, "", ""]];
+                }
+                return group.items.map((item, index) => [
+                    group.title,
+                    index + 1,
+                    item.content,
+                    item.note
+                ]);
+            })
         ];
     }
 
-    function buildEvidenceWorkbook(items: AuditKingEvidenceItem[]) {
+    function buildEvidenceWorkbook(groups: AuditKingEvidenceGroup[]) {
         const workbook = XLSX.utils.book_new();
-        const sheet = XLSX.utils.aoa_to_sheet(buildEvidenceRows(items));
+        const sheet = XLSX.utils.aoa_to_sheet(buildEvidenceRows(groups));
         sheet["!cols"] = [
-            { wch: 18 },
             { wch: 24 },
-            { wch: 36 },
-            { wch: 28 },
-            { wch: 18 },
-            { wch: 48 },
+            { wch: 10 },
+            { wch: 64 },
             { wch: 28 }
         ];
-        XLSX.utils.book_append_sheet(workbook, sheet, "依据篮子");
+        XLSX.utils.book_append_sheet(workbook, sheet, "审计篮子");
         return workbook;
     }
 
@@ -54,22 +53,44 @@
         });
     }
 
-    function parseEvidenceWorkbook(workbook: any): AuditKingEvidenceItem[] {
+    function makeGroupId(index: number): string {
+        return `evidence-group-${index + 1}`;
+    }
+
+    function parseEvidenceWorkbook(workbook: any): AuditKingEvidenceGroup[] {
         const firstSheetName = workbook.SheetNames?.[0];
         if (!firstSheetName) return [];
         const sheet = workbook.Sheets[firstSheetName];
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: "" }) as unknown[][];
-        return rowsToObjects(rows)
+        const groups: AuditKingEvidenceGroup[] = [];
+        const groupIndexes = new Map<string, number>();
+        rowsToObjects(rows)
             .map((row) => ({
-                keywordText: normalizeText(row["关键词"]),
-                title: normalizeText(row["依据名称"]),
-                checklistClause: normalizeText(row["检查单条款"]),
-                documentName: normalizeText(row["手册"]),
-                locationLabel: normalizeText(row["位置"]),
-                excerpt: normalizeText(row["手册原文摘录"]),
+                title: normalizeText(row["条款名称"]),
+                content: normalizeText(row["依据内容"]),
                 note: normalizeText(row["备注"])
             }))
-            .filter((item) => item.title || item.checklistClause || item.excerpt || item.documentName);
+            .filter((item) => item.title || item.content || item.note)
+            .forEach((item) => {
+                const key = item.title;
+                let groupIndex = groupIndexes.get(key);
+                if (groupIndex === undefined) {
+                    groupIndex = groups.length;
+                    groupIndexes.set(key, groupIndex);
+                    groups.push({
+                        id: makeGroupId(groupIndex),
+                        title: item.title,
+                        items: []
+                    });
+                }
+                if (item.content || item.note) {
+                    groups[groupIndex].items.push({
+                        content: item.content,
+                        note: item.note
+                    });
+                }
+            });
+        return groups;
     }
 
     runtime.Export = {

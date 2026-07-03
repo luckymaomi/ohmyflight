@@ -1,20 +1,22 @@
 (function () {
     const runtime = window.AuditKing || (window.AuditKing = {});
 
-    const headers = ["关键词", "依据名称", "检查单条款", "手册", "位置", "手册原文摘录", "备注"];
+    const headers = ["条款名称", "依据序号", "依据内容", "备注"];
 
-    function buildEvidenceRows(items: AuditKingEvidenceItem[]): string[][] {
+    function buildEvidenceRows(groups: AuditKingEvidenceGroup[]): Array<Array<string | number>> {
         return [
             headers,
-            ...items.map((item) => [
-                item.keywordText,
-                item.title,
-                item.checklistClause,
-                item.documentName,
-                item.locationLabel,
-                item.excerpt,
-                item.note
-            ])
+            ...groups.flatMap((group) => {
+                if (!group.items.length) {
+                    return [[group.title, 0, "", ""]];
+                }
+                return group.items.map((item, index) => [
+                    group.title,
+                    index + 1,
+                    item.content,
+                    item.note
+                ]);
+            })
         ];
     }
 

@@ -40,6 +40,8 @@ npm.cmd run typecheck
 npm.cmd test
 ```
 
+本地预览可运行 `python start_index.py`，或双击 `start_index.cmd`；脚本会构建 `dist/`，用 Edge 无痕模式打开 `http://localhost:4567/index.html`，并启动本地站点。
+
 `tests/helpers/browser-context.ts` 会在局部测试读取 `dist/` 前自动检查构建产物；如果 `src/` 或 `public/` 更新过，会先触发一次构建，避免测试读到旧脚本。
 
 GitHub Pages 会在 `master` 分支 push 后自动运行 `npm run build`，并把 `dist/` 部署到项目站点。类型检查和测试由本地开发阶段手动运行。

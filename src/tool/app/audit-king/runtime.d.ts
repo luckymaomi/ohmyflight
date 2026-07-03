@@ -79,14 +79,15 @@ interface AuditKingHighlightRange {
     end: number;
 }
 
-interface AuditKingEvidenceItem {
-    keywordText: string;
-    title: string;
-    checklistClause: string;
-    documentName: string;
-    locationLabel: string;
-    excerpt: string;
+interface AuditKingEvidenceEntry {
+    content: string;
     note: string;
+}
+
+interface AuditKingEvidenceGroup {
+    id: string;
+    title: string;
+    items: AuditKingEvidenceEntry[];
 }
 
 interface AuditKingStateModel {
@@ -98,7 +99,7 @@ interface AuditKingStateModel {
     currentKeywordId: string;
     documentFilterId: string;
     currentMatchIndex: number;
-    evidenceItems: AuditKingEvidenceItem[];
+    evidenceGroups: AuditKingEvidenceGroup[];
 }
 
 interface Window {

@@ -92,19 +92,6 @@
             const selection = getChecklistSelection();
             addKeyword(selection.text, selection.source);
         });
-        getElement<HTMLButtonElement>("setEvidenceTitleBtn").addEventListener("click", () => {
-            const selection = getChecklistSelection();
-            if (!selection.text) {
-                runtime.View.renderStatus("请先在检查单中选中对应条款。", "error");
-                return;
-            }
-            getElement<HTMLInputElement>("evidenceTitleInput").value = selection.text;
-            renderEvidenceDraft();
-            runtime.View.renderStatus("已设置依据名称/检查单条款。", "success");
-        });
-        getElement<HTMLInputElement>("evidenceTitleInput").addEventListener("input", () => {
-            renderEvidenceDraft();
-        });
 
         getElement<HTMLButtonElement>("addKeywordBtn").addEventListener("click", () => {
             const input = getElement<HTMLInputElement>("keywordInput");
@@ -215,34 +202,64 @@
                 recomputeSearch();
                 refresh("手册已删除。", "info");
             } else if (action === "remove-evidence") {
-                const index = Number(actionTarget.dataset.evidenceIndex || -1);
-                if (index >= 0) {
-                    state.evidenceItems.splice(index, 1);
+                const groupIndex = Number(actionTarget.dataset.groupIndex || -1);
+                const itemIndex = Number(actionTarget.dataset.itemIndex || -1);
+                if (groupIndex >= 0 && itemIndex >= 0) {
+                    runtime.State.removeEvidenceEntry(state, groupIndex, itemIndex);
                     runtime.View.renderEvidence(state);
                 }
-            } else if (action === "clear-evidence-title") {
-                getElement<HTMLInputElement>("evidenceTitleInput").value = "";
-                renderEvidenceDraft();
+            } else if (action === "remove-evidence-group") {
+                const groupIndex = Number(actionTarget.dataset.groupIndex || -1);
+                if (groupIndex >= 0) {
+                    runtime.State.removeEvidenceGroup(state, groupIndex);
+                    runtime.View.renderEvidence(state);
+                }
+            } else if (action === "add-evidence-entry") {
+                const groupIndex = Number(actionTarget.dataset.groupIndex || -1);
+                addEvidenceEntryFromGroup(groupIndex);
             }
         });
     }
 
-    function renderEvidenceDraft(): void {
-        const draft = getElement<HTMLElement>("evidenceDraft");
-        const title = getElement<HTMLInputElement>("evidenceTitleInput").value.trim();
-        if (!title) {
-            draft.className = "evidence-draft empty";
-            draft.textContent = "尚未选择要绑定的检查单条款。";
-            return;
-        }
-        draft.className = "evidence-draft";
-        draft.innerHTML = `
-            <div class="evidence-draft-label">待绑定检查单条款</div>
-            <div class="evidence-draft-text">${runtime.View.escapeHtml(title)}</div>
-            <div class="evidence-draft-actions">
-                <button class="btn btn-sm btn-outline-secondary" data-action="clear-evidence-title">清空</button>
-            </div>
-        `;
+    function bindEvidenceEditing(): void {
+        getElement<HTMLButtonElement>("addEvidenceGroupBtn").addEventListener("click", () => {
+            const input = getElement<HTMLInputElement>("evidenceGroupTitleInput");
+            const title = input.value.trim();
+            if (!title) {
+                runtime.View.renderStatus("请先填写条款名称。", "error");
+                return;
+            }
+            runtime.State.addEvidenceGroup(state, title);
+            input.value = "";
+            runtime.View.renderEvidence(state);
+            runtime.View.renderStatus("已新增条款。", "success");
+        });
+        getElement<HTMLInputElement>("evidenceGroupTitleInput").addEventListener("keydown", (event: KeyboardEvent) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            getElement<HTMLButtonElement>("addEvidenceGroupBtn").click();
+        });
+        document.addEventListener("input", (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLInputElement) && !(target instanceof HTMLTextAreaElement)) return;
+            const action = target.dataset.action;
+            const groupIndex = Number(target.dataset.groupIndex || -1);
+            const itemIndex = Number(target.dataset.itemIndex || -1);
+            if (action === "edit-evidence-group-title" && groupIndex >= 0) {
+                runtime.State.updateEvidenceGroupTitle(state, groupIndex, target.value);
+            } else if (action === "edit-evidence-content" && groupIndex >= 0 && itemIndex >= 0) {
+                runtime.State.updateEvidenceEntry(state, groupIndex, itemIndex, { content: target.value });
+            } else if (action === "edit-evidence-note" && groupIndex >= 0 && itemIndex >= 0) {
+                runtime.State.updateEvidenceEntry(state, groupIndex, itemIndex, { note: target.value });
+            }
+        });
+    }
+
+    function addEvidenceEntryFromGroup(groupIndex: number): void {
+        if (groupIndex < 0) return;
+        runtime.State.addEvidenceEntry(state, groupIndex, "", "");
+        runtime.View.renderEvidence(state);
+        runtime.View.renderStatus("已新增依据行。", "success");
     }
 
     function bindExport(): void {
@@ -258,21 +275,18 @@
                 const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
                 runtime.State.replaceEvidence(state, runtime.Export.parseEvidenceWorkbook(workbook));
                 runtime.View.renderEvidence(state);
-                runtime.View.renderStatus(`已导入 ${state.evidenceItems.length} 条依据。`, "success");
+                runtime.View.renderStatus(`已导入 ${state.evidenceGroups.length} 个条款 / ${countEvidenceEntries()} 条依据。`, "success");
             } catch (error) {
                 runtime.View.renderStatus(error instanceof Error ? error.message : String(error), "error");
             }
         });
         getElement<HTMLButtonElement>("exportEvidenceBtn").addEventListener("click", () => {
-            if (!state.evidenceItems.length) {
-                runtime.View.renderStatus("没有可导出的依据。", "error");
+            if (!state.evidenceGroups.length) {
+                runtime.View.renderStatus("没有可导出的审计篮子内容。", "error");
                 return;
             }
-            const workbook = runtime.Export.buildEvidenceWorkbook(state.evidenceItems);
-            XLSX.writeFile(workbook, `审计之王_依据篮子_${formatLocalDate(new Date())}.xlsx`);
-        });
-        getElement<HTMLButtonElement>("addDetailEvidenceBtn").addEventListener("click", () => {
-            addEvidenceFromDetailSelection();
+            const workbook = runtime.Export.buildEvidenceWorkbook(state.evidenceGroups);
+            XLSX.writeFile(workbook, `审计之王_审计篮子_${formatLocalDate(new Date())}.xlsx`);
         });
     }
 
@@ -280,50 +294,8 @@
         return getFilteredMatches()[state.currentMatchIndex] || null;
     }
 
-    function getDetailSelectionText(): string {
-        const selection = window.getSelection();
-        const detail = document.getElementById("matchDetail");
-        if (!selection || !detail || selection.rangeCount === 0) return "";
-        const range = selection.getRangeAt(0);
-        const startElement = range.startContainer.nodeType === Node.TEXT_NODE
-            ? range.startContainer.parentElement
-            : range.startContainer as Element;
-        const endElement = range.endContainer.nodeType === Node.TEXT_NODE
-            ? range.endContainer.parentElement
-            : range.endContainer as Element;
-        if (!startElement || !endElement || !detail.contains(startElement) || !detail.contains(endElement)) {
-            return "";
-        }
-        return selection.toString().trim();
-    }
-
-    function addEvidenceFromDetailSelection(): void {
-        const match = getCurrentMatch();
-        if (!match) {
-            runtime.View.renderStatus("请先点击一条命中摘要。", "error");
-            return;
-        }
-        const title = getElement<HTMLInputElement>("evidenceTitleInput").value.trim();
-        if (!title) {
-            runtime.View.renderStatus("请先从检查单选中依据名称/对应条款。", "error");
-            return;
-        }
-        const excerpt = getDetailSelectionText();
-        if (!excerpt) {
-            runtime.View.renderStatus("请先在右侧全部详情中选中手册原文。", "error");
-            return;
-        }
-        runtime.State.addEvidence(state, {
-            keywordText: match.keywordText,
-            title,
-            checklistClause: title,
-            documentName: match.documentName,
-            locationLabel: `第 ${match.blockIndex} 段${match.title ? ` / ${match.title}` : ""}`,
-            excerpt,
-            note: ""
-        });
-        runtime.View.renderEvidence(state);
-        runtime.View.renderStatus("已加入依据篮子。", "success");
+    function countEvidenceEntries(): number {
+        return state.evidenceGroups.reduce((total, group) => total + group.items.length, 0);
     }
 
     function bindKeywordImportExport(): void {
@@ -366,7 +338,7 @@
         bindDelegatedActions();
         bindExport();
         bindKeywordImportExport();
-        renderEvidenceDraft();
+        bindEvidenceEditing();
         refresh("上传检查单和手册后，手动添加关键词开始检索。");
     }
 

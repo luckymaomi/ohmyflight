@@ -237,19 +237,47 @@
 
     function renderEvidence(state: AuditKingStateModel): void {
         const container = getElement<HTMLElement>("evidenceList");
-        getElement<HTMLElement>("evidenceCount").textContent = `${state.evidenceItems.length} 条依据`;
-        if (!state.evidenceItems.length) {
+        const entryCount = state.evidenceGroups.reduce((total, group) => total + group.items.length, 0);
+        getElement<HTMLElement>("evidenceCount").textContent = `${state.evidenceGroups.length} 个条款 / ${entryCount} 条依据`;
+        if (!state.evidenceGroups.length) {
             container.innerHTML = `<div class="empty-panel">人工选中的依据会放在这里。</div>`;
             return;
         }
-        container.innerHTML = state.evidenceItems.map((item, index) => `
-            <div class="evidence-item">
-                <div class="evidence-title">${escapeHtml(item.title || item.keywordText || "未命名依据")}</div>
-                <div class="evidence-meta">检查单：${escapeHtml(item.checklistClause || item.title || "")}</div>
-                <div class="evidence-meta">手册：${escapeHtml(item.documentName)} / ${escapeHtml(item.locationLabel)}</div>
-                <div class="evidence-excerpt">${escapeHtml(item.excerpt)}</div>
-                <button class="btn btn-sm btn-outline-danger" data-action="remove-evidence" data-evidence-index="${index}">删除</button>
-            </div>
+        container.innerHTML = state.evidenceGroups.map((group, groupIndex) => `
+            <section class="audit-clause">
+                <div class="row g-2 align-items-center audit-clause-head">
+                    <div class="col">
+                        <input class="form-control form-control-sm fw-semibold" value="${escapeHtml(group.title)}" data-action="edit-evidence-group-title" data-group-index="${groupIndex}" aria-label="条款名称">
+                    </div>
+                    <div class="col-auto">
+                        <span class="text-muted small">${group.items.length} 条依据</span>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-sm btn-outline-primary" data-action="add-evidence-entry" data-group-index="${groupIndex}">新增依据</button>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-sm btn-outline-danger" data-action="remove-evidence-group" data-group-index="${groupIndex}">删除条款</button>
+                    </div>
+                </div>
+                <div class="row g-2 audit-evidence-head">
+                    <div class="col-md-8">依据内容</div>
+                    <div class="col-md-3">备注</div>
+                    <div class="col-md-auto"></div>
+                </div>
+                ${group.items.length ? group.items.map((item, itemIndex) => `
+                    <div class="row g-2 align-items-start audit-evidence-row">
+                        <div class="col-md-8">
+                            <textarea class="form-control form-control-sm audit-evidence-content" rows="2" data-action="edit-evidence-content" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="依据内容">${escapeHtml(item.content)}</textarea>
+                        </div>
+                        <div class="col-md-3">
+                            <input class="form-control form-control-sm" value="${escapeHtml(item.note)}" placeholder="备注" data-action="edit-evidence-note" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="备注">
+                        </div>
+                        <div class="col-md-auto text-md-end">
+                            <button class="btn btn-sm btn-outline-danger" data-action="remove-evidence" data-group-index="${groupIndex}" data-item-index="${itemIndex}">删除</button>
+                        </div>
+                    </div>
+                `).join("") : `<div class="audit-clause-empty">暂无依据，点击“新增依据”添加一行。</div>`}
+            </section>
         `).join("");
     }
 
