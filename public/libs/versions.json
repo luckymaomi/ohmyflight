@@ -68,6 +68,12 @@
       "source": "https://github.com/mwilliamson/mammoth.js",
       "cdn": "https://cdn.jsdelivr.net/npm/mammoth@1.8.0/"
     },
+    "flexsearch": {
+      "version": "0.8.215",
+      "files": ["flexsearch.bundle.min.js", "flexsearch.LICENSE.txt"],
+      "source": "https://github.com/nextapps-de/flexsearch",
+      "cdn": "https://cdn.jsdelivr.net/npm/flexsearch@0.8.215/dist/"
+    },
     "marked": {
       "version": "15.0.12",
       "files": ["marked.min.js"],

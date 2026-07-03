@@ -11,6 +11,11 @@ type BrowserSandbox = Record<string, unknown> & {
 };
 
 let distFreshChecked = false;
+const buildLockDir = resolveFromRoot(".vitest", "dist-build.lock");
+
+function sleepSync(ms: number) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
 
 function latestMtimeMs(root: string) {
   if (!fs.existsSync(root)) return 0;
@@ -42,10 +47,7 @@ function runBuildForDist() {
   }
 }
 
-function ensureDistFresh() {
-  if (distFreshChecked) return;
-  distFreshChecked = true;
-
+function needsDistBuild() {
   const distRoot = resolveFromRoot("dist");
   const distMtime = latestMtimeMs(distRoot);
   const sourceMtime = Math.max(
@@ -53,8 +55,45 @@ function ensureDistFresh() {
     latestMtimeMs(resolveFromRoot("public"))
   );
 
-  if (!distMtime || distMtime < sourceMtime) {
-    runBuildForDist();
+  return !distMtime || distMtime < sourceMtime;
+}
+
+function runWithBuildLock(callback: () => void) {
+  fs.mkdirSync(resolveFromRoot(".vitest"), { recursive: true });
+  const startedAt = Date.now();
+  let ownsLock = false;
+
+  while (!ownsLock) {
+    try {
+      fs.mkdirSync(buildLockDir);
+      ownsLock = true;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== "EEXIST") throw error;
+      if (Date.now() - startedAt > 120_000) {
+        throw new Error("等待 dist 构建锁超时。");
+      }
+      sleepSync(100);
+    }
+  }
+
+  try {
+    callback();
+  } finally {
+    fs.rmSync(buildLockDir, { recursive: true, force: true });
+  }
+}
+
+function ensureDistFresh() {
+  if (distFreshChecked) return;
+  distFreshChecked = true;
+
+  if (needsDistBuild()) {
+    runWithBuildLock(() => {
+      if (needsDistBuild()) {
+        runBuildForDist();
+      }
+    });
   }
 }
 
@@ -95,6 +134,13 @@ export function createBrowserContext(overrides: Record<string, unknown> = {}) {
 export function runBrowserScript(relativePath: string, context: BrowserSandbox, trailer = "") {
   ensureDistFresh();
   const filename = resolveFromDist(relativePath);
+  if (!fs.existsSync(filename)) {
+    runWithBuildLock(() => {
+      if (!fs.existsSync(filename)) {
+        runBuildForDist();
+      }
+    });
+  }
   const source = fs.readFileSync(filename, "utf8");
   return vm.runInContext(`${source}\n${trailer}`, context, { filename });
 }
