@@ -259,21 +259,20 @@
                         <button class="btn btn-sm btn-outline-danger" data-action="remove-evidence-group" data-group-index="${groupIndex}">删除条款</button>
                     </div>
                 </div>
-                <div class="row g-2 audit-evidence-head">
-                    <div class="col-md-8">依据内容</div>
-                    <div class="col-md-3">备注</div>
-                    <div class="col-md-auto"></div>
-                </div>
                 ${group.items.length ? group.items.map((item, itemIndex) => `
-                    <div class="row g-2 align-items-start audit-evidence-row">
-                        <div class="col-md-8">
+                    <div class="audit-evidence-row">
+                        <div class="mb-2">
+                            <label class="form-label small text-muted mb-1">依据内容</label>
                             <textarea class="form-control form-control-sm audit-evidence-content" rows="2" data-action="edit-evidence-content" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="依据内容">${escapeHtml(item.content)}</textarea>
                         </div>
-                        <div class="col-md-3">
-                            <input class="form-control form-control-sm" value="${escapeHtml(item.note)}" placeholder="备注" data-action="edit-evidence-note" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="备注">
-                        </div>
-                        <div class="col-md-auto text-md-end">
-                            <button class="btn btn-sm btn-outline-danger" data-action="remove-evidence" data-group-index="${groupIndex}" data-item-index="${itemIndex}">删除</button>
+                        <div class="row g-2 align-items-center">
+                            <div class="col">
+                                <label class="form-label small text-muted mb-1">备注</label>
+                                <input class="form-control form-control-sm" value="${escapeHtml(item.note)}" placeholder="备注" data-action="edit-evidence-note" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="备注">
+                            </div>
+                            <div class="col-auto align-self-end">
+                                <button class="btn btn-sm btn-outline-danger" data-action="remove-evidence" data-group-index="${groupIndex}" data-item-index="${itemIndex}">删除</button>
+                            </div>
                         </div>
                     </div>
                 `).join("") : `<div class="audit-clause-empty">暂无依据，点击“新增依据”添加一行。</div>`}
