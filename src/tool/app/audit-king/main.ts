@@ -49,9 +49,9 @@
         }
     }
 
-    function addKeyword(text: string, source?: AuditKingKeywordSource): void {
+    function addKeyword(text: string, source?: AuditKingKeywordSource, options: { afterKeywordId?: string } = {}): void {
         try {
-            runtime.State.addKeyword(state, text, source);
+            runtime.State.addKeyword(state, text, source, options);
             recomputeSearch();
             refresh(`已加入关键词：${text}`, "success");
         } catch (error) {
@@ -93,11 +93,17 @@
     function bindKeywordActions(): void {
         getElement<HTMLButtonElement>("addSelectedKeywordBtn").addEventListener("click", () => {
             const selection = getChecklistSelection();
-            addKeyword(selection.text, selection.source);
+            addKeyword(selection.text, selection.source, {
+                afterKeywordId: state.currentKeywordId !== "all" ? state.currentKeywordId : undefined
+            });
         });
 
         getElement<HTMLButtonElement>("bindSelectedSourceBtn").addEventListener("click", () => {
             bindSelectionToCurrentKeyword();
+        });
+
+        getElement<HTMLButtonElement>("unbindSelectedSourceBtn").addEventListener("click", () => {
+            unbindCurrentKeywordSource();
         });
 
         getElement<HTMLButtonElement>("addKeywordBtn").addEventListener("click", () => {
@@ -211,6 +217,22 @@
         runtime.View.renderStatus(`已更新关键词来源：${keyword.text}`, "success");
     }
 
+    function unbindCurrentKeywordSource(): void {
+        if (!state.currentKeywordId || state.currentKeywordId === "all") {
+            runtime.View.renderStatus("请先在关键词池选择一个关键词。", "error");
+            return;
+        }
+        const keyword = state.keywords.find((item) => item.id === state.currentKeywordId);
+        if (!keyword) {
+            runtime.View.renderStatus("当前关键词不存在。", "error");
+            return;
+        }
+        runtime.State.clearKeywordSource(state, keyword.id);
+        runtime.View.renderKeywords(state);
+        runtime.View.renderChecklist(state);
+        runtime.View.renderStatus(`已解绑关键词来源：${keyword.text}`, "success");
+    }
+
     function bindFiltersAndNavigation(): void {
         getElement<HTMLSelectElement>("manualFilter").addEventListener("change", (event: Event) => {
             runtime.State.setDocumentFilter(state, (event.currentTarget as HTMLSelectElement).value);
@@ -303,9 +325,10 @@
                 runtime.View.renderStatus("请先填写条款名称。", "error");
                 return;
             }
-            runtime.State.addEvidenceGroup(state, title);
+            runtime.State.addEvidenceGroup(state, title, { createInitialEntry: true });
             input.value = "";
             runtime.View.renderEvidence(state);
+            runtime.View.scrollEvidenceToBottom();
             runtime.View.renderStatus("已新增条款。", "success");
         });
         getElement<HTMLInputElement>("evidenceGroupTitleInput").addEventListener("keydown", (event: KeyboardEvent) => {

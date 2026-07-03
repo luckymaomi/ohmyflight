@@ -8,6 +8,7 @@ function createElement() {
     textContent: "",
     className: "",
     clientHeight: 320,
+    scrollHeight: 960,
     scrollTop: 0,
     offsetTop: 0,
     querySelector(_selector?: string) {
@@ -95,6 +96,15 @@ describe("audit-king view", () => {
     expect(elements.evidenceList.innerHTML).toContain("1.2 检查要求");
     expect(elements.evidenceList.innerHTML).toContain("新增依据");
     expect(elements.evidenceList.innerHTML).not.toContain("人工选中的依据会放在这里");
+  });
+
+  it("scrolls audit basket to the bottom after a new group is added", () => {
+    elements.evidenceList.scrollTop = 0;
+    elements.evidenceList.scrollHeight = 1200;
+
+    viewApi.scrollEvidenceToBottom();
+
+    expect(elements.evidenceList.scrollTop).toBe(1200);
   });
 
   it("renders match cards as direct detail targets without a separate detail button", () => {

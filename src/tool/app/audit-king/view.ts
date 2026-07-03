@@ -308,6 +308,11 @@
         `).join("");
     }
 
+    function scrollEvidenceToBottom(): void {
+        const container = getElement<HTMLElement>("evidenceList");
+        container.scrollTop = container.scrollHeight;
+    }
+
     function renderAll(state: AuditKingStateModel): void {
         renderChecklist(state);
         renderDocuments(state);
@@ -328,6 +333,7 @@
         renderKeywords,
         renderMatches,
         renderMatchDetail,
-        renderEvidence
+        renderEvidence,
+        scrollEvidenceToBottom
     };
 })();

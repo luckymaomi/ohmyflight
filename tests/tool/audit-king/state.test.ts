@@ -28,6 +28,25 @@ describe("audit-king state", () => {
     expect(state.checklistBlocks[0].text).toBe("程序是否规定进入机长训练");
   });
 
+  it("inserts a selected checklist keyword below the current keyword when requested", () => {
+    const state = stateApi.createState();
+    const first = stateApi.addKeyword(state, "训练要求");
+    stateApi.addKeyword(state, "证件携带");
+    stateApi.setCurrentKeyword(state, first.id);
+
+    const inserted = stateApi.addKeyword(state, "进入机长训练", {
+      blockId: "checklist-b1",
+      start: 6,
+      end: 12
+    }, {
+      afterKeywordId: first.id
+    });
+
+    expect(state.keywords.map((keyword: any) => keyword.text)).toEqual(["训练要求", "进入机长训练", "证件携带"]);
+    expect(inserted.source).toEqual({ blockId: "checklist-b1", start: 6, end: 12 });
+    expect(state.currentKeywordId).toBe(first.id);
+  });
+
   it("updates filters and removes keywords explicitly", () => {
     const state = stateApi.createState();
     const keyword = stateApi.addKeyword(state, "进入条件");
@@ -186,6 +205,25 @@ describe("audit-king state", () => {
     });
   });
 
+  it("clears a keyword source without changing the keyword text or search fields", () => {
+    const state = stateApi.createState();
+    const keyword = stateApi.addKeyword(state, "机长训练", {
+      blockId: "checklist-b3",
+      blockIndex: 3,
+      start: 5,
+      end: 13,
+      text: "进入机长训练"
+    });
+    stateApi.updateKeywordLabel(state, keyword.id, "1.1 机组资格");
+
+    stateApi.clearKeywordSource(state, keyword.id);
+
+    expect(state.keywords[0].text).toBe("机长训练");
+    expect(state.keywords[0].label).toBe("1.1 机组资格");
+    expect(state.keywords[0].enabled).toBe(true);
+    expect(state.keywords[0].source).toBeUndefined();
+  });
+
   it("updates a keyword label without changing the keyword text", () => {
     const state = stateApi.createState();
     const keyword = stateApi.addKeyword(state, "机长训练");
@@ -207,6 +245,20 @@ describe("audit-king state", () => {
         id: "evidence-group-1",
         title: "1.1 机组训练资格",
         items: []
+      }
+    ]);
+  });
+
+  it("can create the first blank evidence row when adding an audit basket group", () => {
+    const state = stateApi.createState();
+
+    stateApi.addEvidenceGroup(state, "1.1 训练资格", { createInitialEntry: true });
+
+    expect(state.evidenceGroups).toEqual([
+      {
+        id: "evidence-group-1",
+        title: "1.1 训练资格",
+        items: [{ content: "", note: "" }]
       }
     ]);
   });

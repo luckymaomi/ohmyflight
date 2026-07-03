@@ -29,13 +29,25 @@
         return state.documents.filter((documentItem) => documentItem.enabled !== false);
     }
 
-    function addKeyword(state: AuditKingStateModel, text: string, source?: AuditKingKeywordSource): AuditKingKeyword {
+    function addKeyword(
+        state: AuditKingStateModel,
+        text: string,
+        source?: AuditKingKeywordSource,
+        options: { afterKeywordId?: string } = {}
+    ): AuditKingKeyword {
         const normalized = text.trim();
         if (!normalized) {
             throw new Error("关键词不能为空。");
         }
         const keyword = runtime.KeywordStore.createKeyword(normalized, state.keywords.length, { source });
-        state.keywords.push(keyword);
+        const afterIndex = options.afterKeywordId
+            ? state.keywords.findIndex((item) => item.id === options.afterKeywordId)
+            : -1;
+        if (afterIndex >= 0) {
+            state.keywords.splice(afterIndex + 1, 0, keyword);
+        } else {
+            state.keywords.push(keyword);
+        }
         if (state.currentKeywordId === "all") {
             state.currentKeywordId = keyword.id;
         }
@@ -82,6 +94,12 @@
         const keyword = state.keywords.find((item) => item.id === keywordId);
         if (!keyword) return;
         keyword.source = source;
+    }
+
+    function clearKeywordSource(state: AuditKingStateModel, keywordId: string): void {
+        const keyword = state.keywords.find((item) => item.id === keywordId);
+        if (!keyword) return;
+        delete keyword.source;
     }
 
     function updateKeywordLabel(state: AuditKingStateModel, keywordId: string, label: string): void {
@@ -155,11 +173,15 @@
         return `evidence-group-${state.evidenceGroups.length + 1}`;
     }
 
-    function addEvidenceGroup(state: AuditKingStateModel, title: string): AuditKingEvidenceGroup {
+    function addEvidenceGroup(
+        state: AuditKingStateModel,
+        title: string,
+        options: { createInitialEntry?: boolean } = {}
+    ): AuditKingEvidenceGroup {
         const group = {
             id: makeEvidenceGroupId(state),
             title: title.trim(),
-            items: []
+            items: options.createInitialEntry ? [{ content: "", note: "" }] : []
         };
         state.evidenceGroups.push(group);
         return group;
@@ -224,6 +246,7 @@
         removeKeyword,
         setKeywordEnabled,
         updateKeywordSource,
+        clearKeywordSource,
         updateKeywordLabel,
         moveKeywordToPosition,
         replaceKeywords,
