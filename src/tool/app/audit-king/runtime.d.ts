@@ -22,9 +22,13 @@ interface AuditKingKeyword {
 }
 
 interface AuditKingKeywordSource {
-    blockId: string;
-    start: number;
-    end: number;
+    blockId?: string;
+    blockIndex?: number;
+    start?: number;
+    end?: number;
+    text?: string;
+    beforeText?: string;
+    afterText?: string;
 }
 
 interface AuditKingImportedKeyword {

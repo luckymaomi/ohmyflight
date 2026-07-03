@@ -1,7 +1,7 @@
 (function () {
     const runtime = window.AuditKing || (window.AuditKing = {});
 
-    const headers = ["关键词", "启用", "颜色", "检查单段落", "来源起点", "来源终点"];
+    const headers = ["关键词", "启用", "颜色", "检查单段落", "检查单段落序号", "来源起点", "来源终点", "来源文本", "来源前文", "来源后文"];
 
     function normalizeText(value: unknown): string {
         if (value === null || value === undefined) return "";
@@ -22,12 +22,31 @@
 
     function buildSource(row: Record<string, unknown>): AuditKingKeywordSource | undefined {
         const blockId = normalizeText(row["检查单段落"]);
+        const blockIndex = normalizeNumber(row["检查单段落序号"]);
         const start = normalizeNumber(row["来源起点"]);
         const end = normalizeNumber(row["来源终点"]);
-        if (!blockId || start === null || end === null) {
+        const text = normalizeText(row["来源文本"]);
+        const beforeText = normalizeText(row["来源前文"]);
+        const afterText = normalizeText(row["来源后文"]);
+        const legacyBlockIndex = runtime.SourceLocator?.parseLegacyBlockIndex
+            ? runtime.SourceLocator.parseLegacyBlockIndex(blockId)
+            : null;
+        if (!blockId && blockIndex === null && start === null && end === null && !text && !beforeText && !afterText) {
             return undefined;
         }
-        return { blockId, start, end };
+        const source: AuditKingKeywordSource = {};
+        if (blockId) source.blockId = blockId;
+        if (blockIndex !== null) {
+            source.blockIndex = blockIndex;
+        } else if (legacyBlockIndex !== null) {
+            source.blockIndex = legacyBlockIndex;
+        }
+        if (start !== null) source.start = start;
+        if (end !== null) source.end = end;
+        if (text) source.text = text;
+        if (beforeText) source.beforeText = beforeText;
+        if (afterText) source.afterText = afterText;
+        return source;
     }
 
     function buildKeywordRows(keywords: AuditKingKeyword[]): (string | number)[][] {
@@ -38,8 +57,12 @@
                 keyword.enabled === false ? "否" : "是",
                 keyword.color,
                 keyword.source?.blockId || "",
+                keyword.source?.blockIndex ?? "",
                 keyword.source?.start ?? "",
-                keyword.source?.end ?? ""
+                keyword.source?.end ?? "",
+                keyword.source?.text || "",
+                keyword.source?.beforeText || "",
+                keyword.source?.afterText || ""
             ])
         ];
     }
@@ -53,7 +76,11 @@
             { wch: 12 },
             { wch: 24 },
             { wch: 10 },
-            { wch: 10 }
+            { wch: 10 },
+            { wch: 10 },
+            { wch: 24 },
+            { wch: 24 },
+            { wch: 24 }
         ];
         XLSX.utils.book_append_sheet(workbook, sheet, "关键词");
         return workbook;

@@ -6,7 +6,7 @@
     }
 
     function makeDocumentId(file: File, index: number): string {
-        return `doc-${index + 1}-${Date.now()}-${file.name.replace(/[^\w\u4e00-\u9fa5-]+/g, "-")}`;
+        return `doc-${index + 1}-${file.name.replace(/[^\w\u4e00-\u9fa5-]+/g, "-")}`;
     }
 
     function guessTitle(line: string, currentTitle: string): string {

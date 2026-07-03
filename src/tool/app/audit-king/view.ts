@@ -27,27 +27,17 @@
     function keywordRangesForText(text: string, blockId: string, state: AuditKingStateModel): AuditKingHighlightRange[] {
         const ranges: AuditKingHighlightRange[] = [];
         state.keywords.filter((keyword) => keyword.enabled !== false).forEach((keyword) => {
-            if (!keyword.text) return;
-            let start = text.indexOf(keyword.text);
-            while (start >= 0) {
-                ranges.push({
-                    keywordId: keyword.id,
-                    color: keyword.color,
-                    start,
-                    end: start + keyword.text.length
-                });
-                start = text.indexOf(keyword.text, start + Math.max(1, keyword.text.length));
-            }
-        });
-        const currentKeyword = state.keywords.find((keyword) => keyword.id === state.currentKeywordId);
-        if (currentKeyword?.source?.blockId === blockId) {
+            if (!keyword.source || keyword.source.blockId !== blockId) return;
+            const start = Number(keyword.source.start);
+            const end = Number(keyword.source.end);
+            if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end > text.length || end <= start) return;
             ranges.push({
-                keywordId: currentKeyword.id,
-                color: currentKeyword.color,
-                start: currentKeyword.source.start,
-                end: currentKeyword.source.end
+                keywordId: keyword.id,
+                color: keyword.color,
+                start,
+                end
             });
-        }
+        });
         return ranges;
     }
 
@@ -65,7 +55,7 @@
             `border-bottom:2px solid ${background}`,
             shadows ? `box-shadow:${shadows}` : ""
         ].filter(Boolean).join(";");
-        return `<mark class="ak-highlight" style="${style}">${escapeHtml(segment.text)}</mark>`;
+        return `<mark class="ak-highlight" data-keyword-ids="${escapeHtml(segment.keywordIds.join(" "))}" style="${style}">${escapeHtml(segment.text)}</mark>`;
     }
 
     function renderHighlightedText(text: string, ranges: AuditKingHighlightRange[]): string {
@@ -85,8 +75,22 @@
             const ranges = keywordRangesForText(block.text, block.id, state);
             const currentKeyword = state.keywords.find((keyword) => keyword.id === state.currentKeywordId);
             const active = currentKeyword?.source?.blockId === block.id ? " active-source" : "";
-            return `<p id="checklist-block-${escapeHtml(block.id)}" class="${active}" data-block-id="${escapeHtml(block.id)}">${renderHighlightedText(block.text, ranges)}</p>`;
+            return `<p id="checklist-block-${escapeHtml(block.id)}" class="${active}" data-block-id="${escapeHtml(block.id)}" data-block-index="${block.blockIndex}">${renderHighlightedText(block.text, ranges)}</p>`;
         }).join("");
+    }
+
+    function focusChecklistHighlight(state: AuditKingStateModel): void {
+        const container = getElement<HTMLElement>("checklistText");
+        if (!state.currentKeywordId || state.currentKeywordId === "all") return;
+        const activeBlock = container.querySelector<HTMLElement>(".active-source");
+        const highlight = findKeywordHighlight(activeBlock || container, state.currentKeywordId)
+            || findKeywordHighlight(container, state.currentKeywordId);
+        scrollChildIntoPanel(container, highlight || activeBlock);
+    }
+
+    function findKeywordHighlight(root: ParentNode, keywordId: string): HTMLElement | null {
+        const highlights = Array.from(root.querySelectorAll<HTMLElement>(".ak-highlight"));
+        return highlights.find((element) => (element.dataset.keywordIds || "").split(/\s+/).includes(keywordId)) || null;
     }
 
     function renderDocuments(state: AuditKingStateModel): void {
@@ -125,11 +129,15 @@
             const count = state.searchResult.countsByKeyword[keyword.id] ?? 0;
             const active = state.currentKeywordId === keyword.id ? "active" : "";
             const disabled = keyword.enabled === false ? "muted" : "";
+            const sourceStatus = getKeywordSourceStatus(keyword, state.checklistBlocks);
             return `
                 <div class="keyword-item ${active} ${disabled}" data-keyword-id="${escapeHtml(keyword.id)}">
                     <button class="keyword-select" data-action="select-keyword" data-keyword-id="${escapeHtml(keyword.id)}">
                         <span class="keyword-color" style="background:${escapeHtml(keyword.color)}"></span>
-                        <span class="keyword-text">${escapeHtml(keyword.text)}</span>
+                        <span class="keyword-main">
+                            <span class="keyword-text">${escapeHtml(keyword.text)}</span>
+                            <span class="keyword-source-status ${sourceStatus.className}">${sourceStatus.label}</span>
+                        </span>
                         <span class="keyword-count">${count}</span>
                     </button>
                     <button class="keyword-toggle" data-action="toggle-keyword" data-keyword-id="${escapeHtml(keyword.id)}">${keyword.enabled === false ? "启用" : "停用"}</button>
@@ -137,6 +145,23 @@
                 </div>
             `;
         }).join("");
+    }
+
+    function getKeywordSourceStatus(keyword: AuditKingKeyword, blocks: AuditKingTextBlock[]): { label: string; className: string } {
+        if (!keyword.source) {
+            return { label: "无来源", className: "" };
+        }
+        const block = keyword.source.blockId
+            ? blocks.find((item) => item.id === keyword.source?.blockId)
+            : undefined;
+        const start = Number(keyword.source.start);
+        const end = Number(keyword.source.end);
+        const hasValidRange = !!block && Number.isFinite(start) && Number.isFinite(end) && start >= 0 && end > start && end <= block.text.length;
+        const textOk = !keyword.source.text || (hasValidRange && block?.text.slice(start, end) === keyword.source.text);
+        if (hasValidRange && textOk) {
+            return { label: "已定位", className: "located" };
+        }
+        return { label: "需人工确认", className: "review" };
     }
 
     function renderMatches(state: AuditKingStateModel): void {
@@ -169,16 +194,13 @@
             const active = index === state.currentMatchIndex ? "active" : "";
             const title = match.title ? ` / ${match.title}` : "";
             return `
-                <article class="match-item ${active}" id="match-${index}" data-match-index="${index}">
+                <article class="match-item ${active}" id="match-${index}" data-action="focus-match" data-match-index="${index}" role="button" tabindex="0">
                     <div class="match-meta">
                         <strong>${escapeHtml(match.keywordText)}</strong>
                         <span>${escapeHtml(match.documentName)} / 第 ${match.blockIndex} 段${escapeHtml(title)}</span>
                         <span class="match-mode">${match.mode === "exact" ? "精确" : "宽松"}</span>
                     </div>
                     <div class="match-context">${context.truncatedStart ? "..." : ""}${renderHighlightedText(context.text, [contextRange])}${context.truncatedEnd ? "..." : ""}</div>
-                    <div class="match-actions">
-                        <button class="btn btn-sm btn-outline-secondary" data-action="focus-match" data-match-index="${index}">查看详情</button>
-                    </div>
                 </article>
             `;
         }).join("");
@@ -295,6 +317,7 @@
         renderHighlightedText,
         renderAll,
         renderChecklist,
+        focusChecklistHighlight,
         renderKeywords,
         renderMatches,
         renderMatchDetail,

@@ -93,6 +93,10 @@
             addKeyword(selection.text, selection.source);
         });
 
+        getElement<HTMLButtonElement>("bindSelectedSourceBtn").addEventListener("click", () => {
+            bindSelectionToCurrentKeyword();
+        });
+
         getElement<HTMLButtonElement>("addKeywordBtn").addEventListener("click", () => {
             const input = getElement<HTMLInputElement>("keywordInput");
             addKeyword(input.value);
@@ -135,22 +139,48 @@
         sourceRange.setEnd(range.endContainer, range.endOffset);
         const end = sourceRange.toString().length;
         sourceRange.detach();
+        const block = state.checklistBlocks.find((item) => item.id === (startBlock.dataset.blockId || ""));
 
         return {
             text,
-            source: {
-                blockId: startBlock.dataset.blockId || "",
-                start,
-                end
-            }
+            source: block && runtime.SourceLocator?.makeSource
+                ? runtime.SourceLocator.makeSource(block, start, end)
+                : {
+                    blockId: startBlock.dataset.blockId || "",
+                    blockIndex: Number(startBlock.dataset.blockIndex || 0) || undefined,
+                    start,
+                    end,
+                    text
+                }
         };
     }
 
-    function scrollChecklistSource(keywordId: string): void {
-        const keyword = state.keywords.find((item) => item.id === keywordId);
-        if (!keyword?.source?.blockId) return;
+    function focusChecklistKeyword(keywordId: string): void {
+        if (!keywordId || keywordId === "all") return;
         runtime.View.renderChecklist(state);
-        document.getElementById(`checklist-block-${keyword.source.blockId}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+        runtime.View.focusChecklistHighlight(state);
+    }
+
+    function bindSelectionToCurrentKeyword(): void {
+        if (!state.currentKeywordId || state.currentKeywordId === "all") {
+            runtime.View.renderStatus("请先在关键词池选择一个关键词。", "error");
+            return;
+        }
+        const keyword = state.keywords.find((item) => item.id === state.currentKeywordId);
+        if (!keyword) {
+            runtime.View.renderStatus("当前关键词不存在。", "error");
+            return;
+        }
+        const selection = getChecklistSelection();
+        if (!selection.text || !selection.source) {
+            runtime.View.renderStatus("请先在检查单参考中选中要绑定的位置。", "error");
+            return;
+        }
+        runtime.State.updateKeywordSource(state, keyword.id, selection.source);
+        runtime.View.renderKeywords(state);
+        runtime.View.renderChecklist(state);
+        runtime.View.focusChecklistHighlight(state);
+        runtime.View.renderStatus(`已更新关键词来源：${keyword.text}`, "success");
     }
 
     function bindFiltersAndNavigation(): void {
@@ -183,7 +213,7 @@
                 runtime.State.setCurrentKeyword(state, keywordId);
                 runtime.View.renderKeywords(state);
                 runtime.View.renderMatches(state);
-                scrollChecklistSource(keywordId);
+                focusChecklistKeyword(keywordId);
             } else if (action === "delete-keyword") {
                 runtime.State.removeKeyword(state, actionTarget.dataset.keywordId || "");
                 recomputeSearch();
@@ -218,6 +248,15 @@
                 const groupIndex = Number(actionTarget.dataset.groupIndex || -1);
                 addEvidenceEntryFromGroup(groupIndex);
             }
+        });
+        document.addEventListener("keydown", (event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) return;
+            const matchItem = target.closest<HTMLElement>(".match-item[data-action='focus-match']");
+            if (!matchItem) return;
+            event.preventDefault();
+            focusMatch(Number(matchItem.dataset.matchIndex || 0));
         });
     }
 

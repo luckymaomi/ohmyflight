@@ -58,6 +58,9 @@
                 source: item.source
             }))
             .filter((keyword) => keyword.text);
+        if (runtime.SourceLocator?.resolveKeywordSources) {
+            state.keywords = runtime.SourceLocator.resolveKeywordSources(state.keywords, state.checklistBlocks);
+        }
         state.currentKeywordId = state.keywords[0]?.id || "all";
         state.currentMatchIndex = 0;
     }
@@ -69,8 +72,17 @@
         state.currentMatchIndex = 0;
     }
 
+    function updateKeywordSource(state: AuditKingStateModel, keywordId: string, source: AuditKingKeywordSource): void {
+        const keyword = state.keywords.find((item) => item.id === keywordId);
+        if (!keyword) return;
+        keyword.source = source;
+    }
+
     function setChecklistBlocks(state: AuditKingStateModel, blocks: AuditKingTextBlock[]): void {
         state.checklistBlocks = [...blocks];
+        if (runtime.SourceLocator?.resolveKeywordSources) {
+            state.keywords = runtime.SourceLocator.resolveKeywordSources(state.keywords, state.checklistBlocks);
+        }
     }
 
     function setDocuments(state: AuditKingStateModel, documents: AuditKingDocument[]): void {
@@ -176,6 +188,7 @@
         addKeyword,
         removeKeyword,
         setKeywordEnabled,
+        updateKeywordSource,
         replaceKeywords,
         setChecklistBlocks,
         setDocuments,

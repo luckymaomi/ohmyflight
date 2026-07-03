@@ -17,6 +17,8 @@
         .top-work-grid, .result-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
         .top-work-grid > .card, .result-grid > .card { min-width: 0; }
         .panel-scroll { min-height: 320px; max-height: 56vh; overflow: auto; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; padding: 12px; }
+        .keyword-list-scroll { height: clamp(260px, 34vh, 360px); overflow: auto; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; padding: 8px; }
+        .match-list-scroll { height: clamp(360px, 52vh, 560px); min-height: 0; max-height: none; }
         .checklist-text p { margin: 0 0 10px; line-height: 1.7; font-size: 14px; }
         .checklist-text p.active-source { outline: 2px solid rgba(13, 110, 253, 0.22); background: #f8fbff; border-radius: 4px; padding: 4px; }
         .empty-panel { color: #6c757d; font-size: 13px; padding: 18px; text-align: center; border: 1px dashed #dee2e6; border-radius: 6px; background: #f8f9fa; }
@@ -27,20 +29,24 @@
         .keyword-item { display: flex; align-items: stretch; border: 1px solid #dee2e6; border-radius: 6px; overflow: hidden; margin-bottom: 8px; background: #fff; }
         .keyword-item.active { border-color: #0d6efd; box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.12); }
         .keyword-item.muted { opacity: 0.58; }
-        .keyword-select { display: grid; grid-template-columns: 14px 1fr auto; align-items: center; gap: 8px; width: 100%; border: 0; background: transparent; padding: 8px 10px; text-align: left; }
+        .keyword-select { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 100%; border: 0; background: transparent; padding: 8px 10px; text-align: left; }
         .keyword-color { width: 12px; height: 12px; border-radius: 999px; }
+        .keyword-main { min-width: 0; display: grid; gap: 3px; }
         .keyword-text { overflow-wrap: anywhere; font-size: 13px; }
         .keyword-count { color: #6c757d; font-variant-numeric: tabular-nums; }
+        .keyword-source-status { width: fit-content; border-radius: 999px; padding: 1px 7px; font-size: 11px; line-height: 1.5; border: 1px solid #dee2e6; color: #6c757d; background: #f8f9fa; }
+        .keyword-source-status.located { border-color: #badbcc; color: #0f5132; background: #d1e7dd; }
+        .keyword-source-status.review { border-color: #ffecb5; color: #664d03; background: #fff3cd; }
         .keyword-toggle { width: 44px; border: 0; border-left: 1px solid #dee2e6; background: #fff; color: #495057; font-size: 12px; }
         .keyword-delete { width: 34px; border: 0; border-left: 1px solid #dee2e6; background: #fff; color: #dc3545; }
         .match-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .match-item { border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; margin-bottom: 10px; background: #fff; }
+        .match-item { border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; margin-bottom: 10px; background: #fff; cursor: pointer; }
         .match-item.active { border-color: #0d6efd; background: #f8fbff; }
+        .match-item:focus-visible { outline: 2px solid rgba(13, 110, 253, 0.35); outline-offset: 2px; }
         .match-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; color: #57606a; font-size: 12px; margin-bottom: 6px; }
         .match-meta strong { color: #24292f; font-size: 13px; }
         .match-mode { border: 1px solid #dee2e6; border-radius: 4px; padding: 1px 6px; background: #f8f9fa; }
         .match-context { line-height: 1.7; font-size: 14px; margin-bottom: 8px; overflow-wrap: anywhere; }
-        .match-actions { display: flex; justify-content: flex-end; gap: 8px; }
         .detail-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; color: #57606a; font-size: 12px; margin-bottom: 10px; }
         .detail-meta strong { color: #24292f; font-size: 13px; }
         .detail-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; margin-bottom: 10px; }
@@ -52,6 +58,8 @@
         .audit-evidence-row:last-child { border-bottom: 0; }
         .audit-evidence-content { line-height: 1.6; min-height: 70px; }
         .audit-clause-empty { padding: 14px 12px; color: #6c757d; font-size: 13px; background: #fff; }
+        .evidence-list-scroll { height: clamp(360px, 52vh, 620px); overflow: auto; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; padding: 12px; }
+        .evidence-list-scroll .audit-clause:last-child { margin-bottom: 0; }
         @media (max-width: 900px) {
             .upload-grid, .top-work-grid, .result-grid { grid-template-columns: 1fr; }
             .upload-status { grid-column: auto; }
@@ -104,7 +112,7 @@
                     <button class="btn btn-outline-primary" id="addKeywordBtn">加入</button>
                 </div>
                 <button class="btn btn-sm btn-outline-secondary mb-2" id="showAllKeywordsBtn">查看全部命中</button>
-                <div id="keywordList" class="mb-3"></div>
+                <div id="keywordList" class="keyword-list-scroll mb-3"></div>
                 <h6 class="card-title mb-2">手册</h6>
                 <div id="manualList"></div>
             </div>
@@ -125,7 +133,7 @@
                         <button class="btn btn-sm btn-outline-secondary" id="nextMatchBtn">下一个</button>
                     </div>
                 </div>
-                <div id="matchList" class="panel-scroll"></div>
+                <div id="matchList" class="panel-scroll match-list-scroll"></div>
             </div>
         </section>
     </div>
@@ -136,6 +144,7 @@
                 <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                     <h6 class="card-title mb-0">检查单参考</h6>
                     <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-secondary" id="bindSelectedSourceBtn">绑定到当前关键词</button>
                         <button class="btn btn-sm btn-outline-primary" id="addSelectedKeywordBtn">选中加入关键词</button>
                     </div>
                 </div>
@@ -174,7 +183,7 @@
                     <button class="btn btn-sm btn-outline-primary" id="addEvidenceGroupBtn">新增条款</button>
                 </div>
             </div>
-            <div id="evidenceList"></div>
+            <div id="evidenceList" class="evidence-list-scroll"></div>
         </div>
     </section>
 </div>
@@ -189,6 +198,7 @@
 <script src="keyword-store.js"></script>
 <script src="search-engine.js"></script>
 <script src="highlight.js"></script>
+<script src="source-locator.js"></script>
 <script src="evidence-basket.js"></script>
 <script src="export.js"></script>
 <script src="keyword-import-export.js"></script>

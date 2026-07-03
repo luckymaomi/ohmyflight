@@ -8,6 +8,7 @@ describe("audit-king state", () => {
     beforeAll(() => {
         const context = loadBrowserScripts([
             "tool/app/audit-king/keyword-store.js",
+            "tool/app/audit-king/source-locator.js",
             "tool/app/audit-king/state.js"
         ]);
         stateApi = (context.AuditKing as any).State;
@@ -83,6 +84,56 @@ describe("audit-king state", () => {
       blockId: "checklist-b1",
       start: 6,
       end: 12
+    });
+  });
+
+  it("resolves imported legacy keyword sources when checklist blocks are loaded", () => {
+    const state = stateApi.createState();
+
+    stateApi.replaceKeywords(state, [{
+      text: "进入机长训练",
+      color: "#f59e0b",
+      enabled: true,
+      source: {
+        blockId: "doc-1-1783044084949-checklist-docx-b2",
+        blockIndex: 2,
+        start: 6,
+        end: 12
+      }
+    }]);
+    stateApi.setChecklistBlocks(state, [
+      { id: "doc-1-checklist-docx-b1", documentId: "doc-1-checklist-docx", documentName: "检查单.docx", blockIndex: 1, title: "", text: "无关段落" },
+      { id: "doc-1-checklist-docx-b2", documentId: "doc-1-checklist-docx", documentName: "检查单.docx", blockIndex: 2, title: "", text: "程序是否规定进入机长训练" }
+    ]);
+
+    expect(state.keywords[0].source).toMatchObject({
+      blockId: "doc-1-checklist-docx-b2",
+      blockIndex: 2,
+      start: 6,
+      end: 12,
+      text: "进入机长训练"
+    });
+  });
+
+  it("updates a keyword source without changing the keyword text", () => {
+    const state = stateApi.createState();
+    const keyword = stateApi.addKeyword(state, "机长训练");
+
+    stateApi.updateKeywordSource(state, keyword.id, {
+      blockId: "checklist-b3",
+      blockIndex: 3,
+      start: 5,
+      end: 13,
+      text: "进入机长训练"
+    });
+
+    expect(state.keywords[0].text).toBe("机长训练");
+    expect(state.keywords[0].source).toMatchObject({
+      blockId: "checklist-b3",
+      blockIndex: 3,
+      start: 5,
+      end: 13,
+      text: "进入机长训练"
     });
   });
 
