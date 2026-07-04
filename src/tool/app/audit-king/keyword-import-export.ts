@@ -2,6 +2,7 @@
     const runtime = window.AuditKing || (window.AuditKing = {});
 
     const headers = ["序号", "关键词", "标记", "启用", "颜色", "检查单段落", "检查单段落序号", "来源起点", "来源终点", "来源文本", "来源前文", "来源后文"];
+    const evidenceHeaders = ["关键词序号", "关键词", "证据序号", "手册名称", "手册ID", "手册段落", "手册段落序号", "章节标题", "证据起点", "证据终点", "证据文本", "证据前文", "证据后文", "命中类型", "备注"];
 
     function normalizeText(value: unknown): string {
         if (value === null || value === undefined) return "";
@@ -75,9 +76,33 @@
         ];
     }
 
+    function buildEvidenceRows(keywords: AuditKingKeyword[]): (string | number)[][] {
+        return [
+            evidenceHeaders,
+            ...keywords.flatMap((keyword, keywordIndex) => (keyword.evidences || []).map((evidence, evidenceIndex) => [
+                keywordIndex + 1,
+                keyword.text,
+                evidenceIndex + 1,
+                evidence.documentName || "",
+                evidence.documentId || "",
+                evidence.blockId || "",
+                evidence.blockIndex ?? "",
+                evidence.title || "",
+                evidence.start ?? "",
+                evidence.end ?? "",
+                evidence.text || "",
+                evidence.beforeText || "",
+                evidence.afterText || "",
+                evidence.mode || "",
+                evidence.note || ""
+            ]))
+        ];
+    }
+
     function buildKeywordWorkbook(keywords: AuditKingKeyword[]) {
         const workbook = XLSX.utils.book_new();
         const sheet = XLSX.utils.aoa_to_sheet(buildKeywordRows(keywords));
+        const evidenceSheet = XLSX.utils.aoa_to_sheet(buildEvidenceRows(keywords));
         sheet["!cols"] = [
             { wch: 8 },
             { wch: 24 },
@@ -92,7 +117,25 @@
             { wch: 24 },
             { wch: 24 }
         ];
+        evidenceSheet["!cols"] = [
+            { wch: 12 },
+            { wch: 24 },
+            { wch: 10 },
+            { wch: 24 },
+            { wch: 18 },
+            { wch: 24 },
+            { wch: 14 },
+            { wch: 24 },
+            { wch: 10 },
+            { wch: 10 },
+            { wch: 32 },
+            { wch: 24 },
+            { wch: 24 },
+            { wch: 10 },
+            { wch: 24 }
+        ];
         XLSX.utils.book_append_sheet(workbook, sheet, "关键词");
+        XLSX.utils.book_append_sheet(workbook, evidenceSheet, "手册证据");
         return workbook;
     }
 
@@ -110,13 +153,80 @@
         });
     }
 
+    function buildManualEvidence(row: Record<string, unknown>): AuditKingManualEvidence | null {
+        const documentName = normalizeText(row["手册名称"]);
+        const text = normalizeText(row["证据文本"]);
+        if (!documentName && !text) return null;
+        const evidence: AuditKingManualEvidence = {
+            documentName,
+            documentId: normalizeText(row["手册ID"]),
+            blockId: normalizeText(row["手册段落"]),
+            title: normalizeText(row["章节标题"]),
+            text,
+            beforeText: normalizeText(row["证据前文"]),
+            afterText: normalizeText(row["证据后文"]),
+            mode: normalizeText(row["命中类型"]) as "exact" | "loose" | "",
+            note: normalizeText(row["备注"])
+        };
+        const blockIndex = normalizeNumber(row["手册段落序号"]);
+        const start = normalizeNumber(row["证据起点"]);
+        const end = normalizeNumber(row["证据终点"]);
+        if (blockIndex !== null) evidence.blockIndex = blockIndex;
+        if (start !== null) evidence.start = start;
+        if (end !== null) evidence.end = end;
+        return evidence;
+    }
+
+    function parseEvidenceRows(workbook: any): Array<{ keywordOrder: number | null; keywordText: string; evidenceOrder: number | null; evidence: AuditKingManualEvidence }> {
+        const sheetName = workbook.SheetNames?.find((name: string) => name === "手册证据");
+        if (!sheetName) return [];
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, raw: true, defval: "" }) as unknown[][];
+        return rowsToObjects(rows)
+            .map((row, rowIndex) => {
+                const evidence = buildManualEvidence(row);
+                if (!evidence) return null;
+                return {
+                    keywordOrder: normalizeOrder(row["关键词序号"]),
+                    keywordText: normalizeText(row["关键词"]),
+                    evidenceOrder: normalizeOrder(row["证据序号"]) ?? rowIndex + 1,
+                    evidence
+                };
+            })
+            .filter((item): item is { keywordOrder: number | null; keywordText: string; evidenceOrder: number | null; evidence: AuditKingManualEvidence } => !!item)
+            .sort((left, right) => {
+                const leftOrder = left.evidenceOrder ?? 0;
+                const rightOrder = right.evidenceOrder ?? 0;
+                return leftOrder - rightOrder;
+            });
+    }
+
+    function attachEvidences(
+        keywords: AuditKingImportedKeyword[],
+        evidenceRows: Array<{ keywordOrder: number | null; keywordText: string; evidence: AuditKingManualEvidence }>
+    ): AuditKingImportedKeyword[] {
+        if (!evidenceRows.length && !keywords.length) return keywords;
+        const keywordsWithEvidence = keywords.map((keyword) => ({
+            ...keyword,
+            evidences: [] as AuditKingManualEvidence[]
+        }));
+        evidenceRows.forEach((row) => {
+            const target = row.keywordOrder !== null
+                ? keywordsWithEvidence.find((keyword) => keyword.order === row.keywordOrder)
+                : keywordsWithEvidence.find((keyword) => keyword.text === row.keywordText);
+            if (target) {
+                target.evidences.push(row.evidence);
+            }
+        });
+        return keywordsWithEvidence;
+    }
+
     function parseKeywordWorkbook(workbook: any): AuditKingImportedKeyword[] {
         const firstSheetName = workbook.SheetNames?.[0];
         if (!firstSheetName) return [];
         const sheet = workbook.Sheets[firstSheetName];
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: "" }) as unknown[][];
 
-        return rowsToObjects(rows)
+        const keywords = rowsToObjects(rows)
             .map((row, rowIndex) => {
                 const text = normalizeText(row["关键词"]);
                 if (!text) return null;
@@ -153,6 +263,10 @@
                 return left.rowIndex - right.rowIndex;
             })
             .map((item: { keyword: AuditKingImportedKeyword }) => item.keyword);
+        const evidenceRows = parseEvidenceRows(workbook);
+        return workbook.SheetNames?.includes("手册证据")
+            ? attachEvidences(keywords, evidenceRows)
+            : keywords;
     }
 
     runtime.KeywordImportExport = {

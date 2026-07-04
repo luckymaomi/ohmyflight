@@ -62,6 +62,27 @@ describe("audit-king state", () => {
     expect(state.currentKeywordId).toBe("all");
   });
 
+  it("keeps match detail context length temporary and resets it on keyword or filter changes", () => {
+    const state = stateApi.createState();
+    const keyword = stateApi.addKeyword(state, "进入条件");
+
+    expect(state.currentDetailContextLength).toBe(2000);
+
+    stateApi.expandMatchDetailContext(state);
+    stateApi.expandMatchDetailContext(state);
+
+    expect(state.currentDetailContextLength).toBe(6000);
+
+    stateApi.setDocumentFilter(state, "manual-1");
+
+    expect(state.currentDetailContextLength).toBe(2000);
+
+    stateApi.expandMatchDetailContext(state);
+    stateApi.setCurrentKeyword(state, keyword.id);
+
+    expect(state.currentDetailContextLength).toBe(2000);
+  });
+
   it("enables and disables a keyword explicitly", () => {
     const state = stateApi.createState();
     const keyword = stateApi.addKeyword(state, "训练要求");
@@ -222,6 +243,148 @@ describe("audit-king state", () => {
     expect(state.keywords[0].label).toBe("1.1 机组资格");
     expect(state.keywords[0].enabled).toBe(true);
     expect(state.keywords[0].source).toBeUndefined();
+  });
+
+  it("stores multiple manual evidences on a keyword without changing checklist source or audit basket", () => {
+    const state = stateApi.createState();
+    const keyword = stateApi.addKeyword(state, "训练要求", {
+      blockId: "checklist-b1",
+      blockIndex: 1,
+      start: 2,
+      end: 6,
+      text: "训练要求"
+    });
+    stateApi.addEvidenceGroup(state, "1.1 人工条款", { createInitialEntry: true });
+
+    const first = stateApi.addKeywordEvidence(state, keyword.id, {
+      documentId: "manual-1",
+      documentName: "运行手册.docx",
+      blockId: "manual-1-b3",
+      blockIndex: 3,
+      start: 10,
+      end: 14,
+      text: "训练要求",
+      beforeText: "机组",
+      afterText: "应当",
+      mode: "exact",
+      note: "第一处"
+    });
+    const second = stateApi.addKeywordEvidence(state, keyword.id, {
+      documentId: "manual-2",
+      documentName: "训练大纲.docx",
+      blockId: "manual-2-b8",
+      blockIndex: 8,
+      start: 4,
+      end: 8,
+      text: "训练要求",
+      beforeText: "进入",
+      afterText: "检查",
+      mode: "loose"
+    });
+
+    expect(state.keywords[0].source).toMatchObject({
+      blockId: "checklist-b1",
+      text: "训练要求"
+    });
+    expect(state.keywords[0].evidences).toEqual([
+      {
+        id: first.id,
+        documentId: "manual-1",
+        documentName: "运行手册.docx",
+        blockId: "manual-1-b3",
+        blockIndex: 3,
+        title: "",
+        start: 10,
+        end: 14,
+        text: "训练要求",
+        beforeText: "机组",
+        afterText: "应当",
+        mode: "exact",
+        note: "第一处"
+      },
+      {
+        id: second.id,
+        documentId: "manual-2",
+        documentName: "训练大纲.docx",
+        blockId: "manual-2-b8",
+        blockIndex: 8,
+        title: "",
+        start: 4,
+        end: 8,
+        text: "训练要求",
+        beforeText: "进入",
+        afterText: "检查",
+        mode: "loose",
+        note: ""
+      }
+    ]);
+    expect(state.evidenceGroups).toEqual([
+      {
+        id: "evidence-group-1",
+        title: "1.1 人工条款",
+        items: [{ content: "", note: "" }]
+      }
+    ]);
+  });
+
+  it("removes one manual evidence without removing the keyword or other evidences", () => {
+    const state = stateApi.createState();
+    const keyword = stateApi.addKeyword(state, "训练要求");
+    const first = stateApi.addKeywordEvidence(state, keyword.id, {
+      documentName: "运行手册.docx",
+      blockIndex: 3,
+      start: 10,
+      end: 14,
+      text: "训练要求"
+    });
+    stateApi.addKeywordEvidence(state, keyword.id, {
+      documentName: "训练大纲.docx",
+      blockIndex: 8,
+      start: 4,
+      end: 8,
+      text: "训练要求"
+    });
+
+    stateApi.removeKeywordEvidence(state, keyword.id, first.id);
+
+    expect(state.keywords).toHaveLength(1);
+    expect(state.keywords[0].evidences.map((evidence: any) => evidence.documentName)).toEqual(["训练大纲.docx"]);
+  });
+
+  it("resolves keyword manual evidences when manuals are loaded without affecting keyword search text", () => {
+    const state = stateApi.createState();
+    stateApi.replaceKeywords(state, [{
+      text: "训练要求",
+      evidences: [{
+        documentName: "运行手册.docx",
+        blockIndex: 2,
+        start: 0,
+        end: 4,
+        text: "训练要求",
+        beforeText: "",
+        afterText: "应当"
+      }]
+    }]);
+
+    stateApi.setDocuments(state, [{
+      id: "manual-current",
+      name: "运行手册.docx",
+      blocks: [
+        { id: "manual-current-b1", documentId: "manual-current", documentName: "运行手册.docx", blockIndex: 1, title: "", text: "无关段落" },
+        { id: "manual-current-b2", documentId: "manual-current", documentName: "运行手册.docx", blockIndex: 2, title: "", text: "训练要求应当符合手册" }
+      ]
+    }]);
+
+    expect(state.keywords[0].text).toBe("训练要求");
+    expect(state.keywords[0].evidences[0]).toMatchObject({
+      documentId: "manual-current",
+      documentName: "运行手册.docx",
+      blockId: "manual-current-b2",
+      blockIndex: 2,
+      start: 0,
+      end: 4,
+      text: "训练要求"
+    });
   });
 
   it("updates a keyword label without changing the keyword text", () => {

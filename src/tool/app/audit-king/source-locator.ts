@@ -16,6 +16,25 @@
         };
     }
 
+    function makeManualEvidence(match: AuditKingMatch): AuditKingManualEvidence {
+        const safeStart = Math.max(0, Math.min(match.start, match.blockText.length));
+        const safeEnd = Math.max(safeStart, Math.min(match.end, match.blockText.length));
+        return {
+            documentId: match.documentId,
+            documentName: match.documentName,
+            blockId: match.blockId,
+            blockIndex: match.blockIndex,
+            title: match.title,
+            start: safeStart,
+            end: safeEnd,
+            text: match.blockText.slice(safeStart, safeEnd),
+            beforeText: match.blockText.slice(Math.max(0, safeStart - CONTEXT_LENGTH), safeStart),
+            afterText: match.blockText.slice(safeEnd, Math.min(match.blockText.length, safeEnd + CONTEXT_LENGTH)),
+            mode: match.mode,
+            note: ""
+        };
+    }
+
     function normalizeNumber(value: unknown): number | null {
         if (value === null || value === undefined || value === "") return null;
         const numberValue = typeof value === "number" ? value : Number(String(value).trim());
@@ -120,6 +139,123 @@
         return source;
     }
 
+    function makeEvidenceFromBlock(
+        block: AuditKingTextBlock,
+        start: number,
+        end: number,
+        evidence: AuditKingManualEvidence
+    ): AuditKingManualEvidence {
+        const safeStart = Math.max(0, Math.min(start, block.text.length));
+        const safeEnd = Math.max(safeStart, Math.min(end, block.text.length));
+        return {
+            ...evidence,
+            documentId: block.documentId,
+            documentName: block.documentName,
+            blockId: block.id,
+            blockIndex: block.blockIndex,
+            title: block.title,
+            start: safeStart,
+            end: safeEnd,
+            text: block.text.slice(safeStart, safeEnd),
+            beforeText: block.text.slice(Math.max(0, safeStart - CONTEXT_LENGTH), safeStart),
+            afterText: block.text.slice(safeEnd, Math.min(block.text.length, safeEnd + CONTEXT_LENGTH))
+        };
+    }
+
+    function getEvidenceDocumentBlocks(evidence: AuditKingManualEvidence, documents: AuditKingDocument[]): AuditKingTextBlock[] {
+        const byId = evidence.documentId
+            ? documents.find((documentItem) => documentItem.id === evidence.documentId)
+            : undefined;
+        if (byId) return byId.blocks;
+
+        const byName = evidence.documentName
+            ? documents.filter((documentItem) => documentItem.name === evidence.documentName)
+            : [];
+        if (byName.length) {
+            return byName.flatMap((documentItem) => documentItem.blocks);
+        }
+        return documents.flatMap((documentItem) => documentItem.blocks);
+    }
+
+    function resolveEvidenceByCoordinates(
+        block: AuditKingTextBlock | undefined,
+        evidence: AuditKingManualEvidence
+    ): AuditKingManualEvidence | null {
+        if (!block) return null;
+        const start = normalizeNumber(evidence.start);
+        const end = normalizeNumber(evidence.end);
+        const selected = textAt(block, start, end);
+        if (!matchesExpected(selected, evidence.text)) return null;
+        return makeEvidenceFromBlock(block, start as number, end as number, evidence);
+    }
+
+    function findEvidenceTextInBlock(block: AuditKingTextBlock, text: string): AuditKingManualEvidence[] {
+        if (!text) return [];
+        const matches: AuditKingManualEvidence[] = [];
+        let start = block.text.indexOf(text);
+        while (start >= 0) {
+            matches.push(makeEvidenceFromBlock(block, start, start + text.length, {
+                documentName: block.documentName,
+                text
+            }));
+            start = block.text.indexOf(text, start + Math.max(1, text.length));
+        }
+        return matches;
+    }
+
+    function evidenceContextMatches(blockText: string, candidate: AuditKingManualEvidence, evidence: AuditKingManualEvidence): boolean {
+        const start = normalizeNumber(candidate.start);
+        const end = normalizeNumber(candidate.end);
+        if (start === null || end === null) return false;
+        const before = evidence.beforeText || "";
+        const after = evidence.afterText || "";
+        const beforeOk = !before || blockText.slice(Math.max(0, start - before.length), start) === before;
+        const afterOk = !after || blockText.slice(end, Math.min(blockText.length, end + after.length)) === after;
+        return beforeOk && afterOk;
+    }
+
+    function uniqueEvidenceByContext(blocks: AuditKingTextBlock[], evidence: AuditKingManualEvidence): AuditKingManualEvidence | null {
+        const evidenceText = evidence.text || "";
+        if (!evidenceText) return null;
+        const matches = blocks.flatMap((block) => findEvidenceTextInBlock(block, evidenceText)
+            .filter((candidate) => evidenceContextMatches(block.text, candidate, evidence)));
+        return matches.length === 1 ? { ...matches[0], mode: evidence.mode, note: evidence.note || "" } : null;
+    }
+
+    function resolveManualEvidence(
+        evidence: AuditKingManualEvidence,
+        documents: AuditKingDocument[]
+    ): AuditKingManualEvidence {
+        if (!documents.length || !evidence.text) return evidence;
+
+        const blocks = getEvidenceDocumentBlocks(evidence, documents);
+        const exactBlock = evidence.blockId ? blocks.find((block) => block.id === evidence.blockId) : undefined;
+        const byExactId = resolveEvidenceByCoordinates(exactBlock, evidence);
+        if (byExactId) return byExactId;
+
+        const blockIndex = normalizeNumber(evidence.blockIndex);
+        const indexedBlock = blockIndex !== null ? blocks.find((block) => block.blockIndex === blockIndex) : undefined;
+        const byIndex = resolveEvidenceByCoordinates(indexedBlock, evidence);
+        if (byIndex) return byIndex;
+
+        if (indexedBlock) {
+            const byContextInBlock = uniqueEvidenceByContext([indexedBlock], evidence);
+            if (byContextInBlock) return byContextInBlock;
+        }
+
+        const byContext = uniqueEvidenceByContext(blocks, evidence);
+        if (byContext) return byContext;
+
+        return evidence;
+    }
+
+    function resolveKeywordEvidences(keywords: AuditKingKeyword[], documents: AuditKingDocument[]): AuditKingKeyword[] {
+        return keywords.map((keyword) => ({
+            ...keyword,
+            evidences: (keyword.evidences || []).map((evidence) => resolveManualEvidence(evidence, documents))
+        }));
+    }
+
     function resolveKeywordSources(keywords: AuditKingKeyword[], blocks: AuditKingTextBlock[]): AuditKingKeyword[] {
         return keywords.map((keyword) => ({
             ...keyword,
@@ -129,8 +265,11 @@
 
     runtime.SourceLocator = {
         makeSource,
+        makeManualEvidence,
         resolveSource,
+        resolveManualEvidence,
         resolveKeywordSources,
+        resolveKeywordEvidences,
         parseLegacyBlockIndex
     };
 })();

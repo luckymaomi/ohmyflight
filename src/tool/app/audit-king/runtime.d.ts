@@ -21,6 +21,7 @@ interface AuditKingKeyword {
     color: string;
     enabled: boolean;
     source?: AuditKingKeywordSource;
+    evidences?: AuditKingManualEvidence[];
 }
 
 interface AuditKingKeywordSource {
@@ -40,6 +41,23 @@ interface AuditKingImportedKeyword {
     color?: string;
     enabled?: boolean;
     source?: AuditKingKeywordSource;
+    evidences?: AuditKingManualEvidence[];
+}
+
+interface AuditKingManualEvidence {
+    id?: string;
+    documentId?: string;
+    documentName: string;
+    blockId?: string;
+    blockIndex?: number;
+    title?: string;
+    start?: number;
+    end?: number;
+    text: string;
+    beforeText?: string;
+    afterText?: string;
+    mode?: "exact" | "loose" | "";
+    note?: string;
 }
 
 interface AuditKingMatch {
@@ -107,6 +125,7 @@ interface AuditKingStateModel {
     currentKeywordId: string;
     documentFilterId: string;
     currentMatchIndex: number;
+    currentDetailContextLength: number;
     evidenceGroups: AuditKingEvidenceGroup[];
 }
 

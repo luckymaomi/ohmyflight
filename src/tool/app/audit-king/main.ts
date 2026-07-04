@@ -69,7 +69,11 @@
     function focusMatch(index: number): void {
         const matches = getFilteredMatches();
         if (!matches.length) return;
-        state.currentMatchIndex = Math.max(0, Math.min(matches.length - 1, index));
+        const nextIndex = Math.max(0, Math.min(matches.length - 1, index));
+        if (nextIndex !== state.currentMatchIndex) {
+            runtime.State.resetMatchDetailContext(state);
+        }
+        state.currentMatchIndex = nextIndex;
         runtime.View.renderMatches(state);
     }
 
@@ -241,6 +245,7 @@
         getElement<HTMLButtonElement>("showAllKeywordsBtn").addEventListener("click", () => {
             runtime.State.setCurrentKeyword(state, "all");
             runtime.View.renderKeywords(state);
+            runtime.View.renderKeywordEvidences(state);
             runtime.View.renderMatches(state);
         });
         getElement<HTMLButtonElement>("prevMatchBtn").addEventListener("click", () => {
@@ -262,6 +267,7 @@
                 const keywordId = actionTarget.dataset.keywordId || "all";
                 runtime.State.setCurrentKeyword(state, keywordId);
                 runtime.View.renderKeywords(state);
+                runtime.View.renderKeywordEvidences(state);
                 runtime.View.renderMatches(state);
                 focusChecklistKeyword(keywordId);
             } else if (action === "delete-keyword") {
@@ -277,6 +283,15 @@
                 refresh(keyword.enabled === false ? "关键词已停用。" : "关键词已启用。", "info");
             } else if (action === "focus-match") {
                 focusMatch(Number(actionTarget.dataset.matchIndex || 0));
+            } else if (action === "bind-match-evidence") {
+                bindMatchAsManualEvidence(Number(actionTarget.dataset.matchIndex || 0));
+            } else if (action === "unbind-match-evidence") {
+                unbindMatchManualEvidence(Number(actionTarget.dataset.matchIndex || 0));
+            } else if (action === "expand-match-detail") {
+                runtime.State.expandMatchDetailContext(state);
+                runtime.View.renderMatchDetail(state);
+            } else if (action === "remove-manual-evidence") {
+                removeCurrentKeywordManualEvidence(actionTarget.dataset.evidenceId || "");
             } else if (action === "remove-document") {
                 runtime.State.removeDocument(state, actionTarget.dataset.documentId || "");
                 recomputeSearch();
@@ -310,6 +325,7 @@
             if (event.key !== "Enter" && event.key !== " ") return;
             const target = event.target;
             if (!(target instanceof HTMLElement)) return;
+            if (target.closest("button,input,select,textarea")) return;
             const matchItem = target.closest<HTMLElement>(".match-item[data-action='focus-match']");
             if (!matchItem) return;
             event.preventDefault();
@@ -377,6 +393,92 @@
         runtime.View.renderStatus("已新增依据行。", "success");
     }
 
+    function bindMatchAsManualEvidence(matchIndex: number): void {
+        if (!state.currentKeywordId || state.currentKeywordId === "all") {
+            runtime.View.renderStatus("请先在关键词池选择一个关键词。", "error");
+            return;
+        }
+        const keyword = state.keywords.find((item) => item.id === state.currentKeywordId);
+        if (!keyword) {
+            runtime.View.renderStatus("当前关键词不存在。", "error");
+            return;
+        }
+        const matches = getFilteredMatches();
+        const match = matches[Math.max(0, Math.min(matches.length - 1, matchIndex))] || null;
+        if (!match) {
+            runtime.View.renderStatus("请先选择一条手册命中。", "error");
+            return;
+        }
+        if (match.keywordId !== keyword.id) {
+            runtime.View.renderStatus("当前命中不属于所选关键词，请先切换到该关键词后再绑定。", "error");
+            return;
+        }
+        const nextIndex = Math.max(0, Math.min(matches.length - 1, matchIndex));
+        if (nextIndex !== state.currentMatchIndex) {
+            runtime.State.resetMatchDetailContext(state);
+        }
+        state.currentMatchIndex = nextIndex;
+        const evidence = runtime.SourceLocator.makeManualEvidence(match);
+        runtime.State.addKeywordEvidence(state, keyword.id, evidence);
+        runtime.View.renderKeywords(state);
+        runtime.View.renderMatches(state);
+        runtime.View.renderKeywordEvidences(state);
+        runtime.View.renderStatus(`已为关键词绑定手册证据：${keyword.text}`, "success");
+    }
+
+    function unbindMatchManualEvidence(matchIndex: number): void {
+        if (!state.currentKeywordId || state.currentKeywordId === "all") {
+            runtime.View.renderStatus("请先在关键词池选择一个关键词。", "error");
+            return;
+        }
+        const keyword = state.keywords.find((item) => item.id === state.currentKeywordId);
+        if (!keyword) {
+            runtime.View.renderStatus("当前关键词不存在。", "error");
+            return;
+        }
+        const matches = getFilteredMatches();
+        const match = matches[Math.max(0, Math.min(matches.length - 1, matchIndex))] || null;
+        if (!match) {
+            runtime.View.renderStatus("请先选择一条手册命中。", "error");
+            return;
+        }
+        const selectedText = match.blockText.slice(match.start, match.end);
+        const evidence = (keyword.evidences || []).find((item) => (
+            item.documentName === match.documentName
+            && item.blockId === match.blockId
+            && Number(item.start) === match.start
+            && Number(item.end) === match.end
+            && item.text === selectedText
+        ));
+        if (!evidence?.id) {
+            runtime.View.renderStatus("这条摘要尚未绑定到当前关键词。", "error");
+            return;
+        }
+        const nextIndex = Math.max(0, Math.min(matches.length - 1, matchIndex));
+        if (nextIndex !== state.currentMatchIndex) {
+            runtime.State.resetMatchDetailContext(state);
+        }
+        state.currentMatchIndex = nextIndex;
+        runtime.State.removeKeywordEvidence(state, keyword.id, evidence.id);
+        runtime.View.renderKeywords(state);
+        runtime.View.renderMatches(state);
+        runtime.View.renderKeywordEvidences(state);
+        runtime.View.renderStatus("已解绑当前摘要的手册证据。", "success");
+    }
+
+    function removeCurrentKeywordManualEvidence(evidenceId: string): void {
+        if (!state.currentKeywordId || state.currentKeywordId === "all") {
+            runtime.View.renderStatus("请先在关键词池选择一个关键词。", "error");
+            return;
+        }
+        if (!evidenceId) return;
+        runtime.State.removeKeywordEvidence(state, state.currentKeywordId, evidenceId);
+        runtime.View.renderKeywords(state);
+        runtime.View.renderMatches(state);
+        runtime.View.renderKeywordEvidences(state);
+        runtime.View.renderStatus("已解绑手册证据。", "success");
+    }
+
     function bindExport(): void {
         const importInput = getElement<HTMLInputElement>("evidenceImportInput");
         getElement<HTMLButtonElement>("importEvidenceBtn").addEventListener("click", () => {
@@ -403,10 +505,6 @@
             const workbook = runtime.Export.buildEvidenceWorkbook(state.evidenceGroups);
             XLSX.writeFile(workbook, `审计之王_审计篮子_${formatLocalDate(new Date())}.xlsx`);
         });
-    }
-
-    function getCurrentMatch(): AuditKingMatch | null {
-        return getFilteredMatches()[state.currentMatchIndex] || null;
     }
 
     function countEvidenceEntries(): number {

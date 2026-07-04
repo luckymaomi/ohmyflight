@@ -90,4 +90,29 @@ describe("audit-king highlight", () => {
     expect(context.truncatedStart).toBe(true);
     expect(context.truncatedEnd).toBe(true);
   });
+
+  it("limits a very large block to the requested window around the match", () => {
+    const blocks = [{
+      id: "b1",
+      documentId: "manual-1",
+      documentName: "手册.docx",
+      blockIndex: 1,
+      title: "",
+      text: `${"前".repeat(5000)}命中${"后".repeat(5000)}`
+    }];
+
+    const context = highlight.buildBlockWindowContext(blocks, {
+      blockId: "b1",
+      matchStart: 5000,
+      matchEnd: 5002,
+      targetLength: 2000
+    });
+
+    expect(context.text.length).toBe(2000);
+    expect(context.text.slice(context.matchStart, context.matchEnd)).toBe("命中");
+    expect(context.text.startsWith("前")).toBe(true);
+    expect(context.text.endsWith("后")).toBe(true);
+    expect(context.truncatedStart).toBe(true);
+    expect(context.truncatedEnd).toBe(true);
+  });
 });

@@ -83,39 +83,32 @@
             };
         }
 
-        let startIndex = currentIndex;
-        let endIndex = currentIndex;
-        let totalLength = blocks[currentIndex].text.length;
-        let preferBefore = true;
-
-        while (totalLength < options.targetLength && (startIndex > 0 || endIndex < blocks.length - 1)) {
-            if (preferBefore && startIndex > 0) {
-                startIndex -= 1;
-                totalLength += blocks[startIndex].text.length + 2;
-            } else if (!preferBefore && endIndex < blocks.length - 1) {
-                endIndex += 1;
-                totalLength += blocks[endIndex].text.length + 2;
-            } else if (startIndex > 0) {
-                startIndex -= 1;
-                totalLength += blocks[startIndex].text.length + 2;
-            } else if (endIndex < blocks.length - 1) {
-                endIndex += 1;
-                totalLength += blocks[endIndex].text.length + 2;
+        const blockOffsets: number[] = [];
+        let offset = 0;
+        blocks.forEach((block, index) => {
+            blockOffsets[index] = offset;
+            offset += block.text.length;
+            if (index < blocks.length - 1) {
+                offset += 2;
             }
-            preferBefore = !preferBefore;
-        }
+        });
 
-        const selected = blocks.slice(startIndex, endIndex + 1);
-        const beforeCurrent = blocks.slice(startIndex, currentIndex);
-        const prefixLength = beforeCurrent.reduce((total, block) => total + block.text.length + 2, 0);
-        const text = selected.map((block) => block.text).join("\n\n");
+        const fullText = blocks.map((block) => block.text).join("\n\n");
+        const currentOffset = blockOffsets[currentIndex] || 0;
+        const globalMatchStart = currentOffset + options.matchStart;
+        const globalMatchEnd = currentOffset + options.matchEnd;
+        const targetLength = Math.max(globalMatchEnd - globalMatchStart, Math.trunc(options.targetLength || 0));
+        const beforeLength = Math.floor((targetLength - (globalMatchEnd - globalMatchStart)) / 2);
+        const afterLength = Math.max(0, targetLength - (globalMatchEnd - globalMatchStart) - beforeLength);
+        const windowStart = Math.max(0, globalMatchStart - beforeLength);
+        const windowEnd = Math.min(fullText.length, globalMatchEnd + afterLength);
 
         return {
-            text,
-            matchStart: prefixLength + options.matchStart,
-            matchEnd: prefixLength + options.matchEnd,
-            truncatedStart: startIndex > 0,
-            truncatedEnd: endIndex < blocks.length - 1
+            text: fullText.slice(windowStart, windowEnd),
+            matchStart: globalMatchStart - windowStart,
+            matchEnd: globalMatchEnd - windowStart,
+            truncatedStart: windowStart > 0,
+            truncatedEnd: windowEnd < fullText.length
         };
     }
 

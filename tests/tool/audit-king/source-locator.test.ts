@@ -74,4 +74,92 @@ describe("audit-king source locator", () => {
       text: "进入机长训练"
     });
   });
+
+  it("creates durable manual evidence from a manual match", () => {
+    const evidence = locator.makeManualEvidence({
+      id: "match-1",
+      keywordId: "kw-1",
+      keywordText: "训练要求",
+      keywordColor: "#ffd666",
+      documentId: "manual-1",
+      documentName: "运行手册.docx",
+      blockId: "manual-1-b3",
+      blockIndex: 3,
+      title: "训练章节",
+      start: 2,
+      end: 6,
+      mode: "exact",
+      matchedText: "训练要求",
+      blockText: "机组训练要求应当满足运行手册"
+    });
+
+    expect(evidence).toMatchObject({
+      documentId: "manual-1",
+      documentName: "运行手册.docx",
+      blockId: "manual-1-b3",
+      blockIndex: 3,
+      title: "训练章节",
+      start: 2,
+      end: 6,
+      text: "训练要求",
+      beforeText: "机组",
+      afterText: "应当满足运行手册",
+      mode: "exact"
+    });
+  });
+
+  it("resolves manual evidence by document name, block index, coordinates and text", () => {
+    const documents = [{
+      id: "manual-current",
+      name: "运行手册.docx",
+      blocks: [
+        { id: "manual-current-b1", documentId: "manual-current", documentName: "运行手册.docx", blockIndex: 1, title: "", text: "无关段落" },
+        { id: "manual-current-b3", documentId: "manual-current", documentName: "运行手册.docx", blockIndex: 3, title: "训练章节", text: "机组训练要求应当满足运行手册" }
+      ]
+    }];
+
+    const evidence = locator.resolveManualEvidence({
+      documentName: "运行手册.docx",
+      blockIndex: 3,
+      start: 2,
+      end: 6,
+      text: "训练要求",
+      beforeText: "机组",
+      afterText: "应当满足运行手册"
+    }, documents);
+
+    expect(evidence).toMatchObject({
+      documentId: "manual-current",
+      documentName: "运行手册.docx",
+      blockId: "manual-current-b3",
+      blockIndex: 3,
+      title: "训练章节",
+      start: 2,
+      end: 6,
+      text: "训练要求"
+    });
+  });
+
+  it("does not guess a manual evidence location when the same evidence appears multiple times", () => {
+    const documents = [{
+      id: "manual-current",
+      name: "运行手册.docx",
+      blocks: [
+        { id: "manual-current-b1", documentId: "manual-current", documentName: "运行手册.docx", blockIndex: 1, title: "", text: "训练要求应当满足运行手册" },
+        { id: "manual-current-b2", documentId: "manual-current", documentName: "运行手册.docx", blockIndex: 2, title: "", text: "训练要求应当满足运行手册" }
+      ]
+    }];
+
+    const evidence = locator.resolveManualEvidence({
+      documentName: "运行手册.docx",
+      text: "训练要求",
+      afterText: "应当满足运行手册"
+    }, documents);
+
+    expect(evidence).toEqual({
+      documentName: "运行手册.docx",
+      text: "训练要求",
+      afterText: "应当满足运行手册"
+    });
+  });
 });

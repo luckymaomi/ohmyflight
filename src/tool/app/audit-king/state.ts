@@ -1,5 +1,7 @@
 (function () {
     const runtime = window.AuditKing || (window.AuditKing = {});
+    const DEFAULT_DETAIL_CONTEXT_LENGTH = 2000;
+    const DETAIL_CONTEXT_STEP = 2000;
 
     function createState(): AuditKingStateModel {
         return {
@@ -14,8 +16,17 @@
             currentKeywordId: "all",
             documentFilterId: "all",
             currentMatchIndex: 0,
+            currentDetailContextLength: DEFAULT_DETAIL_CONTEXT_LENGTH,
             evidenceGroups: []
         };
+    }
+
+    function resetMatchDetailContext(state: AuditKingStateModel): void {
+        state.currentDetailContextLength = DEFAULT_DETAIL_CONTEXT_LENGTH;
+    }
+
+    function expandMatchDetailContext(state: AuditKingStateModel): void {
+        state.currentDetailContextLength = (state.currentDetailContextLength || DEFAULT_DETAIL_CONTEXT_LENGTH) + DETAIL_CONTEXT_STEP;
     }
 
     function rebuildDocumentIndex(state: AuditKingStateModel): void {
@@ -65,6 +76,7 @@
         delete state.searchResult.countsByKeyword[keywordId];
         state.searchResult.matches = state.searchResult.matches.filter((match) => match.keywordId !== keywordId);
         state.currentMatchIndex = 0;
+        resetMatchDetailContext(state);
     }
 
     function replaceKeywords(state: AuditKingStateModel, importedKeywords: AuditKingImportedKeyword[]): void {
@@ -73,14 +85,23 @@
                 label: item.label,
                 color: item.color,
                 enabled: item.enabled,
-                source: item.source
+                source: item.source,
+                evidences: item.evidences
+            }))
+            .map((keyword) => ({
+                ...keyword,
+                evidences: (keyword.evidences || []).map((evidence) => normalizeKeywordEvidence(keyword, evidence))
             }))
             .filter((keyword) => keyword.text);
         if (runtime.SourceLocator?.resolveKeywordSources) {
             state.keywords = runtime.SourceLocator.resolveKeywordSources(state.keywords, state.checklistBlocks);
         }
+        if (runtime.SourceLocator?.resolveKeywordEvidences) {
+            state.keywords = runtime.SourceLocator.resolveKeywordEvidences(state.keywords, state.documents);
+        }
         state.currentKeywordId = state.keywords[0]?.id || "all";
         state.currentMatchIndex = 0;
+        resetMatchDetailContext(state);
     }
 
     function setKeywordEnabled(state: AuditKingStateModel, keywordId: string, enabled: boolean): void {
@@ -88,6 +109,7 @@
         if (!keyword) return;
         keyword.enabled = enabled;
         state.currentMatchIndex = 0;
+        resetMatchDetailContext(state);
     }
 
     function updateKeywordSource(state: AuditKingStateModel, keywordId: string, source: AuditKingKeywordSource): void {
@@ -129,6 +151,9 @@
             ...documentItem,
             enabled: documentItem.enabled !== false
         }));
+        if (runtime.SourceLocator?.resolveKeywordEvidences) {
+            state.keywords = runtime.SourceLocator.resolveKeywordEvidences(state.keywords, state.documents);
+        }
         rebuildDocumentIndex(state);
         if (state.documentFilterId !== "all" && !getEnabledDocuments(state).some((documentItem) => documentItem.id === state.documentFilterId)) {
             state.documentFilterId = "all";
@@ -152,21 +177,72 @@
             state.documentFilterId = "all";
         }
         state.currentMatchIndex = 0;
+        resetMatchDetailContext(state);
     }
 
     function setCurrentKeyword(state: AuditKingStateModel, keywordId: string): void {
         state.currentKeywordId = keywordId || "all";
         state.currentMatchIndex = 0;
+        resetMatchDetailContext(state);
     }
 
     function setDocumentFilter(state: AuditKingStateModel, documentId: string): void {
         state.documentFilterId = documentId || "all";
         state.currentMatchIndex = 0;
+        resetMatchDetailContext(state);
     }
 
     function setSearchResult(state: AuditKingStateModel, searchResult: AuditKingSearchResult): void {
         state.searchResult = searchResult;
         state.currentMatchIndex = 0;
+        resetMatchDetailContext(state);
+    }
+
+    function makeKeywordEvidenceId(keyword: AuditKingKeyword): string {
+        const maxNumber = (keyword.evidences || []).reduce((maxValue, evidence) => {
+            const match = String(evidence.id || "").match(/manual-evidence-(\d+)$/);
+            return match ? Math.max(maxValue, Number(match[1])) : maxValue;
+        }, 0);
+        return `manual-evidence-${maxNumber + 1}`;
+    }
+
+    function normalizeKeywordEvidence(keyword: AuditKingKeyword, evidence: AuditKingManualEvidence): AuditKingManualEvidence {
+        return {
+            id: evidence.id || makeKeywordEvidenceId(keyword),
+            documentId: evidence.documentId || "",
+            documentName: String(evidence.documentName || "").trim(),
+            blockId: evidence.blockId || "",
+            blockIndex: evidence.blockIndex,
+            title: evidence.title || "",
+            start: evidence.start,
+            end: evidence.end,
+            text: String(evidence.text || "").trim(),
+            beforeText: evidence.beforeText || "",
+            afterText: evidence.afterText || "",
+            mode: evidence.mode || "",
+            note: evidence.note?.trim() || ""
+        };
+    }
+
+    function addKeywordEvidence(
+        state: AuditKingStateModel,
+        keywordId: string,
+        evidence: AuditKingManualEvidence
+    ): AuditKingManualEvidence | null {
+        const keyword = state.keywords.find((item) => item.id === keywordId);
+        if (!keyword) return null;
+        const normalized = normalizeKeywordEvidence(keyword, evidence);
+        if (!normalized.documentName || !normalized.text) {
+            throw new Error("手册证据缺少手册名称或证据文本。");
+        }
+        keyword.evidences = [...(keyword.evidences || []), normalized];
+        return normalized;
+    }
+
+    function removeKeywordEvidence(state: AuditKingStateModel, keywordId: string, evidenceId: string): void {
+        const keyword = state.keywords.find((item) => item.id === keywordId);
+        if (!keyword) return;
+        keyword.evidences = (keyword.evidences || []).filter((evidence) => evidence.id !== evidenceId);
     }
 
     function makeEvidenceGroupId(state: AuditKingStateModel): string {
@@ -267,6 +343,10 @@
         setCurrentKeyword,
         setDocumentFilter,
         setSearchResult,
+        resetMatchDetailContext,
+        expandMatchDetailContext,
+        addKeywordEvidence,
+        removeKeywordEvidence,
         addEvidenceGroup,
         updateEvidenceGroupTitle,
         moveEvidenceGroupToPosition,

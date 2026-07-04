@@ -24,6 +24,8 @@ describe("audit-king view", () => {
   let viewApi: any;
   let browserContext: any;
   let elements: Record<string, ReturnType<typeof createElement>>;
+  let lastBlockWindowTargetLength = 0;
+  let blockWindowTruncated = false;
 
   beforeAll(() => {
     elements = {};
@@ -42,8 +44,9 @@ describe("audit-king view", () => {
       buildContext(text: string) {
         return { text, offset: 0, truncatedStart: false, truncatedEnd: false };
       },
-      buildBlockWindowContext() {
-        return { text: "完整详情", matchStart: 0, matchEnd: 2, truncatedStart: false, truncatedEnd: false };
+      buildBlockWindowContext(_blocks: any[], options: any) {
+        lastBlockWindowTargetLength = options.targetLength;
+        return { text: "完整详情", matchStart: 0, matchEnd: 2, truncatedStart: blockWindowTruncated, truncatedEnd: blockWindowTruncated };
       },
       buildHighlightSegments(text: string, ranges: any[]) {
         const ordered = [...ranges].sort((left, right) => left.start - right.start || right.end - left.end);
@@ -71,6 +74,8 @@ describe("audit-king view", () => {
   });
 
   beforeEach(() => {
+    lastBlockWindowTargetLength = 0;
+    blockWindowTruncated = false;
     elements = {
       evidenceList: createElement(),
       evidenceCount: createElement(),
@@ -79,7 +84,9 @@ describe("audit-king view", () => {
       manualFilter: createElement(),
       matchList: createElement(),
       matchCount: createElement(),
-      matchDetail: createElement()
+      matchDetail: createElement(),
+      keywordEvidenceList: createElement(),
+      keywordEvidenceCount: createElement()
     };
   });
 
@@ -140,6 +147,140 @@ describe("audit-king view", () => {
     expect(elements.matchList.innerHTML).toContain('data-action="focus-match"');
     expect(elements.matchList.innerHTML).toContain('role="button"');
     expect(elements.matchList.innerHTML).not.toContain("查看详情");
+  });
+
+  it("renders bind and unbind actions on match cards for the current keyword", () => {
+    const match = {
+      id: "match-1",
+      keywordId: "keyword-1",
+      keywordText: "训练",
+      keywordColor: "#ffd666",
+      documentId: "doc-1",
+      documentName: "运行手册",
+      blockId: "block-1",
+      blockIndex: 3,
+      blockText: "飞行员训练要求",
+      title: "",
+      start: 3,
+      end: 5,
+      matchedText: "训练",
+      mode: "exact"
+    };
+
+    viewApi.renderMatches({
+      currentKeywordId: "keyword-1",
+      currentMatchIndex: 0,
+      documentFilterId: "all",
+      documents: [{ id: "doc-1", name: "运行手册", blocks: [{ id: "block-1", text: "完整详情" }] }],
+      keywords: [{
+        id: "keyword-1",
+        text: "训练",
+        evidences: []
+      }],
+      searchResult: {
+        matches: [match],
+        countsByKeyword: {}
+      }
+    });
+
+    expect(elements.matchList.innerHTML).toContain("绑定当前关键词");
+    expect(elements.matchList.innerHTML).toContain('data-action="bind-match-evidence"');
+
+    viewApi.renderMatches({
+      currentKeywordId: "keyword-1",
+      currentMatchIndex: 0,
+      documentFilterId: "all",
+      documents: [{ id: "doc-1", name: "运行手册", blocks: [{ id: "block-1", text: "完整详情" }] }],
+      keywords: [{
+        id: "keyword-1",
+        text: "训练",
+        evidences: [{
+          id: "manual-evidence-1",
+          documentId: "doc-1",
+          documentName: "运行手册",
+          blockId: "block-1",
+          blockIndex: 3,
+          start: 3,
+          end: 5,
+          text: "训练"
+        }]
+      }],
+      searchResult: {
+        matches: [match],
+        countsByKeyword: {}
+      }
+    });
+
+    expect(elements.matchList.innerHTML).toContain("解绑当前关键词");
+    expect(elements.matchList.innerHTML).toContain('data-action="unbind-match-evidence"');
+  });
+
+  it("keeps manual evidence binding out of the full detail panel", () => {
+    viewApi.renderMatchDetail({
+      currentKeywordId: "keyword-1",
+      currentMatchIndex: 0,
+      documentFilterId: "all",
+      documents: [{ id: "doc-1", name: "运行手册", blocks: [{ id: "block-1", text: "完整详情" }] }],
+      searchResult: {
+        matches: [{
+          id: "match-1",
+          keywordId: "keyword-1",
+          keywordText: "训练",
+          keywordColor: "#ffd666",
+          documentId: "doc-1",
+          documentName: "运行手册",
+          blockId: "block-1",
+          blockIndex: 3,
+          blockText: "飞行员训练要求",
+          title: "",
+          start: 3,
+          end: 5,
+          matchedText: "训练",
+          mode: "exact"
+        }],
+        countsByKeyword: {}
+      }
+    });
+
+    expect(elements.matchDetail.innerHTML).toContain("detail-text");
+    expect(lastBlockWindowTargetLength).toBe(2000);
+    expect(elements.matchDetail.innerHTML).not.toContain("绑定为手册证据");
+    expect(elements.matchDetail.innerHTML).not.toContain('data-action="bind-manual-evidence"');
+  });
+
+  it("shows a load-more context action when the full detail panel is truncated", () => {
+    blockWindowTruncated = true;
+
+    viewApi.renderMatchDetail({
+      currentKeywordId: "keyword-1",
+      currentMatchIndex: 0,
+      currentDetailContextLength: 4000,
+      documentFilterId: "all",
+      documents: [{ id: "doc-1", name: "运行手册", blocks: [{ id: "block-1", text: "完整详情" }] }],
+      searchResult: {
+        matches: [{
+          id: "match-1",
+          keywordId: "keyword-1",
+          keywordText: "训练",
+          keywordColor: "#ffd666",
+          documentId: "doc-1",
+          documentName: "运行手册",
+          blockId: "block-1",
+          blockIndex: 3,
+          blockText: "飞行员训练要求",
+          title: "",
+          start: 3,
+          end: 5,
+          matchedText: "训练",
+          mode: "exact"
+        }],
+        countsByKeyword: {}
+      }
+    });
+
+    expect(lastBlockWindowTargetLength).toBe(4000);
+    expect(elements.matchDetail.innerHTML).toContain("查看更多上下文");
+    expect(elements.matchDetail.innerHTML).toContain('data-action="expand-match-detail"');
   });
 
   it("scrolls checklist reference panel to the current keyword highlight", () => {
@@ -267,6 +408,62 @@ describe("audit-king view", () => {
     expect(elements.keywordList.innerHTML).toContain("value=\"1\"");
     expect(elements.keywordList.innerHTML).toContain("data-action=\"edit-keyword-label\"");
     expect(elements.keywordList.innerHTML).toContain("1.1 机组资格");
+  });
+
+  it("shows manual evidence counts in the keyword pool", () => {
+    viewApi.renderKeywords({
+      currentKeywordId: "keyword-1",
+      checklistBlocks: [],
+      searchResult: {
+        countsByKeyword: {
+          "keyword-1": 2
+        }
+      },
+      keywords: [
+        {
+          id: "keyword-1",
+          text: "机长训练",
+          color: "#ffd666",
+          enabled: true,
+          evidences: [
+            { id: "evidence-1", documentName: "运行手册.docx", blockIndex: 1, text: "机长训练" },
+            { id: "evidence-2", documentName: "训练大纲.docx", blockIndex: 2, text: "机长训练" }
+          ]
+        }
+      ]
+    });
+
+    expect(elements.keywordList.innerHTML).toContain("2 条证据");
+  });
+
+  it("renders manual evidences for the current keyword with remove actions", () => {
+    viewApi.renderKeywordEvidences({
+      currentKeywordId: "keyword-1",
+      keywords: [
+        {
+          id: "keyword-1",
+          text: "机长训练",
+          color: "#ffd666",
+          evidences: [
+            {
+              id: "evidence-1",
+              documentName: "运行手册.docx",
+              blockIndex: 3,
+              title: "训练章节",
+              text: "机长训练要求",
+              mode: "exact",
+              note: "已确认"
+            }
+          ]
+        }
+      ]
+    });
+
+    expect(elements.keywordEvidenceCount.textContent).toBe("1 条手册证据");
+    expect(elements.keywordEvidenceList.innerHTML).toContain("运行手册.docx / 第 3 段");
+    expect(elements.keywordEvidenceList.innerHTML).toContain("机长训练要求");
+    expect(elements.keywordEvidenceList.innerHTML).toContain("已确认");
+    expect(elements.keywordEvidenceList.innerHTML).toContain('data-action="remove-manual-evidence"');
   });
 
   it("renders disabled manuals in the manual list but excludes them from the result filter", () => {

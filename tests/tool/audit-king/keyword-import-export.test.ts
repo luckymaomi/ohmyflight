@@ -30,11 +30,29 @@ describe("audit-king keyword import export", () => {
           text: "进入条件",
           beforeText: "训练要求",
           afterText: "资格检查"
-        }
+        },
+        evidences: [
+          {
+            id: "manual-evidence-1",
+            documentId: "manual-1",
+            documentName: "运行手册.docx",
+            blockId: "manual-1-b3",
+            blockIndex: 3,
+            title: "训练章节",
+            start: 10,
+            end: 14,
+            text: "进入条件",
+            beforeText: "机组",
+            afterText: "应当",
+            mode: "exact",
+            note: "已人工确认"
+          }
+        ]
       }
     ]);
 
     const sheet = workbook.Sheets["关键词"];
+    const evidenceSheet = workbook.Sheets["手册证据"];
 
     expect(sheet.A1?.v).toBe("序号");
     expect(sheet.B1?.v).toBe("关键词");
@@ -60,6 +78,37 @@ describe("audit-king keyword import export", () => {
     expect(sheet.J2?.v).toBe("进入条件");
     expect(sheet.K2?.v).toBe("训练要求");
     expect(sheet.L2?.v).toBe("资格检查");
+    expect(workbook.SheetNames).toEqual(["关键词", "手册证据"]);
+    expect(evidenceSheet.A1?.v).toBe("关键词序号");
+    expect(evidenceSheet.B1?.v).toBe("关键词");
+    expect(evidenceSheet.C1?.v).toBe("证据序号");
+    expect(evidenceSheet.D1?.v).toBe("手册名称");
+    expect(evidenceSheet.E1?.v).toBe("手册ID");
+    expect(evidenceSheet.F1?.v).toBe("手册段落");
+    expect(evidenceSheet.G1?.v).toBe("手册段落序号");
+    expect(evidenceSheet.H1?.v).toBe("章节标题");
+    expect(evidenceSheet.I1?.v).toBe("证据起点");
+    expect(evidenceSheet.J1?.v).toBe("证据终点");
+    expect(evidenceSheet.K1?.v).toBe("证据文本");
+    expect(evidenceSheet.L1?.v).toBe("证据前文");
+    expect(evidenceSheet.M1?.v).toBe("证据后文");
+    expect(evidenceSheet.N1?.v).toBe("命中类型");
+    expect(evidenceSheet.O1?.v).toBe("备注");
+    expect(evidenceSheet.A2?.v).toBe(1);
+    expect(evidenceSheet.B2?.v).toBe("进入条件");
+    expect(evidenceSheet.C2?.v).toBe(1);
+    expect(evidenceSheet.D2?.v).toBe("运行手册.docx");
+    expect(evidenceSheet.E2?.v).toBe("manual-1");
+    expect(evidenceSheet.F2?.v).toBe("manual-1-b3");
+    expect(evidenceSheet.G2?.v).toBe(3);
+    expect(evidenceSheet.H2?.v).toBe("训练章节");
+    expect(evidenceSheet.I2?.v).toBe(10);
+    expect(evidenceSheet.J2?.v).toBe(14);
+    expect(evidenceSheet.K2?.v).toBe("进入条件");
+    expect(evidenceSheet.L2?.v).toBe("机组");
+    expect(evidenceSheet.M2?.v).toBe("应当");
+    expect(evidenceSheet.N2?.v).toBe("exact");
+    expect(evidenceSheet.O2?.v).toBe("已人工确认");
   });
 
   it("reads keywords from a workbook by header names", () => {
@@ -129,6 +178,56 @@ describe("audit-king keyword import export", () => {
         enabled: true
       }
     ]);
+  });
+
+  it("reads manual evidences from the second sheet and attaches them to the matching keyword row", () => {
+    const keywordSheet = XLSX.utils.aoa_to_sheet([
+      ["序号", "关键词", "标记", "启用", "颜色"],
+      [1, "进入条件", "1.1 训练资格", "是", "#f59e0b"],
+      [2, "训练要求", "1.2 训练要求", "是", "#22c55e"]
+    ]);
+    const evidenceSheet = XLSX.utils.aoa_to_sheet([
+      ["关键词序号", "关键词", "证据序号", "手册名称", "手册ID", "手册段落", "手册段落序号", "章节标题", "证据起点", "证据终点", "证据文本", "证据前文", "证据后文", "命中类型", "备注"],
+      [1, "进入条件", 1, "运行手册.docx", "manual-1", "manual-1-b3", 3, "训练章节", 10, 14, "进入条件", "机组", "应当", "exact", "已人工确认"],
+      [1, "进入条件", 2, "训练大纲.docx", "manual-2", "manual-2-b8", 8, "", 4, 8, "进入条件", "进入", "检查", "loose", ""]
+    ]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, keywordSheet, "关键词");
+    XLSX.utils.book_append_sheet(workbook, evidenceSheet, "手册证据");
+
+    const keywords = keywordIO.parseKeywordWorkbook(workbook);
+
+    expect(keywords[0].evidences).toEqual([
+      {
+        documentName: "运行手册.docx",
+        documentId: "manual-1",
+        blockId: "manual-1-b3",
+        blockIndex: 3,
+        title: "训练章节",
+        start: 10,
+        end: 14,
+        text: "进入条件",
+        beforeText: "机组",
+        afterText: "应当",
+        mode: "exact",
+        note: "已人工确认"
+      },
+      {
+        documentName: "训练大纲.docx",
+        documentId: "manual-2",
+        blockId: "manual-2-b8",
+        blockIndex: 8,
+        title: "",
+        start: 4,
+        end: 8,
+        text: "进入条件",
+        beforeText: "进入",
+        afterText: "检查",
+        mode: "loose",
+        note: ""
+      }
+    ]);
+    expect(keywords[1].evidences).toEqual([]);
   });
 
   it("reads legacy timestamp source ids and derives the stable block index", () => {
