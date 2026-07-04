@@ -203,15 +203,18 @@
             const title = match.title ? ` / ${match.title}` : "";
             const canBindEvidence = state.currentKeywordId !== "all" && match.keywordId === state.currentKeywordId;
             const boundEvidence = canBindEvidence ? findManualEvidenceForMatch(state, match) : null;
+            const boundClass = boundEvidence ? " bound-evidence" : "";
+            const boundStatus = boundEvidence ? `<span class="match-bound-status">已绑定证据</span>` : "";
             const evidenceAction = boundEvidence
                 ? `<button class="btn btn-sm btn-outline-danger match-evidence-action" data-action="unbind-match-evidence" data-match-index="${index}">解绑当前关键词</button>`
                 : `<button class="btn btn-sm btn-outline-primary match-evidence-action" data-action="bind-match-evidence" data-match-index="${index}">绑定当前关键词</button>`;
             return `
-                <article class="match-item ${active}" id="match-${index}" data-action="focus-match" data-match-index="${index}" role="button" tabindex="0">
+                <article class="match-item ${active}${boundClass}" id="match-${index}" data-action="focus-match" data-match-index="${index}" role="button" tabindex="0">
                     <div class="match-meta">
-                        <strong>${escapeHtml(match.keywordText)}</strong>
-                        <span>${escapeHtml(match.documentName)} / 第 ${match.blockIndex} 段${escapeHtml(title)}</span>
+                        <strong class="match-keyword">${escapeHtml(match.keywordText)}</strong>
+                        <span class="match-location">${escapeHtml(match.documentName)} / 第 ${match.blockIndex} 段${escapeHtml(title)}</span>
                         <span class="match-mode">${match.mode === "exact" ? "精确" : "宽松"}</span>
+                        ${boundStatus}
                         ${canBindEvidence ? evidenceAction : ""}
                     </div>
                     <div class="match-context">${context.truncatedStart ? "..." : ""}${renderHighlightedText(context.text, [contextRange])}${context.truncatedEnd ? "..." : ""}</div>

@@ -185,6 +185,8 @@ describe("audit-king view", () => {
 
     expect(elements.matchList.innerHTML).toContain("绑定当前关键词");
     expect(elements.matchList.innerHTML).toContain('data-action="bind-match-evidence"');
+    expect(elements.matchList.innerHTML).toContain("match-location");
+    expect(elements.matchList.innerHTML).toContain("match-evidence-action");
 
     viewApi.renderMatches({
       currentKeywordId: "keyword-1",
@@ -213,6 +215,8 @@ describe("audit-king view", () => {
 
     expect(elements.matchList.innerHTML).toContain("解绑当前关键词");
     expect(elements.matchList.innerHTML).toContain('data-action="unbind-match-evidence"');
+    expect(elements.matchList.innerHTML).toContain("bound-evidence");
+    expect(elements.matchList.innerHTML).toContain("已绑定证据");
   });
 
   it("keeps manual evidence binding out of the full detail panel", () => {

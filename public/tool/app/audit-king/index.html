@@ -50,11 +50,16 @@
         .match-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .match-item { border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; margin-bottom: 10px; background: #fff; cursor: pointer; }
         .match-item.active { border-color: #0d6efd; background: #f8fbff; }
+        .match-item.bound-evidence { border: 2px solid #198754; background: #f3fff8; box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.10); }
+        .match-item.active.bound-evidence { border: 2px solid #198754; background: #edfff5; box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.18); }
         .match-item:focus-visible { outline: 2px solid rgba(13, 110, 253, 0.35); outline-offset: 2px; }
-        .match-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; color: #57606a; font-size: 12px; margin-bottom: 6px; }
+        .match-meta { display: grid; grid-template-columns: auto minmax(80px, 1fr) auto auto auto; gap: 8px; align-items: center; color: #57606a; font-size: 12px; margin-bottom: 6px; min-width: 0; }
         .match-meta strong { color: #24292f; font-size: 13px; }
+        .match-keyword, .match-mode, .match-bound-status, .match-evidence-action { white-space: nowrap; }
+        .match-location { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .match-mode { border: 1px solid #dee2e6; border-radius: 4px; padding: 1px 6px; background: #f8f9fa; }
-        .match-evidence-action { margin-left: auto; }
+        .match-bound-status { border: 1px solid #badbcc; border-radius: 4px; padding: 1px 6px; color: #0f5132; background: #d1e7dd; font-weight: 600; }
+        .match-evidence-action { grid-column: 5; justify-self: end; padding: 3px 8px; font-size: 12px; line-height: 1.25; }
         .match-context { line-height: 1.7; font-size: 14px; margin-bottom: 8px; overflow-wrap: anywhere; }
         .detail-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; color: #57606a; font-size: 12px; margin-bottom: 10px; }
         .detail-meta strong { color: #24292f; font-size: 13px; }
