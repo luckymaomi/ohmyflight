@@ -1,112 +1,133 @@
-# 审计之王手册证据采集 Plan
+# 全局文件职责审查与拆分 Plan
 
 ## 1. 需求文档
 
-用户要解决的实际问题：迎审时，搜索命中摘要只能帮助定位候选位置，但真正要保存的手册证据可能是摘要本身，也可能是用户在全部详情中人工选中的更完整原文。用户需要把这些材料统一挂到当前关键词下，并能随关键词一起导入导出。
+用户要解决的实际问题：项目持续增加工具后，部分文件变成超长、超重、职责混杂的维护点。后续小白维护时，如果状态管理、规则计算、数据读写、渲染展示、外部接线和兼容处理继续混在一起，改一个功能会牵动很多无关逻辑。
 
-谁会使用：对照检查单、公司手册和审计篮子整理迎审依据的人工审核人员。
+谁会使用：项目 owner、后续维护者和 agent。
 
-用户完成任务时应该看到什么体验：选中关键词后，可以从命中摘要一键加入手册证据，也可以在全部详情里选中一段原文加入手册证据；底部左侧集中显示当前关键词的手册证据，底部右侧保留独立审计篮子。
+用户完成任务时应该看到什么体验：核心工具的文件职责清楚，能一句话说清每个文件为什么变化；已经拆分的模块有测试保护；没有为了行数机械拆分，也没有为了省事把不同变化原因硬塞在一个文件。
 
-当前范围包含：统一手册证据模型；区分证据来源为摘要加入或全文选中；底部区域拆成当前关键词手册证据和审计篮子；关键词 Excel 的 `手册证据` sheet 同步导入导出证据来源和全文定位字段；手册轻微变化时按文本和上下文恢复，不能唯一确认时不乱猜。
+当前范围包含：扫描 `src/tool/app`、`public/tool/app`、`scripts`、`tests/tool` 和 `spec/app` 中超过 300 行或职责信号混杂的文件；先按语义记录每个候选文件的一句话职责、变化原因和混杂风险；再决定是否拆分。审计之王、酒店皇帝、航线班次统计、PDF 盖章、人员结构统计、会话账单、旧 Python 工具都先审查，不先入为主。
 
-当前范围不包含：自动判断证据是否符合条款；自动把手册证据写入审计篮子；把审计篮子改成自动生成成果；AI、语义判断、PDF/OCR、Word 写回。
+当前范围不包含：培训皇帝的大规模拆分；培训皇帝只做职责审查记录，因为它已经按规则、扫描、渲染、图表、动作等模块拆开。也不做业务规则重写、UI 重设计、工具下线、旧兼容迁移。
 
-业务上怎样算完成：同一个关键词下的手册证据可以来自摘要或全文选中；导出再导入后仍能恢复关键词、检查单来源和手册证据；审计篮子仍是最终人工成果，不被手册证据自动污染。
+业务上怎样算完成：形成基于语义的全局职责审查记录；明确必须拆、建议拆、暂缓和保留的事实理由；只有确认必须拆且测试保护足够的文件才进入拆分；构建、类型检查和全量测试通过；最终提交和推送。
 
 ## 2. 当前事实
 
-已确认代码事实：`AuditKingKeyword.evidences` 是统一手册证据数组；摘要卡片可加入/移出当前关键词手册证据；全部详情可把选中原文加入当前关键词手册证据；`keyword-import-export.ts` 的 `手册证据` sheet 已记录证据来源和全文定位字段；`source-locator.ts` 可按全文坐标、段落坐标、文本和上下文恢复手册证据；当前关键词手册证据已移动到底部左侧，审计篮子保留在底部右侧。
+已确认扫描事实：`git status --short --branch` 显示 `## master...origin/master`，当前工作区干净。
 
-已确认测试事实：`tests/tool/audit-king` 已覆盖状态、导入导出、定位、视图、上下文加载和摘要绑定状态。
+已确认超过 300 行的源码文本文件包括：`public/tool/app/lock-entry-helper/superapp.py`、`public/tool/app/lock-entry-helper/app.py`、`public/tool/app/flight-stats-helper/app.py`、`src/tool/app/personnel-structure-stats/app.py`、`src/tool/app/training-workbench/scripts/schedule-assessment.ts`、`src/tool/app/audit-king/main.ts`、`src/tool/app/personnel-structure-stats/logic.ts`、`src/tool/app/pdf-stamp/main.ts`、`src/tool/app/hotel-bill-check/main.ts`、`src/tool/app/audit-king/view.ts`、`src/tool/app/audit-king/source-locator.ts`、`src/tool/app/audit-king/state.ts`、`src/tool/app/crew-flight-stats/main.ts`、`src/tool/app/session-bill-check/logic.ts`、`src/tool/app/session-bill-check/main.ts` 等。
 
-已确认文档/spec 事实：`spec/app/audit-king.md` 已记录关键词、检查单来源、手册证据、审计篮子分离，已记录摘要加入和全文选中都进入统一手册证据，已记录底部双栏布局和 Excel 字段。
+已确认职责信号：`src/tool/app/audit-king/main.ts` 同时包含文件上传、搜索重算、DOM 选区、事件委托、关键词动作、检查单来源绑定、手册证据加入/移除、审计篮子编辑、Excel 导入导出和日期文件名，属于重点审查对象；是否拆分需结合现有测试、入口脚本顺序和模块边界再决定。
 
-已确认配置或入口事实：审计之王页面为 `public/tool/app/audit-king/index.html`；源码在 `src/tool/app/audit-king/`；测试在 `tests/tool/audit-king/`。
+已确认可暂缓事实：`src/tool/app/word-template-filler` 已拆成 `generated-app-runtime-*`、`app-packager`、`config-parser`、`html-generator` 等小模块，当前没有超过 300 行源码文件。
 
-已确认命令输出：`npx.cmd vitest run tests/tool/audit-king` 通过 9 个测试文件、63 个测试；`npm.cmd run build` 通过；`npm.cmd run typecheck` 通过；`npm.cmd test` 通过 34 个测试文件、132 个测试。
+已确认可暂缓事实：培训皇帝虽然存在 300 行以上文件，但 `schedule-assessment.ts` 主要是排班风险计算和视图数据构造，`rule-engine.ts` 主要是培训有效期规则，`app-renderers.ts` 主要是渲染，`app-charts.ts` 主要是图表。它们触发职责审查，但不是本轮优先拆分对象。
 
-当前已有能力：上传检查单、多手册搜索、筛选手册、命中摘要、全部详情临时扩展上下文、摘要加入手册证据、全文选中加入手册证据、关键词和手册证据 Excel 导入导出、审计篮子独立导入导出。
+已确认测试事实：审计之王已有 9 个测试文件保护文档读取、搜索、高亮、定位、状态、导入导出和视图；全量测试在上一阶段通过 34 个测试文件、132 个测试。
 
-当前缺口：本轮需求内无已知代码缺口。
+语义审查记录：
 
-仍不明确：前端视觉效果需要 owner 人工检查；真实超大手册的长期性能仍需实际样本验证。
+- 保留：`src/tool/app/training-workbench/scripts/rule-engine.ts`。一句话职责：计算培训有效期、窗口期、排班状态和规则判断。变化原因集中在培训规则变化，不含 DOM、Excel 读写或事件接线。
+- 保留：`src/tool/app/training-workbench/scripts/schedule-assessment.ts`。一句话职责：基于培训分析结果构造排班评估、筛选、统计和图表数据。变化原因集中在排班总览评估口径，不直接操作 DOM 或文件。
+- 保留：`src/tool/app/training-workbench/scripts/app-renderers.ts`。一句话职责：把 TrainingToolApp 状态渲染到页面。变化原因集中在页面展示结构，不负责规则计算或文件读写。
+- 保留：`src/tool/app/training-workbench/scripts/app-charts.ts`。一句话职责：渲染培训工作台图表。变化原因集中在图表展示。
+- 暂缓：`src/tool/app/training-workbench/scripts/utils.ts`。一句话职责：培训工作台共享工具函数。它包含日期、表头、样式和 Excel 写单元格工具，确实偏“工具箱”，但调用面广且现有行为稳定，本轮不拆。
+- 必须拆候选：`src/tool/app/audit-king/main.ts`。一句话现状：审计之王页面入口和所有用户动作编排。问题是同一文件同时处理上传、搜索重算、DOM 选区、关键词动作、来源绑定、手册证据、审计篮子、Excel 导入导出和事件委托，变化原因过多；测试保护相对充分，适合作为第一轮拆分对象。
+- 暂缓：`src/tool/app/audit-king/view.ts`。一句话职责：渲染审计之王页面。虽然超过 300 行，但变化原因主要是展示；可后续按面板拆，不作为第一轮。
+- 保留：`src/tool/app/audit-king/source-locator.ts`。一句话职责：从检查单来源和手册证据的坐标、文本、上下文恢复定位。算法多但变化原因一致，不因行数拆。
+- 保留：`src/tool/app/audit-king/state.ts`。一句话职责：审计之王状态创建和状态变更 API。覆盖关键词、手册、筛选、详情上下文和审计篮子，属于同一状态层；暂不拆。
+- 建议拆：`src/tool/app/hotel-bill-check/main.ts`。一句话现状：酒店皇帝页面入口、Excel 读取预览、列选择、匹配触发、结果渲染和 Excel 导出。`logic.ts` 已承接核心匹配和日期逻辑，`main.ts` 仍混合 UI 和导出，后续适合拆成 view/export/io。
+- 建议拆：`src/tool/app/session-bill-check/main.ts`。一句话现状：会话账单页面入口、文件读取、状态、图表、表格、详情和导出。`logic.ts` 已承接核心规则，`main.ts` 可后续拆渲染和导出。
+- 建议拆：`src/tool/app/crew-flight-stats/main.ts`。一句话现状：航线班次统计页面入口、默认花名册读取、排班表读取、sheet 选择、结果渲染、导出和手工机组表。`logic.ts` 已承接核心统计，`main.ts` 可后续拆页面接线和渲染。
+- 必须拆候选但本轮暂缓：`src/tool/app/pdf-stamp/main.ts`。一句话现状：PDF 盖章页面入口、上传、规则编辑、预览渲染、拖拽和导出。`logic.ts` 只承接规则计算，`main.ts` 职责混杂明显；但当前测试只覆盖 logic，拆前需补浏览器交互或更细的纯逻辑测试。
+- 建议拆：`src/tool/app/personnel-structure-stats/app.py`。一句话现状：人员结构报告 Python GUI/CLI、Excel 解析、统计、Word 写回和界面运行。职责混杂明显，但已有 `logic.ts` 和部分 docx 测试；Python 端拆分需要单独计划。
+- 保留：`src/tool/app/personnel-structure-stats/logic.ts`。一句话职责：浏览器版人员结构统计解析和计算。变化原因集中在统计口径。
+- 必须拆候选但本轮暂缓：`public/tool/app/lock-entry-helper/app.py`、`public/tool/app/lock-entry-helper/superapp.py`、`public/tool/app/flight-stats-helper/app.py`。一句话现状：可下载 Python 自动化脚本，混合 CLI、输入解析、Playwright 页面操作、结果匹配和 Excel 写回。职责混杂明显，但它们在 `public` 下作为分发脚本，测试保护不足，不能直接大拆。
+- 暂缓：`public/tool/app/oa-read-helper/app.py`。一句话现状：OA 批量已阅自动化脚本，主要围绕 Playwright 页面循环操作；虽然长，但变化原因比锁班/经历助手集中，本轮不拆。
+
+仍不明确：旧 Python 工具位于 `public/tool/app`，是否继续维护为源码还是只作为可下载脚本，需要后续按工具逐个确认；本轮不在没有业务需求的情况下重写 Python 工具。
 
 ## 3. 失败测试
 
-自动测试：状态测试先失败，证明手册证据能保存 `sourceType`、全文起止位置，并且摘要和全文选中都进入同一 `evidences` 数组。
+自动测试：拆分审计之王 `main.ts` 后，`npx.cmd vitest run tests/tool/audit-king` 必须保持通过，证明事件接线、状态流、导入导出和证据逻辑没有断。
 
-自动测试：定位测试先失败，证明可以从文档全文全局坐标创建证据，并在手册轻微变化后用证据文本和上下文唯一恢复。
+自动测试：如果移动审计之王状态或定位逻辑，`state.test.ts`、`source-locator.test.ts`、`keyword-import-export.test.ts` 必须继续覆盖同一行为。
 
-自动测试：Excel 测试先失败，证明 `手册证据` sheet 导出和导入 `证据来源`、`全文起点`、`全文终点`。
+自动测试：如果拆酒店皇帝或会话账单，必须先补对应导出、超链接、日期和匹配测试，再拆。
 
-自动测试：视图测试先失败，证明底部左侧存在当前关键词手册证据区域，关键词池内部不再承载该区域，全部详情标题栏有“选中内容加入手册证据”入口。
+静态检查：拆分后 `public/tool/app/<tool>/index.html` 的脚本加载顺序必须包含新模块，构建产物必须生成对应脚本。
 
-类型检查：新增字段和 API 后 `runtime.d.ts`、源码和测试必须一致。
+类型检查：`npm.cmd run typecheck` 必须通过。
 
 构建命令：`npm.cmd run build` 必须通过。
 
-静态检查：spec 必须同步统一手册证据模型、证据来源、底部布局和导入导出字段。
+全量测试：`npm.cmd test` 必须通过。
 
-真实用户路径演练：选择关键词 -> 点击摘要加入证据 -> 在全部详情选中原文加入证据 -> 导出关键词 -> 导入关键词 -> 查看当前关键词手册证据。
-
-失败判定：任一核心测试失败、Excel 字段缺失、页面没有独立手册证据区、spec 描述旧结构，都判定未完成。
+失败判定：拆分后任何测试失败、入口缺少新脚本、spec 描述旧文件职责、或拆分只是移动代码但职责仍混杂，都判定未完成。
 
 ## 4. 目标
 
-用户路径完成到：用户可以用摘要快速加入证据，也可以在全部详情中精确选取原文加入同一手册证据列表。
+审计之王先审查：确认 `main.ts` 的变化原因是否已经超过“页面接线和应用控制”职责；如果拆分，目标是让 `main.ts` 回到启动和模块装配职责。
 
-代码主链路接到：`source-locator.ts` 负责从摘要或全文范围生成稳定证据；`state.ts` 管理同一证据数组；`view.ts` 渲染底部双栏和详情标题栏按钮；`main.ts` 接 selection 事件；`keyword-import-export.ts` 读写统一证据字段。
+全局审查完成：形成“必须拆、建议拆、暂缓、保留”的事实清单；是否做第一轮拆分以审查结论和测试保护为准。
 
-状态和记录落到：每条手册证据记录来源、手册名、手册 ID、段落信息、全文起止、局部起止、证据文本、前文、后文、命中类型和备注。
+测试保护完成：对测试不足的工具先记录，不直接大拆；对确认必须拆的文件，先确认或补足核心测试。
 
-输出呈现到：底部左侧为当前关键词手册证据，底部右侧为审计篮子；命中摘要仍可加入/移出手册证据；全部详情标题栏可把选中内容加入手册证据。
+文档同步完成：spec 或 plan 记录当前职责边界和暂缓理由。
 
-测试和文档同步到：状态、定位、导入导出、视图测试更新；`spec/app/audit-king.md` 更新。
-
-完成判定：审计之王局部测试、构建、类型检查、全量测试全部通过。
+完成判定：相关局部测试、build、typecheck、全量 test 全部通过。
 
 ## 5. 不做范围
 
-不做：把摘要绑定和全文证据拆成两个长期列表。
+不为了行数拆分：超过 300 行只触发职责审查，不自动拆。
 
-不保留：不把手册证据继续塞在关键词池卡片内部。
+不拆培训皇帝核心模块：除非发现明确职责混杂或测试失败。
 
-不兼容：不为不存在的旧模型增加隐藏分支；当前 Excel 以新字段为事实，缺字段按空值读入。
+不重写旧 Python 工具：先审查记录，后续按实际维护需求决定。
 
-不处理：自动合成审计篮子、自动判断符合性、PDF/OCR、Word 写回、跨浏览器持久保存。
+不在没有测试保护的情况下大拆酒店皇帝、PDF 盖章、人员结构统计等工具。
+
+不改变业务规则、导出结构、页面文案和用户工作流。
 
 ## 6. 设计
 
-主链路：关键词选中 -> 摘要加入或详情选中加入 -> 生成 `AuditKingManualEvidence` -> 写入当前关键词 `evidences` -> 底部手册证据刷新 -> 导出关键词 Excel `手册证据` sheet -> 导入后恢复关键词和证据 -> 上传手册后按全文坐标、文本和上下文尝试恢复。
+审查主链路：先按文件阅读和事实记录，不先设计拆分文件名；每个候选文件记录一句话职责、变化原因、内部耦合、测试保护、拆分收益、拆分风险和结论。
 
-输入 -> 判断 -> 状态 -> 执行 -> 输出 -> 记录：输入来自摘要 match 或详情 selection；判断必须选中具体关键词，详情 selection 必须在当前详情原文内；状态只写当前关键词证据数组；执行不修改审计篮子；输出刷新摘要绑定状态和底部证据列表；记录用于导入导出和恢复。
+可能的审计之王拆分方向仅作为候选：外部接线/应用控制、上传处理、关键词与检查单来源动作、手册证据动作、审计篮子动作、导入导出动作。是否执行以审查结论为准。
 
-模块边界：`highlight.ts` 提供详情窗口全局偏移；`source-locator.ts` 提供摘要证据和全文选中证据创建/恢复；`state.ts` 只管理证据数组；`keyword-import-export.ts` 只管理 Excel 结构；`view.ts` 只渲染区域和控件；`main.ts` 只处理 DOM 选择和事件接线。
+状态归属：仍由 `state.ts` 管理状态变更；动作模块只调用状态 API；渲染仍由 `view.ts` 管理；定位仍由 `source-locator.ts` 管理。
 
-文件职责：`runtime.d.ts` 定义新增字段；`source-locator.ts` 处理文档全文坐标和上下文；`view.ts` 调整底部布局和详情按钮；`main.ts` 从详情 selection 生成证据；测试文件保护核心规则。
+全局审查口径：能一句话说清职责、变化原因一致、内部耦合合理的文件保留；状态管理、规则计算、数据读写、渲染展示、外部接线、错误兼容和业务判断混在一起的文件进入拆分候选。
 
-状态归属：手册证据归属关键词；审计篮子归属最终人工整理；命中摘要和详情窗口是临时视图。
+测试影响：审计之王现有测试主要从构建产物读取脚本，改完 `src` 后必须先 build 再跑测试。
 
-数据或事件流：摘要加入保存来源 `summary`；详情选中保存来源 `selection`；导出时都进入同一 `手册证据` sheet；导入后都回到同一 `evidences` 数组。
+本轮拆分事实：
 
-错误、恢复、中断、重试边界：没有当前关键词、没有当前命中、选区不在详情原文内时提示错误；手册恢复不能唯一确认时保留证据但显示需人工确认；删除手册不删除证据；删除关键词删除其证据。
+- 已拆：`src/tool/app/audit-king/main.ts`。拆分后一句话职责：创建审计之王上下文并装配动作模块。
+- 新增：`src/tool/app/audit-king/app-context.ts`。一句话职责：创建共享上下文，集中提供状态、runtime、搜索重算、刷新、命中过滤、命中聚焦和本地日期格式化。
+- 新增：`src/tool/app/audit-king/upload-actions.ts`。一句话职责：处理检查单和手册上传读取。
+- 新增：`src/tool/app/audit-king/keyword-actions.ts`。一句话职责：处理关键词、检查单选区和检查单来源绑定动作。
+- 新增：`src/tool/app/audit-king/match-actions.ts`。一句话职责：处理命中筛选、命中导航、手册证据加入/移出和手册启停删除动作。
+- 新增：`src/tool/app/audit-king/evidence-actions.ts`。一句话职责：处理审计篮子编辑和审计篮子 Excel 导入导出。
+- 新增：`src/tool/app/audit-king/keyword-file-actions.ts`。一句话职责：处理关键词 Excel 导入导出。
+- 已更新：`public/tool/app/audit-king/index.html` 按依赖顺序加载新拆分脚本。
 
-与现有架构的关系：沿用当前静态浏览器 runtime 模块结构和 Bootstrap 卡片布局，不引入新框架。
-
-测试和文档影响：新增/更新状态、定位、Excel、视图测试；更新 spec。
+已验证事实：`npm.cmd run build` 通过，构建输出从 100 个脚本增加到 106 个脚本；`npx.cmd vitest run tests/tool/audit-king` 通过 9 个测试文件、63 个测试；`npm.cmd run typecheck` 通过。
 
 ## 7. 实施任务
 
-- [x] T001 补状态测试：证据来源和全文定位字段进入同一证据数组；文件：`tests/tool/audit-king/state.test.ts`；验收：失败测试覆盖统一模型。
-- [x] T002 补定位测试：从文档全文范围创建/恢复证据；文件：`tests/tool/audit-king/source-locator.test.ts`；验收：唯一恢复、多处不猜。
-- [x] T003 补 Excel 测试：`手册证据` sheet 包含来源和全文字段；文件：`tests/tool/audit-king/keyword-import-export.test.ts`；验收：导出导入字段一致。
-- [x] T004 补视图测试：底部双栏和详情选中加入入口；文件：`tests/tool/audit-king/view.test.ts`；验收：旧区域位置不再出现，新区域出现。
-- [x] T005 实现类型和定位逻辑；文件：`runtime.d.ts`、`highlight.ts`、`source-locator.ts`；验收：定位测试通过。
-- [x] T006 实现状态和 Excel；文件：`state.ts`、`keyword-import-export.ts`；验收：状态和 Excel 测试通过。
-- [x] T007 实现 UI 和事件；文件：`view.ts`、`main.ts`、`public/tool/app/audit-king/index.html`；验收：视图测试通过。
-- [x] T008 同步 spec；文件：`spec/app/audit-king.md`；验收：文档描述当前事实。
-- [x] T009 构建和全量验证；命令：局部测试、build、typecheck、test；验收：全部通过。
+- [x] T001 语义审查培训皇帝：确认哪些长文件职责单一、为什么不拆；验收：plan 中有保留理由。
+- [x] T002 语义审查审计之王：确认 `main.ts`、`view.ts`、`source-locator.ts`、`state.ts` 的职责边界；验收：plan 中有拆/不拆结论。
+- [x] T003 语义审查酒店皇帝、会话账单、航线班次统计；验收：记录职责、测试保护和风险。
+- [x] T004 语义审查 PDF 盖章、人员结构统计、旧 Python 工具；验收：记录职责、测试保护和风险。
+- [x] T005 形成全局清单：必须拆、建议拆、暂缓、保留；验收：每项有事实理由。
+- [x] T006 对“必须拆且测试保护足够”的对象执行第一轮拆分；验收：拆分前后行为测试通过。
+- [x] T007 补充或调整测试；验收：受影响工具局部测试通过。
+- [x] T008 同步文档；验收：职责边界不描述旧结构。
+- [x] T009 完整验证；命令：`npm.cmd run build`、相关局部测试、`npm.cmd run typecheck`、`npm.cmd test`；验收：全部通过。
 
 ## 8. 验证计划
 
@@ -114,30 +135,28 @@
 
 完整验证命令：`npm.cmd run build`、`npm.cmd run typecheck`、`npm.cmd test`。
 
-构建或安装检查：确认 `dist/tool/app/audit-king/` 生成最新脚本。
+构建或安装检查：确认 `dist/tool/app/audit-king/` 生成新拆分脚本，页面入口按依赖顺序加载。
 
-页面/工具入口检查：确认底部左侧为当前关键词手册证据，右侧为审计篮子；全部详情标题栏有选中内容加入证据入口。
+页面/工具入口检查：确认审计之王入口不缺脚本；页面视觉由 owner 人工确认。
 
-恢复或中断演练：测试覆盖全文坐标恢复、文本上下文恢复、多处命中不猜、无选区提示。
+文档同步检查：`plan.md` 记录全局审查事实和本轮拆分事实。
 
-文档同步检查：`spec/app/audit-king.md` 与实现一致。
+未验证内容：旧 Python 工具是否要迁移源码位置，需要后续单独确认。
 
-未验证内容：最终视觉和真实大手册体验需要 owner 人工检查。
-
-剩余风险：Word 段落拆分大幅变化时，部分证据可能只能保留为需人工确认。
+剩余风险：拆分动作模块可能影响事件绑定顺序，必须用测试和构建产物检查兜住。
 
 ## 9. 收口
 
-目标是否完成：已完成。
+目标是否完成：已完成本轮语义审查和第一轮拆分。
 
 失败测试是否变绿：已变绿。
 
-改了哪些文件：`public/tool/app/audit-king/index.html`、`src/tool/app/audit-king/highlight.ts`、`src/tool/app/audit-king/keyword-import-export.ts`、`src/tool/app/audit-king/main.ts`、`src/tool/app/audit-king/runtime.d.ts`、`src/tool/app/audit-king/source-locator.ts`、`src/tool/app/audit-king/state.ts`、`src/tool/app/audit-king/view.ts`、`tests/tool/audit-king/*`、`spec/app/audit-king.md`、`plan.md`。
+改了哪些文件：`plan.md`、`public/tool/app/audit-king/index.html`、`src/tool/app/audit-king/main.ts`、`src/tool/app/audit-king/runtime.d.ts`，新增 `src/tool/app/audit-king/app-context.ts`、`upload-actions.ts`、`keyword-actions.ts`、`match-actions.ts`、`evidence-actions.ts`、`keyword-file-actions.ts`。
 
-跑了哪些验证：`npx.cmd vitest run tests/tool/audit-king`、`npm.cmd run build`、`npm.cmd run typecheck`、`npm.cmd test`。
+跑了哪些验证：`npm.cmd run build`、`npx.cmd vitest run tests/tool/audit-king`、`npm.cmd run typecheck`、`npm.cmd test`。
 
-哪些内容没有验证：最终视觉和真实超大手册体验需要 owner 人工检查。
+哪些内容没有验证：最终页面视觉由 owner 人工检查。
 
-剩余风险：Word 段落拆分大幅变化时，部分手册证据可能只能保留为需人工确认。
+剩余风险：PDF 盖章和旧 Python 自动化脚本仍是高风险候选，但测试保护不足，本轮只记录不拆。
 
 是否 commit / push：待执行。

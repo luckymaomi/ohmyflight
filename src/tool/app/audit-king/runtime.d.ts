@@ -132,6 +132,18 @@ interface AuditKingStateModel {
     evidenceGroups: AuditKingEvidenceGroup[];
 }
 
+interface AuditKingAppContext {
+    runtime: Record<string, any>;
+    state: AuditKingStateModel;
+    getElement<T extends HTMLElement>(id: string): T;
+    recomputeSearch(): void;
+    refresh(message?: string, type?: "info" | "success" | "error"): void;
+    getFilteredMatches(): AuditKingMatch[];
+    getCurrentFilteredMatch(): AuditKingMatch | null;
+    focusMatch(index: number): void;
+    formatLocalDate(date: Date): string;
+}
+
 interface Window {
     AuditKing: Record<string, any>;
     FlexSearch: any;
