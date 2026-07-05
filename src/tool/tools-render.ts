@@ -18,6 +18,9 @@ const versionMeta = document.getElementById("versionMeta");
 const commitLog = document.getElementById("commitLog");
 const logToggle = document.getElementById("logToggle");
 const commitLogWrap = document.getElementById("commitLogWrap");
+const historyToggle = document.getElementById("historyToggle");
+const historyWrap = document.getElementById("historyWrap");
+const historyContent = document.getElementById("historyContent");
 
 if (
     searchInput instanceof HTMLInputElement
@@ -28,7 +31,9 @@ if (
     renderToolCards(allToolRows);
     bindSearch(searchInput);
     bindLogToggle();
+    bindHistoryToggle();
     renderVersion();
+    renderHistory();
 }
 
 function renderGreeting(): void {
@@ -130,6 +135,189 @@ function bindLogToggle(): void {
         logToggle.textContent = "展开";
         logToggle.setAttribute("aria-expanded", "false");
     });
+}
+
+async function renderHistory(): Promise<void> {
+    if (!(historyContent instanceof HTMLElement)) return;
+
+    try {
+        const response = await fetch("../history.md", { cache: "no-store" });
+        if (!response.ok) throw new Error("history not found");
+
+        const markdown = await response.text();
+        historyContent.innerHTML = renderMarkdown(markdown);
+    } catch {
+        historyContent.innerHTML = '<div class="commit-empty">暂无开发历史。</div>';
+    }
+}
+
+function bindHistoryToggle(): void {
+    if (!(historyToggle instanceof HTMLElement) || !(historyWrap instanceof HTMLElement)) return;
+
+    historyWrap.addEventListener("shown.bs.collapse", () => {
+        historyToggle.textContent = "收起";
+        historyToggle.setAttribute("aria-expanded", "true");
+    });
+    historyWrap.addEventListener("hidden.bs.collapse", () => {
+        historyToggle.textContent = "展开";
+        historyToggle.setAttribute("aria-expanded", "false");
+    });
+}
+
+function renderMarkdown(markdown: string): string {
+    const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+    const html: string[] = [];
+    let paragraph: string[] = [];
+    let listItems: string[] = [];
+    let orderedListItems: string[] = [];
+    let tableLines: string[] = [];
+    let codeLines: string[] = [];
+    let inCodeBlock = false;
+
+    const flushParagraph = (): void => {
+        if (!paragraph.length) return;
+        html.push(`<p>${renderInline(paragraph.join(" "))}</p>`);
+        paragraph = [];
+    };
+
+    const flushList = (): void => {
+        if (!listItems.length) return;
+        html.push(`<ul>${listItems.map((item) => `<li>${renderInline(item)}</li>`).join("")}</ul>`);
+        listItems = [];
+    };
+
+    const flushOrderedList = (): void => {
+        if (!orderedListItems.length) return;
+        html.push(`<ol>${orderedListItems.map((item) => `<li>${renderInline(item)}</li>`).join("")}</ol>`);
+        orderedListItems = [];
+    };
+
+    const flushTable = (): void => {
+        if (tableLines.length < 2 || !isMarkdownTableSeparator(tableLines[1])) {
+            paragraph.push(...tableLines);
+            tableLines = [];
+            return;
+        }
+
+        const headers = splitMarkdownTableRow(tableLines[0]);
+        const rows = tableLines.slice(2).map(splitMarkdownTableRow);
+        html.push(`
+            <div class="history-table-wrap">
+                <table>
+                    <thead>
+                        <tr>${headers.map((cell) => `<th>${renderInline(cell)}</th>`).join("")}</tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map((row) => `<tr>${row.map((cell) => `<td>${renderInline(cell)}</td>`).join("")}</tr>`).join("")}
+                    </tbody>
+                </table>
+            </div>
+        `);
+        tableLines = [];
+    };
+
+    const flushBlocks = (): void => {
+        flushParagraph();
+        flushList();
+        flushOrderedList();
+        flushTable();
+    };
+
+    for (const line of lines) {
+        if (line.trim().startsWith("```")) {
+            if (inCodeBlock) {
+                html.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+                codeLines = [];
+                inCodeBlock = false;
+                continue;
+            }
+
+            flushBlocks();
+            inCodeBlock = true;
+            continue;
+        }
+
+        if (inCodeBlock) {
+            codeLines.push(line);
+            continue;
+        }
+
+        if (!line.trim()) {
+            flushBlocks();
+            continue;
+        }
+
+        const heading = line.match(/^(#{1,6})\s+(.+)$/);
+        if (heading) {
+            flushBlocks();
+            const level = Math.min(heading[1].length + 1, 6);
+            html.push(`<h${level}>${renderInline(heading[2])}</h${level}>`);
+            continue;
+        }
+
+        const listItem = line.match(/^\s*[-*]\s+(.+)$/);
+        if (listItem) {
+            flushParagraph();
+            flushOrderedList();
+            flushTable();
+            listItems.push(listItem[1]);
+            continue;
+        }
+
+        const orderedListItem = line.match(/^\s*\d+\.\s+(.+)$/);
+        if (orderedListItem) {
+            flushParagraph();
+            flushList();
+            flushTable();
+            orderedListItems.push(orderedListItem[1]);
+            continue;
+        }
+
+        if (isPotentialMarkdownTableLine(line)) {
+            flushParagraph();
+            flushList();
+            flushOrderedList();
+            tableLines.push(line);
+            continue;
+        }
+
+        flushList();
+        flushOrderedList();
+        flushTable();
+        paragraph.push(line.trim());
+    }
+
+    if (inCodeBlock) {
+        html.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+    }
+    flushBlocks();
+
+    return html.join("");
+}
+
+function isPotentialMarkdownTableLine(line: string): boolean {
+    const trimmed = line.trim();
+    return trimmed.startsWith("|") && trimmed.endsWith("|");
+}
+
+function isMarkdownTableSeparator(line: string): boolean {
+    return /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$/.test(line.trim());
+}
+
+function splitMarkdownTableRow(line: string): string[] {
+    return line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((cell) => cell.trim());
+}
+
+function renderInline(value: string): string {
+    const escaped = escapeHtml(value);
+    return escaped
+        .replace(/`([^`]+)`/g, "<code>$1</code>")
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label: string, href: string) => {
+            const safeHref = String(href).startsWith("http") || String(href).startsWith("./") || String(href).startsWith("../")
+                ? href
+                : "#";
+            return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+        });
 }
 
 function formatCommitDate(value: unknown): string {

@@ -169,6 +169,10 @@ body {
     overflow: hidden;
 }
 
+.log-section + .log-section {
+    margin-top: 18px;
+}
+
 .log-head {
     display: flex;
     align-items: center;
@@ -238,6 +242,125 @@ body {
     color: var(--muted);
 }
 
+.history-content {
+    padding: 22px 24px 26px;
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.75;
+}
+
+.history-content h2,
+.history-content h3,
+.history-content h4,
+.history-content h5,
+.history-content h6 {
+    margin: 26px 0 12px;
+    line-height: 1.35;
+    font-weight: 760;
+}
+
+.history-content h2:first-child,
+.history-content h3:first-child {
+    margin-top: 0;
+}
+
+.history-content h2 {
+    padding-bottom: 8px;
+    border-bottom: 1px solid #edf0f2;
+    font-size: 22px;
+}
+
+.history-content h3 {
+    font-size: 18px;
+}
+
+.history-content h4,
+.history-content h5,
+.history-content h6 {
+    font-size: 16px;
+}
+
+.history-content p {
+    margin: 0 0 14px;
+}
+
+.history-content ul,
+.history-content ol {
+    margin: 0 0 16px;
+    padding-left: 1.2rem;
+}
+
+.history-content li + li {
+    margin-top: 5px;
+}
+
+.history-content code {
+    padding: 2px 5px;
+    border-radius: 5px;
+    background: #f1f3f5;
+    color: #7c2d12;
+    font-size: 0.92em;
+}
+
+.history-content pre {
+    margin: 0 0 18px;
+    padding: 14px 16px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    background: #f8f9fa;
+    overflow: auto;
+}
+
+.history-content pre code {
+    padding: 0;
+    background: transparent;
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.history-content a {
+    color: var(--brand);
+    text-decoration: none;
+}
+
+.history-content a:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.history-table-wrap {
+    margin: 0 0 18px;
+    overflow-x: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+}
+
+.history-table-wrap table {
+    width: 100%;
+    min-width: 680px;
+    border-collapse: collapse;
+    background: #fff;
+}
+
+.history-table-wrap th,
+.history-table-wrap td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #edf0f2;
+    text-align: left;
+    vertical-align: top;
+}
+
+.history-table-wrap th {
+    background: #f8f9fa;
+    color: #344054;
+    font-weight: 720;
+}
+
+.history-table-wrap tr:last-child td {
+    border-bottom: 0;
+}
+
 @media (max-width: 768px) {
     .home-head {
         padding-top: 12px;
@@ -261,5 +384,14 @@ body {
     .commit-item {
         grid-template-columns: 1fr;
         gap: 4px;
+    }
+
+    .history-content {
+        padding: 18px 16px 22px;
+        font-size: 14px;
+    }
+
+    .history-content h2 {
+        font-size: 19px;
     }
 }

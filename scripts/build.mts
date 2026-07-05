@@ -83,6 +83,15 @@ async function copyStaticFiles() {
     recursive: true,
     force: true
   });
+
+  const historyPath = path.join(projectRoot, "history.md");
+  try {
+    await fs.copyFile(historyPath, path.join(distRoot, "history.md"));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
+    }
+  }
 }
 
 async function runCommand(command, args) {
