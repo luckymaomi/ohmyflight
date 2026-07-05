@@ -92,5 +92,29 @@ type SessionBillLogicApi = {
 type SessionBillRuntime = Window & {
     XLSX: typeof import("xlsx-js-style");
     SessionBillLogic?: SessionBillLogicApi;
+    SessionBillCheck?: Record<string, any>;
     echarts?: any;
+};
+
+type SessionBillAppState = {
+    sessionWorkbook: SessionBillWorkbook | null;
+    billWorkbook: SessionBillWorkbook | null;
+    sessionFileName: string;
+    billFileName: string;
+    sessionAnalysis: ReturnType<SessionBillLogicApi["analyzeSessionWorkbook"]> | null;
+    billAnalysis: ReturnType<SessionBillLogicApi["analyzeBillWorkbook"]> | null;
+    result: SessionBillCompareResult | null;
+    filter: string;
+    selectedKey: string;
+};
+
+type SessionBillAppContext = {
+    runtime: SessionBillRuntime;
+    logic: SessionBillLogicApi;
+    state: SessionBillAppState;
+    getElement<T extends HTMLElement>(id: string): T;
+    escapeHtml(value: unknown): string;
+    setStatus(message: string, type?: "muted" | "success" | "danger"): void;
+    readWorkbook(file: File): Promise<SessionBillWorkbook>;
+    filteredRows(): SessionBillCompareRow[];
 };

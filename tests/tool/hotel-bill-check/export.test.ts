@@ -31,12 +31,15 @@ function exportHotelBillWorkbook() {
   const context = createBrowserContext({ document, XLSX: runtimeXlsx });
 
   runBrowserScript("tool/app/hotel-bill-check/logic.js", context);
+  runBrowserScript("tool/app/hotel-bill-check/app-context.js", context);
+  runBrowserScript("tool/app/hotel-bill-check/view.js", context);
   runBrowserScript(
-    "tool/app/hotel-bill-check/main.js",
+    "tool/app/hotel-bill-check/export-actions.js",
     context,
     `
-checkinColumns = ["姓名", "入住证明", "补充文件", "备注"];
-checkinHyperlinks = {
+const appContext = HotelBillCheck.AppContext.createAppContext();
+appContext.state.checkinColumns = ["姓名", "入住证明", "补充文件", "备注"];
+appContext.state.checkinHyperlinks = {
   0: {
     1: { url: "https://example.test/proof-a", display: "证明A" },
     2: { url: "https://example.test/proof-b", display: "证明B" }
@@ -45,11 +48,11 @@ checkinHyperlinks = {
     1: { url: "https://example.test/proof-c", display: "证明C" }
   }
 };
-matchResults = [
+appContext.state.matchResults = [
   { status: "matched", billRow: [], billIdx: 0, checkinRow: ["张三"], checkinIdx: 0 },
   { status: "matched", billRow: [], billIdx: 1, checkinRow: ["李四"], checkinIdx: 1 }
 ];
-exportExcel();
+HotelBillCheck.ExportActions.exportExcel(appContext);
 `
   );
 
