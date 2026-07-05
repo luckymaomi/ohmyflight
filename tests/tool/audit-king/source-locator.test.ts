@@ -94,6 +94,7 @@ describe("audit-king source locator", () => {
     });
 
     expect(evidence).toMatchObject({
+      sourceType: "summary",
       documentId: "manual-1",
       documentName: "运行手册.docx",
       blockId: "manual-1-b3",
@@ -105,6 +106,40 @@ describe("audit-king source locator", () => {
       beforeText: "机组",
       afterText: "应当满足运行手册",
       mode: "exact"
+    });
+  });
+
+  it("creates manual evidence from selected full detail text without requiring the keyword", () => {
+    const documentItem = {
+      id: "manual-1",
+      name: "运行手册.docx",
+      blocks: [
+        { id: "manual-1-b1", documentId: "manual-1", documentName: "运行手册.docx", blockIndex: 1, title: "", text: "第一段无关内容" },
+        { id: "manual-1-b2", documentId: "manual-1", documentName: "运行手册.docx", blockIndex: 2, title: "资格章节", text: "驾驶员应当满足申请航线运输驾驶员执照规定的资格要求和经历要求。" }
+      ]
+    };
+    const fullText = "第一段无关内容\n\n驾驶员应当满足申请航线运输驾驶员执照规定的资格要求和经历要求。";
+    const start = fullText.indexOf("申请航线运输驾驶员执照规定的资格要求");
+    const end = start + "申请航线运输驾驶员执照规定的资格要求".length;
+
+    const evidence = locator.makeManualEvidenceFromDocumentRange(documentItem, start, end, {
+      sourceType: "selection"
+    });
+
+    expect(evidence).toMatchObject({
+      sourceType: "selection",
+      documentId: "manual-1",
+      documentName: "运行手册.docx",
+      blockId: "manual-1-b2",
+      blockIndex: 2,
+      title: "资格章节",
+      start: 7,
+      end: 25,
+      globalStart: start,
+      globalEnd: end,
+      text: "申请航线运输驾驶员执照规定的资格要求",
+      beforeText: "第一段无关内容\n\n驾驶员应当满足",
+      afterText: "和经历要求。"
     });
   });
 
@@ -138,6 +173,41 @@ describe("audit-king source locator", () => {
       end: 6,
       text: "训练要求"
     });
+  });
+
+  it("uses full-document context to recover selected evidence after coordinates move", () => {
+    const documents = [{
+      id: "manual-current",
+      name: "运行手册.docx",
+      blocks: [
+        { id: "manual-current-b1", documentId: "manual-current", documentName: "运行手册.docx", blockIndex: 1, title: "", text: "新增段落" },
+        { id: "manual-current-b2", documentId: "manual-current", documentName: "运行手册.docx", blockIndex: 2, title: "资格章节", text: "新增文字。驾驶员应当满足申请航线运输驾驶员执照规定的资格要求和经历要求。" }
+      ]
+    }];
+
+    const evidence = locator.resolveManualEvidence({
+      sourceType: "selection",
+      documentName: "运行手册.docx",
+      globalStart: 999,
+      globalEnd: 1018,
+      text: "申请航线运输驾驶员执照规定的资格要求",
+      beforeText: "驾驶员应当满足",
+      afterText: "和经历要求。"
+    }, documents);
+
+    expect(evidence).toMatchObject({
+      sourceType: "selection",
+      documentId: "manual-current",
+      documentName: "运行手册.docx",
+      blockId: "manual-current-b2",
+      blockIndex: 2,
+      title: "资格章节",
+      start: 12,
+      end: 30,
+      text: "申请航线运输驾驶员执照规定的资格要求"
+    });
+    expect(evidence.globalStart).toBeGreaterThan(0);
+    expect(evidence.globalEnd).toBeGreaterThan(evidence.globalStart);
   });
 
   it("does not guess a manual evidence location when the same evidence appears multiple times", () => {

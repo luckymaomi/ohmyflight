@@ -71,7 +71,7 @@
     function buildBlockWindowContext(
         blocks: AuditKingTextBlock[],
         options: { blockId: string; matchStart: number; matchEnd: number; targetLength: number }
-    ): { text: string; matchStart: number; matchEnd: number; truncatedStart: boolean; truncatedEnd: boolean } {
+    ): { text: string; matchStart: number; matchEnd: number; truncatedStart: boolean; truncatedEnd: boolean; windowStart: number; windowEnd: number } {
         const currentIndex = blocks.findIndex((block) => block.id === options.blockId);
         if (currentIndex < 0) {
             return {
@@ -79,7 +79,9 @@
                 matchStart: 0,
                 matchEnd: 0,
                 truncatedStart: false,
-                truncatedEnd: false
+                truncatedEnd: false,
+                windowStart: 0,
+                windowEnd: 0
             };
         }
 
@@ -108,7 +110,9 @@
             matchStart: globalMatchStart - windowStart,
             matchEnd: globalMatchEnd - windowStart,
             truncatedStart: windowStart > 0,
-            truncatedEnd: windowEnd < fullText.length
+            truncatedEnd: windowEnd < fullText.length,
+            windowStart,
+            windowEnd
         };
     }
 

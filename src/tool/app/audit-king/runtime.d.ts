@@ -46,6 +46,7 @@ interface AuditKingImportedKeyword {
 
 interface AuditKingManualEvidence {
     id?: string;
+    sourceType?: "summary" | "selection" | "";
     documentId?: string;
     documentName: string;
     blockId?: string;
@@ -53,6 +54,8 @@ interface AuditKingManualEvidence {
     title?: string;
     start?: number;
     end?: number;
+    globalStart?: number;
+    globalEnd?: number;
     text: string;
     beforeText?: string;
     afterText?: string;

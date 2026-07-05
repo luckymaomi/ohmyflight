@@ -87,6 +87,7 @@ describe("audit-king view", () => {
       matchDetail: createElement(),
       matchDetailContextLabel: createElement(),
       expandMatchDetailBtn: createElement(),
+      addSelectedManualEvidenceBtn: createElement(),
       keywordEvidenceList: createElement(),
       keywordEvidenceCount: createElement()
     };
@@ -185,7 +186,7 @@ describe("audit-king view", () => {
       }
     });
 
-    expect(elements.matchList.innerHTML).toContain("绑定当前关键词");
+    expect(elements.matchList.innerHTML).toContain("加入手册证据");
     expect(elements.matchList.innerHTML).toContain('data-action="bind-match-evidence"');
     expect(elements.matchList.innerHTML).toContain("match-location");
     expect(elements.matchList.innerHTML).toContain("match-evidence-action");
@@ -215,7 +216,7 @@ describe("audit-king view", () => {
       }
     });
 
-    expect(elements.matchList.innerHTML).toContain("解绑当前关键词");
+    expect(elements.matchList.innerHTML).toContain("移出手册证据");
     expect(elements.matchList.innerHTML).toContain('data-action="unbind-match-evidence"');
     expect(elements.matchList.innerHTML).toContain("bound-evidence");
     expect(elements.matchList.innerHTML).toContain("已绑定证据");
@@ -252,6 +253,8 @@ describe("audit-king view", () => {
     expect(lastBlockWindowTargetLength).toBe(2000);
     expect(elements.matchDetail.innerHTML).not.toContain("绑定为手册证据");
     expect(elements.matchDetail.innerHTML).not.toContain('data-action="bind-manual-evidence"');
+    expect(elements.addSelectedManualEvidenceBtn.textContent).toBe("选中内容加入手册证据");
+    expect((elements.addSelectedManualEvidenceBtn as any).disabled).toBe(false);
   });
 
   it("shows a load-more context action when the full detail panel is truncated", () => {

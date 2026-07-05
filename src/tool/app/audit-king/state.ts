@@ -209,6 +209,7 @@
     function normalizeKeywordEvidence(keyword: AuditKingKeyword, evidence: AuditKingManualEvidence): AuditKingManualEvidence {
         return {
             id: evidence.id || makeKeywordEvidenceId(keyword),
+            sourceType: evidence.sourceType || "",
             documentId: evidence.documentId || "",
             documentName: String(evidence.documentName || "").trim(),
             blockId: evidence.blockId || "",
@@ -216,6 +217,8 @@
             title: evidence.title || "",
             start: evidence.start,
             end: evidence.end,
+            globalStart: evidence.globalStart,
+            globalEnd: evidence.globalEnd,
             text: String(evidence.text || "").trim(),
             beforeText: evidence.beforeText || "",
             afterText: evidence.afterText || "",

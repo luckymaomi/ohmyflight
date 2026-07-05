@@ -66,6 +66,11 @@
         });
     }
 
+    function getCurrentFilteredMatch(): AuditKingMatch | null {
+        const matches = getFilteredMatches();
+        return matches[Math.max(0, Math.min(matches.length - 1, state.currentMatchIndex))] || null;
+    }
+
     function focusMatch(index: number): void {
         const matches = getFilteredMatches();
         if (!matches.length) return;
@@ -193,6 +198,35 @@
         };
     }
 
+    function isNodeInside(parent: HTMLElement, node: Node): boolean {
+        return node === parent || parent.contains(node);
+    }
+
+    function getSelectionInsideElement(element: HTMLElement): { start: number; end: number; text: string } | null {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0) return null;
+        const range = selection.getRangeAt(0);
+        if (!isNodeInside(element, range.startContainer) || !isNodeInside(element, range.endContainer)) return null;
+
+        const selectedText = range.toString();
+        if (!selectedText.trim()) return null;
+
+        const sourceRange = document.createRange();
+        sourceRange.selectNodeContents(element);
+        sourceRange.setEnd(range.startContainer, range.startOffset);
+        const rawStart = sourceRange.toString().length;
+        sourceRange.setEnd(range.endContainer, range.endOffset);
+        const rawEnd = sourceRange.toString().length;
+        sourceRange.detach();
+
+        const leadingWhitespace = selectedText.length - selectedText.replace(/^\s+/, "").length;
+        const trailingWhitespace = selectedText.length - selectedText.replace(/\s+$/, "").length;
+        const start = rawStart + leadingWhitespace;
+        const end = Math.max(start, rawEnd - trailingWhitespace);
+        const text = selectedText.trim();
+        return end > start ? { start, end, text } : null;
+    }
+
     function focusChecklistKeyword(keywordId: string): void {
         if (!keywordId || keywordId === "all") return;
         runtime.View.renderChecklist(state);
@@ -290,6 +324,8 @@
             } else if (action === "expand-match-detail") {
                 runtime.State.expandMatchDetailContext(state);
                 runtime.View.renderMatchDetail(state);
+            } else if (action === "add-selected-manual-evidence") {
+                addSelectedDetailManualEvidence();
             } else if (action === "remove-manual-evidence") {
                 removeCurrentKeywordManualEvidence(actionTarget.dataset.evidenceId || "");
             } else if (action === "remove-document") {
@@ -424,6 +460,62 @@
         runtime.View.renderMatches(state);
         runtime.View.renderKeywordEvidences(state);
         runtime.View.renderStatus(`已为关键词绑定手册证据：${keyword.text}`, "success");
+    }
+
+    function addSelectedDetailManualEvidence(): void {
+        if (!state.currentKeywordId || state.currentKeywordId === "all") {
+            runtime.View.renderStatus("请先在关键词池选择一个关键词。", "error");
+            return;
+        }
+        const keyword = state.keywords.find((item) => item.id === state.currentKeywordId);
+        if (!keyword) {
+            runtime.View.renderStatus("当前关键词不存在。", "error");
+            return;
+        }
+        const match = getCurrentFilteredMatch();
+        if (!match) {
+            runtime.View.renderStatus("请先选择一条手册命中。", "error");
+            return;
+        }
+        if (match.keywordId !== keyword.id) {
+            runtime.View.renderStatus("当前详情不属于所选关键词，请先切换到该关键词后再加入证据。", "error");
+            return;
+        }
+        const detailText = document.getElementById("matchDetailOriginalText");
+        if (!(detailText instanceof HTMLElement)) {
+            runtime.View.renderStatus("当前详情原文尚未加载。", "error");
+            return;
+        }
+        const selection = getSelectionInsideElement(detailText);
+        if (!selection) {
+            runtime.View.renderStatus("请先在全部详情原文中选中要加入的证据。", "error");
+            return;
+        }
+        const windowStart = Number(detailText.dataset.windowStart || 0);
+        if (!Number.isFinite(windowStart)) {
+            runtime.View.renderStatus("当前详情缺少全文定位信息。", "error");
+            return;
+        }
+        const documentItem = state.documents.find((item) => item.id === match.documentId);
+        if (!documentItem) {
+            runtime.View.renderStatus("当前命中对应的手册不存在。", "error");
+            return;
+        }
+        const evidence = runtime.SourceLocator.makeManualEvidenceFromDocumentRange(
+            documentItem,
+            windowStart + selection.start,
+            windowStart + selection.end,
+            {
+                sourceType: "selection",
+                mode: match.mode
+            }
+        );
+        runtime.State.addKeywordEvidence(state, keyword.id, evidence);
+        window.getSelection()?.removeAllRanges();
+        runtime.View.renderKeywords(state);
+        runtime.View.renderMatches(state);
+        runtime.View.renderKeywordEvidences(state);
+        runtime.View.renderStatus(`已把选中原文加入手册证据：${keyword.text}`, "success");
     }
 
     function unbindMatchManualEvidence(matchIndex: number): void {

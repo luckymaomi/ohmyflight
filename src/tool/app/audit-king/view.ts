@@ -206,8 +206,8 @@
             const boundClass = boundEvidence ? " bound-evidence" : "";
             const boundStatus = boundEvidence ? `<span class="match-bound-status">已绑定证据</span>` : "";
             const evidenceAction = boundEvidence
-                ? `<button class="btn btn-sm btn-outline-danger match-evidence-action" data-action="unbind-match-evidence" data-match-index="${index}">解绑当前关键词</button>`
-                : `<button class="btn btn-sm btn-outline-primary match-evidence-action" data-action="bind-match-evidence" data-match-index="${index}">绑定当前关键词</button>`;
+                ? `<button class="btn btn-sm btn-outline-danger match-evidence-action" data-action="unbind-match-evidence" data-match-index="${index}">移出手册证据</button>`
+                : `<button class="btn btn-sm btn-outline-primary match-evidence-action" data-action="bind-match-evidence" data-match-index="${index}">加入手册证据</button>`;
             return `
                 <article class="match-item ${active}${boundClass}" id="match-${index}" data-action="focus-match" data-match-index="${index}" role="button" tabindex="0">
                     <div class="match-meta">
@@ -233,7 +233,7 @@
         });
         const match = filtered[state.currentMatchIndex];
         if (!match) {
-            renderMatchDetailControls(0, false);
+            renderMatchDetailControls(0, false, false);
             container.innerHTML = `<div class="empty-panel">点击左侧命中摘要后，这里显示附近全文。</div>`;
             return;
         }
@@ -258,7 +258,7 @@
             </div>
             <div class="detail-text">
                 ${context.truncatedStart ? "<p>...</p>" : ""}
-                <p>${renderHighlightedText(detailText, [{
+                <p id="matchDetailOriginalText" data-window-start="${escapeHtml(context.windowStart ?? 0)}">${renderHighlightedText(detailText, [{
                     keywordId: match.keywordId,
                     color: match.keywordColor,
                     start: rangeStart,
@@ -267,19 +267,23 @@
                 ${context.truncatedEnd ? "<p>...</p>" : ""}
             </div>
         `;
-        renderMatchDetailControls(detailContextLength, context.truncatedStart || context.truncatedEnd);
+        renderMatchDetailControls(detailContextLength, context.truncatedStart || context.truncatedEnd, state.currentKeywordId !== "all" && match.keywordId === state.currentKeywordId);
         scrollChildIntoPanel(container, container.querySelector<HTMLElement>(".ak-highlight"));
     }
 
-    function renderMatchDetailControls(loadedLength: number, hasMore: boolean): void {
+    function renderMatchDetailControls(loadedLength: number, hasMore: boolean, canAddEvidence: boolean): void {
         const label = getElement<HTMLElement>("matchDetailContextLabel");
         const button = getElement<HTMLButtonElement>("expandMatchDetailBtn");
+        const addButton = getElement<HTMLButtonElement>("addSelectedManualEvidenceBtn");
+        addButton.textContent = "选中内容加入手册证据";
         if (!loadedLength) {
             label.textContent = "未加载";
             button.textContent = "查看更多上下文";
             button.disabled = true;
+            addButton.disabled = true;
             return;
         }
+        addButton.disabled = !canAddEvidence;
         label.textContent = `已加载约 ${loadedLength} 字`;
         if (!hasMore) {
             button.textContent = "已加载全部";
@@ -389,10 +393,12 @@
         container.innerHTML = evidences.map((evidence, index) => {
             const title = evidence.title ? ` / ${evidence.title}` : "";
             const status = getManualEvidenceStatus(evidence, state.documents || []);
+            const sourceLabel = evidence.sourceType === "selection" ? "全文选中" : "摘要加入";
             return `
                 <article class="manual-evidence-item">
                     <div class="manual-evidence-head">
                         <strong>${escapeHtml(evidence.documentName)} / 第 ${escapeHtml(evidence.blockIndex ?? "")} 段${escapeHtml(title)}</strong>
+                        <span class="keyword-source-status">${sourceLabel}</span>
                         <span class="keyword-source-status ${status.className}">${status.label}</span>
                     </div>
                     <div class="manual-evidence-text">${escapeHtml(evidence.text)}</div>

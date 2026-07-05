@@ -2,7 +2,7 @@
     const runtime = window.AuditKing || (window.AuditKing = {});
 
     const headers = ["序号", "关键词", "标记", "启用", "颜色", "检查单段落", "检查单段落序号", "来源起点", "来源终点", "来源文本", "来源前文", "来源后文"];
-    const evidenceHeaders = ["关键词序号", "关键词", "证据序号", "手册名称", "手册ID", "手册段落", "手册段落序号", "章节标题", "证据起点", "证据终点", "证据文本", "证据前文", "证据后文", "命中类型", "备注"];
+    const evidenceHeaders = ["关键词序号", "关键词", "证据序号", "证据来源", "手册名称", "手册ID", "手册段落", "手册段落序号", "章节标题", "证据起点", "证据终点", "全文起点", "全文终点", "证据文本", "证据前文", "证据后文", "命中类型", "备注"];
 
     function normalizeText(value: unknown): string {
         if (value === null || value === undefined) return "";
@@ -83,6 +83,7 @@
                 keywordIndex + 1,
                 keyword.text,
                 evidenceIndex + 1,
+                evidence.sourceType || "",
                 evidence.documentName || "",
                 evidence.documentId || "",
                 evidence.blockId || "",
@@ -90,6 +91,8 @@
                 evidence.title || "",
                 evidence.start ?? "",
                 evidence.end ?? "",
+                evidence.globalStart ?? "",
+                evidence.globalEnd ?? "",
                 evidence.text || "",
                 evidence.beforeText || "",
                 evidence.afterText || "",
@@ -121,11 +124,14 @@
             { wch: 12 },
             { wch: 24 },
             { wch: 10 },
+            { wch: 12 },
             { wch: 24 },
             { wch: 18 },
             { wch: 24 },
             { wch: 14 },
             { wch: 24 },
+            { wch: 10 },
+            { wch: 10 },
             { wch: 10 },
             { wch: 10 },
             { wch: 32 },
@@ -158,6 +164,7 @@
         const text = normalizeText(row["证据文本"]);
         if (!documentName && !text) return null;
         const evidence: AuditKingManualEvidence = {
+            sourceType: normalizeText(row["证据来源"]) as "summary" | "selection" | "",
             documentName,
             documentId: normalizeText(row["手册ID"]),
             blockId: normalizeText(row["手册段落"]),
@@ -171,9 +178,13 @@
         const blockIndex = normalizeNumber(row["手册段落序号"]);
         const start = normalizeNumber(row["证据起点"]);
         const end = normalizeNumber(row["证据终点"]);
+        const globalStart = normalizeNumber(row["全文起点"]);
+        const globalEnd = normalizeNumber(row["全文终点"]);
         if (blockIndex !== null) evidence.blockIndex = blockIndex;
         if (start !== null) evidence.start = start;
         if (end !== null) evidence.end = end;
+        if (globalStart !== null) evidence.globalStart = globalStart;
+        if (globalEnd !== null) evidence.globalEnd = globalEnd;
         return evidence;
     }
 

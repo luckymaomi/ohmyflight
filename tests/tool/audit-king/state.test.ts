@@ -261,12 +261,15 @@ describe("audit-king state", () => {
     stateApi.addEvidenceGroup(state, "1.1 人工条款", { createInitialEntry: true });
 
     const first = stateApi.addKeywordEvidence(state, keyword.id, {
+      sourceType: "summary",
       documentId: "manual-1",
       documentName: "运行手册.docx",
       blockId: "manual-1-b3",
       blockIndex: 3,
       start: 10,
       end: 14,
+      globalStart: 110,
+      globalEnd: 114,
       text: "训练要求",
       beforeText: "机组",
       afterText: "应当",
@@ -274,12 +277,15 @@ describe("audit-king state", () => {
       note: "第一处"
     });
     const second = stateApi.addKeywordEvidence(state, keyword.id, {
+      sourceType: "selection",
       documentId: "manual-2",
       documentName: "训练大纲.docx",
       blockId: "manual-2-b8",
       blockIndex: 8,
       start: 4,
       end: 8,
+      globalStart: 204,
+      globalEnd: 208,
       text: "训练要求",
       beforeText: "进入",
       afterText: "检查",
@@ -293,6 +299,7 @@ describe("audit-king state", () => {
     expect(state.keywords[0].evidences).toEqual([
       {
         id: first.id,
+        sourceType: "summary",
         documentId: "manual-1",
         documentName: "运行手册.docx",
         blockId: "manual-1-b3",
@@ -300,6 +307,8 @@ describe("audit-king state", () => {
         title: "",
         start: 10,
         end: 14,
+        globalStart: 110,
+        globalEnd: 114,
         text: "训练要求",
         beforeText: "机组",
         afterText: "应当",
@@ -308,6 +317,7 @@ describe("audit-king state", () => {
       },
       {
         id: second.id,
+        sourceType: "selection",
         documentId: "manual-2",
         documentName: "训练大纲.docx",
         blockId: "manual-2-b8",
@@ -315,6 +325,8 @@ describe("audit-king state", () => {
         title: "",
         start: 4,
         end: 8,
+        globalStart: 204,
+        globalEnd: 208,
         text: "训练要求",
         beforeText: "进入",
         afterText: "检查",
