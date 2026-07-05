@@ -73,6 +73,10 @@ describe("audit-king state", () => {
 
     expect(state.currentDetailContextLength).toBe(6000);
 
+    Array.from({ length: 20 }).forEach(() => stateApi.expandMatchDetailContext(state));
+
+    expect(state.currentDetailContextLength).toBe(46000);
+
     stateApi.setDocumentFilter(state, "manual-1");
 
     expect(state.currentDetailContextLength).toBe(2000);

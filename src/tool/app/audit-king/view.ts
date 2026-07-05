@@ -233,6 +233,7 @@
         });
         const match = filtered[state.currentMatchIndex];
         if (!match) {
+            renderMatchDetailControls(0, false);
             container.innerHTML = `<div class="empty-panel">点击左侧命中摘要后，这里显示附近全文。</div>`;
             return;
         }
@@ -265,9 +266,28 @@
                 }])}</p>
                 ${context.truncatedEnd ? "<p>...</p>" : ""}
             </div>
-            ${context.truncatedStart || context.truncatedEnd ? `<button class="btn btn-sm btn-outline-secondary mt-2" data-action="expand-match-detail">查看更多上下文</button>` : ""}
         `;
+        renderMatchDetailControls(detailContextLength, context.truncatedStart || context.truncatedEnd);
         scrollChildIntoPanel(container, container.querySelector<HTMLElement>(".ak-highlight"));
+    }
+
+    function renderMatchDetailControls(loadedLength: number, hasMore: boolean): void {
+        const label = getElement<HTMLElement>("matchDetailContextLabel");
+        const button = getElement<HTMLButtonElement>("expandMatchDetailBtn");
+        if (!loadedLength) {
+            label.textContent = "未加载";
+            button.textContent = "查看更多上下文";
+            button.disabled = true;
+            return;
+        }
+        label.textContent = `已加载约 ${loadedLength} 字`;
+        if (!hasMore) {
+            button.textContent = "已加载全部";
+            button.disabled = true;
+        } else {
+            button.textContent = "查看更多上下文";
+            button.disabled = false;
+        }
     }
 
     function findManualEvidenceForMatch(state: AuditKingStateModel, match: AuditKingMatch): AuditKingManualEvidence | null {

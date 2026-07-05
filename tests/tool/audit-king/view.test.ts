@@ -85,6 +85,8 @@ describe("audit-king view", () => {
       matchList: createElement(),
       matchCount: createElement(),
       matchDetail: createElement(),
+      matchDetailContextLabel: createElement(),
+      expandMatchDetailBtn: createElement(),
       keywordEvidenceList: createElement(),
       keywordEvidenceCount: createElement()
     };
@@ -283,8 +285,10 @@ describe("audit-king view", () => {
     });
 
     expect(lastBlockWindowTargetLength).toBe(4000);
-    expect(elements.matchDetail.innerHTML).toContain("查看更多上下文");
-    expect(elements.matchDetail.innerHTML).toContain('data-action="expand-match-detail"');
+    expect(elements.matchDetail.innerHTML).not.toContain("查看更多上下文");
+    expect(elements.matchDetailContextLabel.textContent).toBe("已加载约 4000 字");
+    expect(elements.expandMatchDetailBtn.textContent).toBe("查看更多上下文");
+    expect((elements.expandMatchDetailBtn as any).disabled).toBe(false);
   });
 
   it("scrolls checklist reference panel to the current keyword highlight", () => {

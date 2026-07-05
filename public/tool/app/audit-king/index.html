@@ -63,6 +63,8 @@
         .match-context { line-height: 1.7; font-size: 14px; margin-bottom: 8px; overflow-wrap: anywhere; }
         .detail-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; color: #57606a; font-size: 12px; margin-bottom: 10px; }
         .detail-meta strong { color: #24292f; font-size: 13px; }
+        .detail-controls { display: inline-flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+        .detail-context-label { color: #6c757d; font-size: 12px; white-space: nowrap; }
         .detail-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; margin-bottom: 10px; }
         .detail-text { line-height: 1.8; font-size: 14px; overflow-wrap: anywhere; white-space: pre-wrap; }
         .ak-highlight { padding: 0 2px; border-radius: 2px; color: inherit; }
@@ -183,6 +185,10 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                     <h6 class="card-title mb-0">全部详情</h6>
+                    <div class="detail-controls">
+                        <span class="detail-context-label" id="matchDetailContextLabel">未加载</span>
+                        <button class="btn btn-sm btn-outline-secondary" id="expandMatchDetailBtn" data-action="expand-match-detail" disabled>查看更多上下文</button>
+                    </div>
                 </div>
                 <div id="matchDetail" class="panel-scroll"></div>
             </div>
