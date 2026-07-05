@@ -1,4 +1,4 @@
-# 全局文件职责审查与拆分 Plan
+# 全局文件职责审查与部署稳定性 Plan
 
 ## 1. 需求文档
 
@@ -8,11 +8,11 @@
 
 用户完成任务时应该看到什么体验：核心工具的文件职责清楚，能一句话说清每个文件为什么变化；已经拆分的模块有测试保护；没有为了行数机械拆分，也没有为了省事把不同变化原因硬塞在一个文件。
 
-当前范围包含：扫描 `src/tool/app`、`public/tool/app`、`scripts`、`tests/tool` 和 `spec/app` 中超过 300 行或职责信号混杂的文件；先按语义记录每个候选文件的一句话职责、变化原因和混杂风险；再决定是否拆分。审计之王、酒店皇帝、航线班次统计、PDF 盖章、人员结构统计、会话账单、旧 Python 工具都先审查，不先入为主。
+当前范围包含：扫描 `src/tool/app`、`public/tool/app`、`scripts`、`tests/tool` 和 `spec/app` 中超过 300 行或职责信号混杂的文件；先按语义记录每个候选文件的一句话职责、变化原因和混杂风险；再决定是否拆分。审计之王、酒店皇帝、航线班次统计、PDF 盖章、人员结构统计、会话账单、旧 Python 工具都先审查，不先入为主。Python 分发脚本保持单文件形态，只记录内部维护风险，不拆成多个运行文件。
 
-当前范围不包含：培训皇帝的大规模拆分；培训皇帝只做职责审查记录，因为它已经按规则、扫描、渲染、图表、动作等模块拆开。也不做业务规则重写、UI 重设计、工具下线、旧兼容迁移。
+当前范围不包含：培训皇帝的大规模拆分；培训皇帝只做职责审查记录，因为它已经按规则、扫描、渲染、图表、动作等模块拆开。也不做业务规则重写、UI 重设计、工具下线、旧兼容迁移。不把可下载 Python 工具拆成多文件，因为它们对用户的交付边界就是单个可运行文件。
 
-业务上怎样算完成：形成基于语义的全局职责审查记录；明确必须拆、建议拆、暂缓和保留的事实理由；只有确认必须拆且测试保护足够的文件才进入拆分；构建、类型检查和全量测试通过；最终提交和推送。
+业务上怎样算完成：形成基于语义的全局职责审查记录；明确必须拆、建议拆、暂缓和保留的事实理由；只有确认必须拆且测试保护足够的文件才进入拆分；GitHub Pages workflow 对偶发部署失败做最小稳定性修复；构建、类型检查和全量测试通过；最终提交和推送。
 
 ## 2. 当前事实
 
@@ -48,7 +48,17 @@
 - 必须拆候选但本轮暂缓：`public/tool/app/lock-entry-helper/app.py`、`public/tool/app/lock-entry-helper/superapp.py`、`public/tool/app/flight-stats-helper/app.py`。一句话现状：可下载 Python 自动化脚本，混合 CLI、输入解析、Playwright 页面操作、结果匹配和 Excel 写回。职责混杂明显，但它们在 `public` 下作为分发脚本，测试保护不足，不能直接大拆。
 - 暂缓：`public/tool/app/oa-read-helper/app.py`。一句话现状：OA 批量已阅自动化脚本，主要围绕 Playwright 页面循环操作；虽然长，但变化原因比锁班/经历助手集中，本轮不拆。
 
-仍不明确：旧 Python 工具位于 `public/tool/app`，是否继续维护为源码还是只作为可下载脚本，需要后续按工具逐个确认；本轮不在没有业务需求的情况下重写 Python 工具。
+已确认 Python 分发边界：`public/tool/app/*/*.py` 和类似 Python 小工具对用户来说是单文件下载运行的工具，不能为了职责拆分变成多文件包。后续只允许在单文件内部改善结构、补测试或记录风险，除非 owner 明确要求改变分发方式。
+
+已确认部署失败现象：用户提供的 GitHub Actions 日志显示 `npm run build` 和 artifact 上传阶段已经完成，`actions/deploy-pages@v4` 已创建 Pages deployment，失败发生在 `Getting Pages deployment status...` 之后，错误为 `Deployment failed, try again later.` 用户重新推送后同一类部署又成功。
+
+已确认 workflow 事实：`.github/workflows/deploy-pages.yml` 使用 push 到 `master` 和手动触发；build job 安装依赖、构建、配置 Pages、上传 `dist`；deploy job 使用 `actions/deploy-pages@v4`。原 workflow 使用 `concurrency.group: pages` 和 `cancel-in-progress: true`。
+
+已确认官方文档事实：GitHub Actions 并发配置中 `cancel-in-progress: true` 会取消同一 concurrency group 中正在运行的 job 或 workflow。GitHub Pages 自定义 workflow 官方示例使用 `actions/upload-pages-artifact` 上传站点产物，再用 `actions/deploy-pages` 部署。
+
+判断：本次失败更像 Pages 发布服务或 workflow 并发取消造成的部署阶段偶发失败，不像项目构建产物错误。Node 20 deprecation 和 `punycode` 是 action runtime 警告，不是这条日志里的直接失败点。
+
+仍不明确：GitHub Pages 后端服务本身是否当时有瞬时故障，本地无法直接验证；需要以 GitHub Actions 页面后续运行结果确认。
 
 ## 3. 失败测试
 
@@ -59,6 +69,8 @@
 自动测试：如果拆酒店皇帝或会话账单，必须先补对应导出、超链接、日期和匹配测试，再拆。
 
 静态检查：拆分后 `public/tool/app/<tool>/index.html` 的脚本加载顺序必须包含新模块，构建产物必须生成对应脚本。
+
+静态检查：部署稳定性修复后，`.github/workflows/deploy-pages.yml` 必须继续只在 `master` push 和手动触发时部署；Pages 部署必须串行排队，不取消已开始的同分支部署。
 
 类型检查：`npm.cmd run typecheck` 必须通过。
 
@@ -86,11 +98,13 @@
 
 不拆培训皇帝核心模块：除非发现明确职责混杂或测试失败。
 
-不重写旧 Python 工具：先审查记录，后续按实际维护需求决定。
+不重写旧 Python 工具：先审查记录，后续按实际维护需求决定；Python 工具不能拆成多文件分发。
 
 不在没有测试保护的情况下大拆酒店皇帝、PDF 盖章、人员结构统计等工具。
 
 不改变业务规则、导出结构、页面文案和用户工作流。
+
+不把 GitHub Pages 偶发失败归因到构建产物，除非后续日志显示 artifact 或 build 阶段失败。
 
 ## 6. 设计
 
@@ -117,6 +131,13 @@
 
 已验证事实：`npm.cmd run build` 通过，构建输出从 100 个脚本增加到 106 个脚本；`npx.cmd vitest run tests/tool/audit-king` 通过 9 个测试文件、63 个测试；`npm.cmd run typecheck` 通过。
 
+部署稳定性设计：
+
+- 保持一个 Pages workflow，不恢复额外 CI workflow。
+- 并发组改成当前 workflow 和当前分支，避免和其他 workflow 共享过宽的 `pages` 组。
+- `cancel-in-progress` 改为 `false`，让同分支 Pages 部署串行完成，避免取消已经开始创建 Pages deployment 的运行。
+- `actions/upload-pages-artifact` 升级到 v4，跟随当前 GitHub Pages 官方示例；`actions/deploy-pages@v4` 继续保留，因为当前失败点不是 action 版本缺失造成。
+
 ## 7. 实施任务
 
 - [x] T001 语义审查培训皇帝：确认哪些长文件职责单一、为什么不拆；验收：plan 中有保留理由。
@@ -128,6 +149,9 @@
 - [x] T007 补充或调整测试；验收：受影响工具局部测试通过。
 - [x] T008 同步文档；验收：职责边界不描述旧结构。
 - [x] T009 完整验证；命令：`npm.cmd run build`、相关局部测试、`npm.cmd run typecheck`、`npm.cmd test`；验收：全部通过。
+- [x] T010 修正 Python 单文件分发边界；验收：plan 不再把 Python 分发脚本列为多文件拆分对象。
+- [x] T011 诊断 GitHub Pages 偶发部署失败；验收：记录已确认失败阶段、最可能原因和非直接原因。
+- [x] T012 最小修改 Pages workflow 并发策略；验收：部署不再取消同分支正在运行的 Pages workflow。
 
 ## 8. 验证计划
 
@@ -135,28 +159,30 @@
 
 完整验证命令：`npm.cmd run build`、`npm.cmd run typecheck`、`npm.cmd test`。
 
+部署配置验证：静态检查 `.github/workflows/deploy-pages.yml`，确认 Pages workflow 仍只在 `master` push 和手动触发，deploy job 仍依赖 build job，concurrency 不取消进行中的部署。
+
 构建或安装检查：确认 `dist/tool/app/audit-king/` 生成新拆分脚本，页面入口按依赖顺序加载。
 
 页面/工具入口检查：确认审计之王入口不缺脚本；页面视觉由 owner 人工确认。
 
 文档同步检查：`plan.md` 记录全局审查事实和本轮拆分事实。
 
-未验证内容：旧 Python 工具是否要迁移源码位置，需要后续单独确认。
+未验证内容：GitHub Pages 后端偶发失败只能通过后续 GitHub Actions 实际部署结果观察；本地无法复现 GitHub Pages 服务端状态。
 
-剩余风险：拆分动作模块可能影响事件绑定顺序，必须用测试和构建产物检查兜住。
+剩余风险：拆分动作模块可能影响事件绑定顺序，必须用测试和构建产物检查兜住；Pages 服务端如果本身瞬时异常，workflow 只能降低并发触发风险，不能完全消除 GitHub 服务偶发故障。
 
 ## 9. 收口
 
-目标是否完成：已完成本轮语义审查和第一轮拆分。
+目标是否完成：已完成本轮语义审查、第一轮拆分和 Pages workflow 稳定性修正。
 
 失败测试是否变绿：已变绿。
 
-改了哪些文件：`plan.md`、`public/tool/app/audit-king/index.html`、`src/tool/app/audit-king/main.ts`、`src/tool/app/audit-king/runtime.d.ts`，新增 `src/tool/app/audit-king/app-context.ts`、`upload-actions.ts`、`keyword-actions.ts`、`match-actions.ts`、`evidence-actions.ts`、`keyword-file-actions.ts`。
+改了哪些文件：`plan.md`、`.github/workflows/deploy-pages.yml`、`public/tool/app/audit-king/index.html`、`src/tool/app/audit-king/main.ts`、`src/tool/app/audit-king/runtime.d.ts`，新增 `src/tool/app/audit-king/app-context.ts`、`upload-actions.ts`、`keyword-actions.ts`、`match-actions.ts`、`evidence-actions.ts`、`keyword-file-actions.ts`。
 
 跑了哪些验证：`npm.cmd run build`、`npx.cmd vitest run tests/tool/audit-king`、`npm.cmd run typecheck`、`npm.cmd test`。
 
-哪些内容没有验证：最终页面视觉由 owner 人工检查。
+哪些内容没有验证：最终页面视觉由 owner 人工检查；GitHub Pages 服务端偶发失败需要后续实际 Actions 部署观察。
 
-剩余风险：PDF 盖章和旧 Python 自动化脚本仍是高风险候选，但测试保护不足，本轮只记录不拆。
+剩余风险：PDF 盖章仍是高风险候选，但测试保护不足，本轮只记录不拆；Python 自动化脚本保持单文件分发，只记录内部维护风险；Pages 如果是 GitHub 服务端瞬时失败，workflow 修改只能降低并发取消风险。
 
 是否 commit / push：待执行。
