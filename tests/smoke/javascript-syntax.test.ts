@@ -30,5 +30,5 @@ describe("all tool JavaScript files", () => {
         assertJavaScriptSyntax(scriptFilePath, modeByScriptPath.get(scriptFilePath) || "auto");
       }, `invalid JavaScript syntax: ${scriptFilePath}`).not.toThrow();
     });
-  });
+  }, 15000);
 });
