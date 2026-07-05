@@ -41,9 +41,20 @@
         return ranges;
     }
 
-    function segmentToHtml(segment: { text: string; keywordIds: string[]; colors: string[] }): string {
-        if (!segment.keywordIds.length) {
+    function segmentToHtml(segment: { text: string; keywordIds: string[]; evidenceIds?: string[]; colors: string[] }): string {
+        const evidenceIds = segment.evidenceIds || [];
+        if (!segment.keywordIds.length && !evidenceIds.length) {
             return escapeHtml(segment.text);
+        }
+        if (evidenceIds.length) {
+            const style = [
+                "background:#d1e7dd",
+                "border-radius:3px",
+                "padding:0 2px",
+                "box-decoration-break:clone",
+                "-webkit-box-decoration-break:clone"
+            ].join(";");
+            return `<mark class="ak-highlight ak-manual-evidence-highlight" data-keyword-ids="${escapeHtml(segment.keywordIds.join(" "))}" data-evidence-ids="${escapeHtml(evidenceIds.join(" "))}" style="${style}">${escapeHtml(segment.text)}</mark>`;
         }
         const background = segment.colors[segment.colors.length - 1];
         const shadows = segment.colors
@@ -62,6 +73,50 @@
         return runtime.Highlight.buildHighlightSegments(text, ranges)
             .map(segmentToHtml)
             .join("");
+    }
+
+    function manualEvidenceRangesForDetail(
+        state: AuditKingStateModel,
+        match: AuditKingMatch,
+        detailText: string,
+        windowStart: number,
+        blockGlobalStart: number
+    ): AuditKingHighlightRange[] {
+        const keyword = state.keywords?.find((item) => item.id === state.currentKeywordId);
+        if (!keyword || state.currentKeywordId === "all") return [];
+
+        return (keyword.evidences || []).flatMap((evidence) => {
+            if (evidence.sourceType !== "selection") return [];
+            if (evidence.documentId && evidence.documentId !== match.documentId) return [];
+            if (!evidence.documentId && evidence.documentName !== match.documentName) return [];
+
+            let globalStart = Number(evidence.globalStart);
+            let globalEnd = Number(evidence.globalEnd);
+            if (!Number.isFinite(globalStart) || !Number.isFinite(globalEnd)) {
+                if (evidence.blockId !== match.blockId) return [];
+                const start = Number(evidence.start);
+                const end = Number(evidence.end);
+                if (!Number.isFinite(start) || !Number.isFinite(end)) return [];
+                globalStart = blockGlobalStart + start;
+                globalEnd = blockGlobalStart + end;
+            }
+
+            if (globalEnd <= windowStart || globalStart >= windowStart + detailText.length) return [];
+            const start = Math.max(0, globalStart - windowStart);
+            const end = Math.min(detailText.length, globalEnd - windowStart);
+            if (end <= start) return [];
+            const fullyVisible = start === globalStart - windowStart && end === globalEnd - windowStart;
+            if (fullyVisible && evidence.text && detailText.slice(start, end) !== evidence.text) return [];
+
+            return [{
+                keywordId: state.currentKeywordId,
+                evidenceId: evidence.id || `${state.currentKeywordId}-${globalStart}-${globalEnd}`,
+                kind: "manual-evidence" as const,
+                color: "#198754",
+                start,
+                end
+            }];
+        });
     }
 
     function renderChecklist(state: AuditKingStateModel): void {
@@ -249,6 +304,17 @@
         const detailText = context.text || match.blockText;
         const rangeStart = context.text ? context.matchStart : match.start;
         const rangeEnd = context.text ? context.matchEnd : match.end;
+        const windowStart = context.windowStart ?? 0;
+        const blockGlobalStart = windowStart + rangeStart - match.start;
+        const ranges = [
+            ...manualEvidenceRangesForDetail(state, match, detailText, windowStart, blockGlobalStart),
+            {
+                keywordId: match.keywordId,
+                color: match.keywordColor,
+                start: rangeStart,
+                end: rangeEnd
+            }
+        ];
         const title = match.title ? ` / ${match.title}` : "";
         container.innerHTML = `
             <div class="detail-meta">
@@ -258,17 +324,12 @@
             </div>
             <div class="detail-text">
                 ${context.truncatedStart ? "<p>...</p>" : ""}
-                <p id="matchDetailOriginalText" data-window-start="${escapeHtml(context.windowStart ?? 0)}">${renderHighlightedText(detailText, [{
-                    keywordId: match.keywordId,
-                    color: match.keywordColor,
-                    start: rangeStart,
-                    end: rangeEnd
-                }])}</p>
+                <p id="matchDetailOriginalText" data-window-start="${escapeHtml(windowStart)}">${renderHighlightedText(detailText, ranges)}</p>
                 ${context.truncatedEnd ? "<p>...</p>" : ""}
             </div>
         `;
         renderMatchDetailControls(detailContextLength, context.truncatedStart || context.truncatedEnd, state.currentKeywordId !== "all" && match.keywordId === state.currentKeywordId);
-        scrollChildIntoPanel(container, container.querySelector<HTMLElement>(".ak-highlight"));
+        scrollChildIntoPanel(container, findKeywordHighlight(container, match.keywordId));
     }
 
     function renderMatchDetailControls(loadedLength: number, hasMore: boolean, canAddEvidence: boolean): void {

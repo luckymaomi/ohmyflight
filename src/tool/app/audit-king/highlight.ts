@@ -4,6 +4,7 @@
     type HighlightSegment = {
         text: string;
         keywordIds: string[];
+        evidenceIds: string[];
         colors: string[];
     };
 
@@ -37,7 +38,8 @@
             const active = normalizedRanges.filter((range) => range.start < end && range.end > start);
             segments.push({
                 text: text.slice(start, end),
-                keywordIds: active.map((range) => range.keywordId),
+                keywordIds: active.filter((range) => range.kind !== "manual-evidence").map((range) => range.keywordId),
+                evidenceIds: active.filter((range) => range.kind === "manual-evidence").map((range) => range.evidenceId || range.keywordId),
                 colors: active.map((range) => range.color)
             });
         }

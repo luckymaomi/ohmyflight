@@ -50,24 +50,25 @@ describe("audit-king view", () => {
       },
       buildHighlightSegments(text: string, ranges: any[]) {
         const ordered = [...ranges].sort((left, right) => left.start - right.start || right.end - left.end);
-        const segments: Array<{ text: string; keywordIds: string[]; colors: string[] }> = [];
+        const segments: Array<{ text: string; keywordIds: string[]; evidenceIds: string[]; colors: string[] }> = [];
         let cursor = 0;
         ordered.forEach((range) => {
           if (range.start < cursor || range.end <= range.start) return;
           if (range.start > cursor) {
-            segments.push({ text: text.slice(cursor, range.start), keywordIds: [], colors: [] });
+            segments.push({ text: text.slice(cursor, range.start), keywordIds: [], evidenceIds: [], colors: [] });
           }
           segments.push({
             text: text.slice(range.start, range.end),
-            keywordIds: [range.keywordId],
+            keywordIds: range.kind === "manual-evidence" ? [] : [range.keywordId],
+            evidenceIds: range.kind === "manual-evidence" ? [range.evidenceId || range.keywordId] : [],
             colors: [range.color]
           });
           cursor = range.end;
         });
         if (cursor < text.length) {
-          segments.push({ text: text.slice(cursor), keywordIds: [], colors: [] });
+          segments.push({ text: text.slice(cursor), keywordIds: [], evidenceIds: [], colors: [] });
         }
-        return segments.length ? segments : [{ text, keywordIds: [], colors: [] }];
+        return segments.length ? segments : [{ text, keywordIds: [], evidenceIds: [], colors: [] }];
       }
     };
     viewApi = browserContext.AuditKing.View;
@@ -292,6 +293,68 @@ describe("audit-king view", () => {
     expect(elements.matchDetailContextLabel.textContent).toBe("已加载约 4000 字");
     expect(elements.expandMatchDetailBtn.textContent).toBe("查看更多上下文");
     expect((elements.expandMatchDetailBtn as any).disabled).toBe(false);
+  });
+
+  it("highlights selected manual evidence in the full detail text with background color", () => {
+    const originalBuildBlockWindowContext = browserContext.AuditKing.Highlight.buildBlockWindowContext;
+    browserContext.AuditKing.Highlight.buildBlockWindowContext = () => ({
+      text: "前文手册证据内容后文关键词",
+      matchStart: 10,
+      matchEnd: 13,
+      truncatedStart: false,
+      truncatedEnd: false,
+      windowStart: 100,
+      windowEnd: 113
+    });
+
+    viewApi.renderMatchDetail({
+      currentKeywordId: "keyword-1",
+      currentMatchIndex: 0,
+      currentDetailContextLength: 2000,
+      documentFilterId: "all",
+      documents: [{ id: "doc-1", name: "运行手册", blocks: [{ id: "block-1", text: "前文手册证据内容后文关键词" }] }],
+      keywords: [{
+        id: "keyword-1",
+        text: "关键词",
+        color: "#ffd666",
+        enabled: true,
+        evidences: [{
+          id: "evidence-1",
+          sourceType: "selection",
+          documentId: "doc-1",
+          documentName: "运行手册",
+          globalStart: 102,
+          globalEnd: 106,
+          text: "手册证据"
+        }]
+      }],
+      searchResult: {
+        matches: [{
+          id: "match-1",
+          keywordId: "keyword-1",
+          keywordText: "关键词",
+          keywordColor: "#ffd666",
+          documentId: "doc-1",
+          documentName: "运行手册",
+          blockId: "block-1",
+          blockIndex: 3,
+          blockText: "前文手册证据内容后文关键词",
+          title: "",
+          start: 10,
+          end: 13,
+          matchedText: "关键词",
+          mode: "exact"
+        }],
+        countsByKeyword: {}
+      }
+    });
+
+    expect(elements.matchDetail.innerHTML).toContain("ak-manual-evidence-highlight");
+    expect(elements.matchDetail.innerHTML).toContain('data-evidence-ids="evidence-1"');
+    expect(elements.matchDetail.innerHTML).toContain("background:#d1e7dd");
+    expect(elements.matchDetail.innerHTML).toContain("手册证据");
+
+    browserContext.AuditKing.Highlight.buildBlockWindowContext = originalBuildBlockWindowContext;
   });
 
   it("scrolls checklist reference panel to the current keyword highlight", () => {

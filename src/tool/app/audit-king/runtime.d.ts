@@ -106,6 +106,8 @@ interface AuditKingHighlightRange {
     color: string;
     start: number;
     end: number;
+    kind?: "keyword" | "manual-evidence";
+    evidenceId?: string;
 }
 
 interface AuditKingEvidenceEntry {

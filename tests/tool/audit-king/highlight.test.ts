@@ -17,9 +17,24 @@ describe("audit-king highlight", () => {
     ]);
 
     expect(segments).toEqual([
-      { text: "A", keywordIds: ["kw-1"], colors: ["#f59e0b"] },
-      { text: "BC", keywordIds: ["kw-1", "kw-2"], colors: ["#f59e0b", "#22c55e"] },
-      { text: "D", keywordIds: ["kw-2"], colors: ["#22c55e"] }
+      { text: "A", keywordIds: ["kw-1"], evidenceIds: [], colors: ["#f59e0b"] },
+      { text: "BC", keywordIds: ["kw-1", "kw-2"], evidenceIds: [], colors: ["#f59e0b", "#22c55e"] },
+      { text: "D", keywordIds: ["kw-2"], evidenceIds: [], colors: ["#22c55e"] }
+    ]);
+  });
+
+  it("keeps manual evidence ranges separate from keyword ranges", () => {
+    const segments = highlight.buildHighlightSegments("ABCDEFG", [
+      { keywordId: "kw-1", color: "#ffd666", start: 1, end: 3 },
+      { keywordId: "kw-1", evidenceId: "evidence-1", kind: "manual-evidence", color: "#198754", start: 2, end: 6 }
+    ]);
+
+    expect(segments).toEqual([
+      { text: "A", keywordIds: [], evidenceIds: [], colors: [] },
+      { text: "B", keywordIds: ["kw-1"], evidenceIds: [], colors: ["#ffd666"] },
+      { text: "C", keywordIds: ["kw-1"], evidenceIds: ["evidence-1"], colors: ["#ffd666", "#198754"] },
+      { text: "DEF", keywordIds: [], evidenceIds: ["evidence-1"], colors: ["#198754"] },
+      { text: "G", keywordIds: [], evidenceIds: [], colors: [] }
     ]);
   });
 
