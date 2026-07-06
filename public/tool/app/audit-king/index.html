@@ -84,6 +84,9 @@
         .manual-evidence-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; font-size: 13px; }
         .manual-evidence-text { line-height: 1.6; font-size: 13px; overflow-wrap: anywhere; margin-bottom: 6px; }
         .manual-evidence-note { color: #6c757d; font-size: 12px; margin-bottom: 6px; }
+        .folder-preview { min-height: 54px; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; padding: 8px; }
+        .folder-preview-grid { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+        .folder-preview-grid span { border: 1px solid #dee2e6; border-radius: 4px; background: #f8f9fa; padding: 2px 7px; font-size: 12px; line-height: 1.6; }
         @media (max-width: 900px) {
             .upload-grid, .top-work-grid, .result-grid, .bottom-work-grid { grid-template-columns: 1fr; }
             .upload-status { grid-column: auto; }
@@ -115,6 +118,27 @@
                 </div>
                 <div class="upload-status">
                     <div id="statusBar" class="status-bar">上传检查单和手册后，手动添加关键词开始检索。</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row g-2 align-items-end">
+                <div class="col-12 col-lg-4">
+                    <label class="form-label">文件夹范围</label>
+                    <input class="form-control" id="folderRangeInput" value="1.1-1.61" placeholder="例如 1.1-1.61">
+                </div>
+                <div class="col-12 col-lg-auto">
+                    <button class="btn btn-outline-primary w-100" id="exportFolderScriptBtn">导出Python</button>
+                </div>
+                <div class="col-12 col-lg">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label mb-0">文件夹预览</label>
+                        <small class="text-muted" id="folderScriptCount">0 个文件夹</small>
+                    </div>
+                    <div class="folder-preview" id="folderScriptPreview"></div>
                 </div>
             </div>
         </div>
@@ -252,6 +276,8 @@
 <script src="match-actions.js"></script>
 <script src="evidence-actions.js"></script>
 <script src="keyword-file-actions.js"></script>
+<script src="folder-script-generator.js"></script>
+<script src="folder-script-actions.js"></script>
 <script src="main.js"></script>
 </body>
 </html>

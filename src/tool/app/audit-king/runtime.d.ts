@@ -121,6 +121,10 @@ interface AuditKingEvidenceGroup {
     items: AuditKingEvidenceEntry[];
 }
 
+interface AuditKingFolderScriptConfig {
+    rangeText: string;
+}
+
 interface AuditKingStateModel {
     checklistBlocks: AuditKingTextBlock[];
     documents: AuditKingDocument[];

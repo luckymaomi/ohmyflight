@@ -1,157 +1,123 @@
-# 第二轮工具职责拆分 Plan
+# 审计之王文件夹脚本导出 Plan
 
 ## 1. 需求文档
 
-用户要解决的实际问题：上一轮已经拆掉审计之王最重的入口文件，现在剩余几个前端工具仍存在 main 文件职责混杂。继续维护时，如果上传读取、状态管理、渲染、导出和页面事件都挤在一个文件里，后续改功能容易牵动无关代码。
+用户要解决的实际问题：迎审资料整理时，需要快速生成一批空文件夹，文件夹名按 `1.起始-1.结束` 这类范围命名，避免人工逐个新建。
 
-谁会使用：项目 owner、后续维护者和 agent。
+谁会使用：审计之王使用者。
 
-本轮目标体验：PDF 盖章、酒店皇帝、珠海皇帝、航线班次统计的关键业务逻辑先有测试保护，再把入口文件拆成清楚的小模块。拆分后页面行为、导出结构和业务口径不变。
+用户完成任务时应该看到什么体验：在审计之王页面设置完整范围，例如 `1.1-1.61`，先看到将要生成的文件夹预览，再导出一个独立 `.py` 文件。把该 Python 文件放到目标目录运行后，在当前目录创建这些空文件夹。
 
-当前范围包含：
+当前范围包含：审计之王页面新增文件夹脚本导出区；新增可测试的文件夹范围生成逻辑；新增导出 Python 的页面动作；同步 spec 和测试。
 
-- `src/tool/app/pdf-stamp`
-- `src/tool/app/hotel-bill-check`
-- `src/tool/app/session-bill-check`
-- `src/tool/app/crew-flight-stats`
-- 对应 `public/tool/app/*/index.html`
-- 对应 `tests/tool/*`
-- 必要时同步 `spec/app/*`
+当前范围不包含：浏览器直接运行 Python、删除或移动现有文件夹、读取用户本地目录结构、把 Python 拆成多个文件。
 
-当前范围不包含：培训皇帝拆分、Python 单文件工具拆分、页面 UI 重设计、业务规则变化、导出字段变化、工具下线。
-
-业务上怎样算完成：四个工具的核心逻辑有测试保护；确认需要拆的 main 文件被拆成单一职责模块；HTML 脚本顺序正确；构建、类型检查、相关局部测试和全量测试通过；最终提交和推送。
+业务上怎样算完成：页面能按设置导出单文件 Python；Python 脚本只使用标准库，在运行目录创建缺失文件夹，已有文件夹不报错；核心生成规则有测试保护；构建、类型检查和测试通过。
 
 ## 2. 当前事实
 
-已确认工作区事实：开始本轮时 `git status --short --branch` 显示 `## master...origin/master`，工作区干净。
+已确认代码事实：审计之王源码在 `src/tool/app/audit-king/`；页面在 `public/tool/app/audit-king/index.html`；脚本通过 `window.AuditKing` 命名空间装配；`main.ts` 当前只负责绑定各模块。
 
-已确认构建事实：本项目构建脚本把 `src/**/*.ts` 单独编译为无模块全局脚本，输出到 `dist/`；拆分后必须通过 `window.<工具命名空间>` 或全局声明装配，并更新页面脚本加载顺序。
+已确认测试事实：审计之王测试在 `tests/tool/audit-king/`；测试 helper 会在 `dist/` 过旧时自动运行 `npm.cmd run build`。
 
-已确认 PDF 盖章事实：`src/tool/app/pdf-stamp/main.ts` 约 24KB，同时处理上传、状态、规则渲染、页面预览、拖拽缩放、导出和下载；`logic.ts` 只覆盖规则创建、页码匹配和绘制坐标；现有测试只有 `tests/tool/pdf-stamp/logic.test.ts`。
+已确认文档/spec 事实：`spec/app/audit-king.md` 已记录审计之王现有离线检索、关键词、手册证据和审计篮子规则。
 
-已确认酒店皇帝事实：`src/tool/app/hotel-bill-check/main.ts` 约 19KB，同时处理文件读取、预览渲染、列选择、匹配触发、结果渲染和 Excel 导出；`logic.ts` 已覆盖日期解析、匹配、入住证明链接列；现有测试 `tests/tool/hotel-bill-check/export.test.ts` 覆盖多链接导出。
+已确认配置或入口事实：页面按 `<script src="..."></script>` 依赖顺序加载构建后的全局脚本；新增脚本需要加入页面加载顺序并在 `main.ts` 绑定。
 
-已确认珠海皇帝事实：`src/tool/app/session-bill-check/main.ts` 约 14KB，主要包含页面状态、文件读取、汇总渲染、图表渲染、表格渲染、详情渲染和导出触发；`logic.ts` 已覆盖场次/账单解析、比对和导出 workbook；现有测试 `tests/tool/session-bill-check/logic.test.ts` 保护核心业务口径。
+已确认命令输出：工作区开始时 `git status --short --branch` 显示 `## master...origin/master`；用户给的参考目录中存在 `1.1` 到 `1.51` 等单编号文件夹和一个检查单 docx，未观察到现成的 `1.xx-1.xx` 范围文件夹。
 
-已确认航线班次统计事实：`src/tool/app/crew-flight-stats/main.ts` 约 14KB，同时处理默认花名册加载、文件读取、sheet 选择、统计触发、结果渲染、导出和附加姓名识别小表；`logic.ts` 已覆盖花名册解析、排班统计、导出行和按文本顺序识别姓名；现有测试 `tests/tool/crew-flight-stats/logic.test.ts` 保护核心统计口径。
+用户明确事实：页面应指定 `X.X-X.X` 形式的完整范围，例如 `1.1-1.61`。
 
-判断：PDF 盖章拆分前需要补更强的纯逻辑测试；酒店皇帝、珠海皇帝、航线班次统计已有业务逻辑测试，可以补轻量入口/渲染辅助测试后拆 main。
+当前已有能力：审计之王可离线上传检查单和手册、维护关键词、导入导出关键词和审计篮子。
+
+当前缺口：没有根据页面设置导出创建文件夹用的 Python 单文件脚本。
+
+仍不明确：无。
 
 ## 3. 失败测试
 
-PDF 盖章：
+自动测试：新增 `tests/tool/audit-king/folder-script-generator.test.ts`，先覆盖完整范围解析、逐项生成范围、非法输入和 Python 文本关键行为。
 
-- 补测试覆盖规则字段更新、锁定比例时宽高联动、拖拽移动换算、拖拽缩放换算、导出应匹配的页码和规则数量。
-- 拆分后 `npx.cmd vitest run tests/tool/pdf-stamp` 必须通过。
+类型检查：`npm.cmd run typecheck` 必须通过。
 
-酒店皇帝：
+构建命令：`npm.cmd run build` 必须通过并生成新增脚本。
 
-- 现有多入住证明链接导出测试必须继续通过。
-- 拆分后 `npx.cmd vitest run tests/tool/hotel-bill-check` 必须通过。
+静态检查：页面必须加载新增脚本，`main.ts` 必须绑定新增 action。
 
-珠海皇帝：
+真实用户路径演练：页面输入 `1.1-1.61` 时预览显示 `1.1-1.1` 等范围；点击导出 Python 得到单文件脚本。
 
-- 现有姓名拆分、大小写匹配、人次数比对、导出 sheet 测试必须继续通过。
-- 拆分后 `npx.cmd vitest run tests/tool/session-bill-check` 必须通过。
-
-航线班次统计：
-
-- 现有花名册解析、排班统计、未匹配提示和导出行测试必须继续通过。
-- 拆分后 `npx.cmd vitest run tests/tool/crew-flight-stats` 必须通过。
-
-完整失败判定：任一页面缺少新脚本、任一业务测试失败、`npm.cmd run build` 失败、`npm.cmd run typecheck` 失败、`npm.cmd test` 失败，都判定任务未完成。
+失败判定：范围生成错误、非法输入不拦截、Python 不是单文件标准库脚本、页面缺少脚本加载、任一验证命令失败，均判定未完成。
 
 ## 4. 目标
 
-PDF 盖章目标：把 `main.ts` 收敛为初始化和模块装配；规则动作、上传读取、预览画布、拖拽缩放和导出动作拆开；核心换算逻辑有测试保护。
+用户路径完成到：用户在审计之王页面设置范围并下载 Python 文件。
 
-酒店皇帝目标：把文件读取/预览、结果渲染、Excel 导出从 `main.ts` 分离；保持页面结果和 Excel 导出结构不变。
+代码主链路接到：`folder-script-generator.ts` 负责纯生成规则；`folder-script-actions.ts` 负责 DOM 输入、预览和下载；`main.ts` 只新增绑定调用。
 
-珠海皇帝目标：把视图渲染、文件动作、入口装配拆开；业务比对仍留在 `logic.ts`。
+状态和记录落到：该功能不进入审计之王主状态，不影响关键词、手册、手册证据或审计篮子。
 
-航线班次统计目标：把文件动作、sheet 选择和结果渲染、附加姓名识别小表拆开；统计逻辑仍留在 `logic.ts`。
+输出呈现到：页面显示文件夹名预览、数量和导出按钮；下载文件名为创建文件夹用途的 `.py`。
 
-完成判定：相关局部测试、build、typecheck、全量 test 全部通过。
+测试和文档同步到：新增测试和 `spec/app/audit-king.md` 同步描述当前事实。
+
+完成判定：局部测试、build、typecheck、全量 test 全部通过。
 
 ## 5. 不做范围
 
-不改变业务口径。
+不做浏览器执行 Python。
 
-不改变 Excel 导出字段、sheet 名和可点击链接结构。
+不做自动读取或扫描本地目标目录。
 
-不拆 Python 单文件工具。
+不做删除、重命名、移动、覆盖文件。
 
-不为了行数拆分职责清楚的 logic 文件。
+不把该功能绑定到关键词、检查单、手册或审计篮子数据。
 
-不做页面视觉重设计。
+不把 Python 拆成多个文件。
 
 ## 6. 设计
 
-通用拆分方式：每个工具建立本工具命名空间，例如 `window.PdfStampApp`、`window.HotelBillCheck`、`window.SessionBillCheck`、`window.CrewFlightStatsApp`。每个拆分文件向命名空间挂载一个职责对象，`main.ts` 只负责创建上下文、绑定动作和首次渲染。
+主链路：页面输入完整范围 `X.X-X.X` -> 校验格式、同一一级编号和起止顺序 -> 生成文件夹名列表 -> 页面显示数量和前若干项预览 -> 点击导出 -> 生成含固定列表的 Python 文本 -> Blob 下载 `.py`。
 
-类型方式：需要跨文件共享的状态、元素和 API 类型放在对应 `runtime.d.ts`，避免在多个 `.ts` 里复制类型。
+模块边界：
 
-测试方式：业务规则测试继续从 `dist/` 加载构建脚本；改完 `src` 后先 `npm.cmd run build`，再跑局部 vitest。PDF 盖章新增测试优先打到 `logic.ts` 的纯函数，不写脆弱 DOM 细节测试。
+- `folder-script-generator.ts`：纯逻辑，生成范围名、校验配置、生成 Python 文本。
+- `folder-script-actions.ts`：读取页面输入、渲染预览、导出文件。
+- `runtime.d.ts`：声明配置类型和命名空间类型。
+- `index.html`：新增 Bootstrap 表单和预览容器，加载新增脚本。
+- `main.ts`：新增一次 action 绑定。
 
-PDF 盖章模块边界：
+文件职责：生成规则和 DOM 事件分开；Python 模板只在生成器模块里维护。
 
-- `runtime.d.ts`：状态、规则、元素、上下文和命名空间类型。
-- `app-context.ts`：创建状态、读取元素、状态提示和通用刷新。
-- `rule-actions.ts`：添加、删除、复制、字段变更和规则列表渲染。
-- `canvas-actions.ts`：页面渲染、预览覆盖层、翻页和拖拽缩放。
-- `upload-actions.ts`：PDF 和图片上传读取。
-- `export-actions.ts`：PDF 导出和下载。
-- `main.ts`：初始化并绑定模块。
+状态归属：表单值留在 DOM，不写入 `AuditKingStateModel`。
 
-酒店皇帝模块边界：
+数据或事件流：输入框 `input/change` 触发预览刷新；导出按钮读取当前配置并下载。
 
-- `runtime.d.ts`：状态、类型和命名空间。
-- `app-context.ts`：状态、元素和通用读取。
-- `file-actions.ts`：Excel 文件读取、表头预览、超链接提取。
-- `view.ts`：预览表、列选择、结果表渲染。
-- `export-actions.ts`：Excel 导出。
-- `main.ts`：事件绑定和匹配触发。
+错误、恢复、中断、重试边界：非法输入只在页面状态栏提示错误，不修改其它状态；用户改正输入后可重新预览和导出；Python 脚本遇到同名目录视为已存在，遇到同名文件记录失败，不删除任何内容。
 
-珠海皇帝模块边界：
+与现有架构的关系：沿用 `window.AuditKing` 全局模块和 Bootstrap 页面样式。
 
-- `runtime.d.ts` 继续承接已有运行时类型。
-- `view.ts`：文件信息、汇总、图表、表格、来源详情渲染。
-- `app-context.ts`：状态、元素、读取 workbook、筛选和导出。
-- `main.ts`：文件输入、筛选、导出事件绑定。
-
-航线班次统计模块边界：
-
-- `runtime.d.ts`：状态、元素和命名空间。
-- `app-context.ts`：状态、元素、状态提示和 ready 判断。
-- `file-actions.ts`：默认/手动花名册、排班表读取。
-- `view.ts`：sheet 选择器、警告、结果表渲染。
-- `crew-extract-actions.ts`：附加姓名识别小表。
-- `main.ts`：初始化和事件绑定。
+测试和文档影响：新增生成器测试；spec 增加文件夹脚本导出规则。
 
 ## 7. 实施任务
 
-- [x] T001 补强 PDF 盖章纯逻辑测试；验收：新增测试先覆盖待抽出的换算和规则更新逻辑。
-- [x] T002 拆分 PDF 盖章入口；验收：`main.ts` 只装配模块，页面脚本顺序正确，PDF 局部测试通过。
-- [x] T003 拆分酒店皇帝入口；验收：文件读取、视图、导出边界清楚，酒店局部测试通过。
-- [x] T004 拆分珠海皇帝入口；验收：视图和动作分离，会话账单局部测试通过。
-- [x] T005 拆分航线班次统计入口；验收：文件动作、结果视图、姓名识别分离，航线统计局部测试通过。
-- [x] T006 同步 spec 或 plan 中职责事实；验收：不描述旧结构。
-- [x] T007 完整验证；命令：`npm.cmd run build`、四个局部测试、`npm.cmd run typecheck`、`npm.cmd test`。
-- [x] T008 提交和推送；验收：只提交本轮相关文件。
+- [x] T001 新增失败测试；文件/模块：`tests/tool/audit-king/folder-script-generator.test.ts`；验收：覆盖范围名和 Python 文本。
+- [x] T002 新增生成器模块；文件/模块：`src/tool/app/audit-king/folder-script-generator.ts`；验收：测试通过。
+- [x] T003 新增页面 action 和入口绑定；文件/模块：`folder-script-actions.ts`、`main.ts`；验收：页面输入能刷新预览并导出。
+- [x] T004 新增页面 UI 和脚本加载；文件/模块：`public/tool/app/audit-king/index.html`；验收：Bootstrap 风格、紧凑、可读。
+- [x] T005 同步 spec；文件/模块：`spec/app/audit-king.md`；验收：记录当前功能事实和禁止行为。
+- [x] T006 完整验证；命令：局部测试、build、typecheck、全量 test。
+- [ ] T007 收口提交和推送；验收：只提交本任务相关文件。
 
 ## 8. 验证计划
 
-局部测试：
+相关局部测试：
 
 ```powershell
-npx.cmd vitest run tests/tool/pdf-stamp
-npx.cmd vitest run tests/tool/hotel-bill-check
-npx.cmd vitest run tests/tool/session-bill-check
-npx.cmd vitest run tests/tool/crew-flight-stats
+npx.cmd vitest run tests/tool/audit-king/folder-script-generator.test.ts
+npx.cmd vitest run tests/tool/audit-king
 ```
 
-完整验证：
+完整验证命令：
 
 ```powershell
 npm.cmd run build
@@ -159,11 +125,17 @@ npm.cmd run typecheck
 npm.cmd test
 ```
 
-构建检查：确认四个工具的 `dist/tool/app/*/` 下生成新拆分脚本，HTML 按依赖顺序加载。
+构建或安装检查：确认 `dist/tool/app/audit-king/folder-script-generator.js` 和 `folder-script-actions.js` 生成。
 
-未验证内容：最终浏览器视觉和拖拽手感由 owner 人工检查。
+页面/工具入口检查：确认 `public/tool/app/audit-king/index.html` 加载新增脚本，`main.ts` 绑定 action。
 
-剩余风险：PDF 盖章涉及 canvas、pdf.js 和 pdf-lib，自动测试主要保护计算和装配，真实 PDF 预览/导出仍需要人工抽查。
+恢复或中断演练：非法输入不导出，修正后恢复预览和导出。
+
+文档同步检查：`spec/app/audit-king.md` 不描述旧事实。
+
+未验证内容：下载后的 Python 在用户真实目标目录运行效果需要 owner 本地确认；本轮可做脚本文本和标准库逻辑检查。
+
+剩余风险：如果用户实际想要的范围命名不是 `1.1-1.1` 这种闭区间，而是另一个业务口径，需要后续按真实口径调整设置项。
 
 ## 9. 收口
 
@@ -173,26 +145,24 @@ npm.cmd test
 
 改了哪些文件：
 
-- PDF 盖章：新增 `runtime.d.ts`、`app-context.ts`、`rule-actions.ts`、`canvas-actions.ts`、`upload-actions.ts`、`export-actions.ts`，重写 `main.ts` 为入口装配，并更新页面脚本顺序。
-- 酒店皇帝：新增 `runtime.d.ts`、`app-context.ts`、`view.ts`、`file-actions.ts`、`export-actions.ts`，重写 `main.ts` 为入口装配，并更新页面脚本顺序。
-- 珠海皇帝：新增 `app-context.ts`、`view.ts`，重写 `main.ts` 为入口装配，更新 `runtime.d.ts` 和页面脚本顺序。
-- 航线班次统计：新增 `runtime.d.ts`、`app-context.ts`、`view.ts`、`file-actions.ts`、`crew-extract-actions.ts`，重写 `main.ts` 为入口装配，并更新页面脚本顺序。
-- 测试：补强 `tests/tool/pdf-stamp/logic.test.ts`，调整 `tests/tool/hotel-bill-check/export.test.ts` 走新导出模块。
+- `public/tool/app/audit-king/index.html`：新增文件夹脚本导出区域，并加载新增脚本。
+- `src/tool/app/audit-king/folder-script-generator.ts`：新增范围解析、文件夹名生成和 Python 文本生成。
+- `src/tool/app/audit-king/folder-script-actions.ts`：新增页面预览和下载动作。
+- `src/tool/app/audit-king/main.ts`、`runtime.d.ts`：接入新增动作和类型。
+- `tests/tool/audit-king/folder-script-generator.test.ts`：新增核心生成规则测试。
+- `spec/app/audit-king.md`：同步文件夹脚本导出事实。
+- `plan.md`：记录本任务计划和收口。
 
 跑了哪些验证：
 
+- `npx.cmd vitest run tests/tool/audit-king/folder-script-generator.test.ts`
+- `npx.cmd vitest run tests/tool/audit-king`
 - `npm.cmd run build`
-- `npx.cmd vitest run tests/tool/pdf-stamp`
-- `npx.cmd vitest run tests/tool/hotel-bill-check`
-- `npx.cmd vitest run tests/tool/session-bill-check`
-- `npx.cmd vitest run tests/tool/crew-flight-stats`
 - `npm.cmd run typecheck`
 - `npm.cmd test`
 
-验证结果：全量测试通过 34 个测试文件、137 个测试。
+哪些内容没有验证：没有在真实目标目录运行导出的 Python；本轮已通过脚本文本和生成规则测试验证。
 
-哪些内容没有验证：最终浏览器视觉和 PDF 真实拖拽/导出手感由 owner 人工检查。
+剩余风险：当前只支持同一一级编号范围，例如 `1.1-1.61`；跨 `1.x-2.x` 不生成，页面会报错。
 
-剩余风险：PDF 盖章真实 PDF 渲染依赖 pdf.js 和 pdf-lib，自动测试保护核心计算与装配，真实文件导出仍建议用一个小 PDF 抽查。
-
-是否 commit / push：已执行。
+是否 commit / push：待执行。
