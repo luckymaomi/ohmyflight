@@ -59,7 +59,7 @@
         const folders: string[] = [];
         for (let current = range.start.minor; current <= range.end.minor; current += 1) {
             const endpoint = formatEndpoint(range.start.major, current, range.width);
-            folders.push(`${endpoint}-${endpoint}`);
+            folders.push(endpoint);
         }
         return folders;
     }
