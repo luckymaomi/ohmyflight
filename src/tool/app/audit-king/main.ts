@@ -10,6 +10,7 @@
         runtime.EvidenceActions.bindEvidenceImportExport(context);
         runtime.KeywordFileActions.bindKeywordImportExport(context);
         runtime.FolderScriptActions.bindFolderScriptActions(context);
+        runtime.PdfLocatorActions.bindPdfLocatorActions(context);
         context.refresh("上传检查单和手册后，手动添加关键词开始检索。");
     }
 

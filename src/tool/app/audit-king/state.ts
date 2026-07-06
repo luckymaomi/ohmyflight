@@ -17,7 +17,22 @@
             documentFilterId: "all",
             currentMatchIndex: 0,
             currentDetailContextLength: DEFAULT_DETAIL_CONTEXT_LENGTH,
-            evidenceGroups: []
+            evidenceGroups: [],
+            pdfLocator: runtime.PdfLocatorModel?.createState
+                ? runtime.PdfLocatorModel.createState()
+                : {
+                    documents: [],
+                    results: [],
+                    slots: [],
+                    selectedSlotId: "",
+                    expandContextPages: true,
+                    summary: {
+                        trusted: 0,
+                        review: 0,
+                        miss: 0,
+                        skip: 0
+                    }
+                }
         };
     }
 

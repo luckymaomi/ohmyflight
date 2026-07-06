@@ -125,6 +125,101 @@ interface AuditKingFolderScriptConfig {
     rangeText: string;
 }
 
+interface AuditKingPdfLocatorPage {
+    pdfId: string;
+    pdfName: string;
+    pageNumber: number;
+    text: string;
+}
+
+interface AuditKingPdfLocatorDocument {
+    id: string;
+    name: string;
+    pageCount: number;
+    arrayBuffer?: ArrayBuffer;
+    pdf?: any;
+    pages: AuditKingPdfLocatorPage[];
+}
+
+interface AuditKingPdfLocatorTarget {
+    sequence: string;
+    title?: string;
+    content: string;
+    note?: string;
+}
+
+interface AuditKingPdfLocatorResult {
+    sequence: string;
+    title: string;
+    content: string;
+    status: "trusted" | "review" | "miss" | "skip";
+    pdfId?: string;
+    pdfName?: string;
+    startPage?: number;
+    endPage?: number;
+    coverage: number;
+    orderRatio: number;
+    score: number;
+    matchedSegments: number;
+    totalSegments: number;
+    reason: string;
+    snippets: string[];
+    comparisons?: AuditKingPdfLocatorSegmentComparison[];
+}
+
+interface AuditKingPdfLocatorSegmentComparison {
+    text: string;
+    matched: boolean;
+}
+
+interface AuditKingPdfLocatorSlot {
+    id: string;
+    sequence: string;
+    title: string;
+    content: string;
+    note: string;
+    selected: boolean;
+    pdfId: string;
+    pdfName?: string;
+    startPage: number | "";
+    endPage: number | "";
+    result?: AuditKingPdfLocatorResult;
+}
+
+interface AuditKingPdfLocatorWorkspaceSnapshot {
+    version: number;
+    exportedAt: string;
+    selectedSlotId: string;
+    expandContextPages: boolean;
+    slots: AuditKingPdfLocatorSlot[];
+}
+
+interface AuditKingPdfLocatorExportTask {
+    slotId: string;
+    sequence: string;
+    title: string;
+    pdfId: string;
+    pdfName: string;
+    startPage: number;
+    endPage: number;
+    filename: string;
+    skippedReason?: string;
+}
+
+interface AuditKingPdfLocatorState {
+    documents: AuditKingPdfLocatorDocument[];
+    results: AuditKingPdfLocatorResult[];
+    slots: AuditKingPdfLocatorSlot[];
+    selectedSlotId: string;
+    expandContextPages: boolean;
+    summary: {
+        trusted: number;
+        review: number;
+        miss: number;
+        skip: number;
+    };
+}
+
 interface AuditKingStateModel {
     checklistBlocks: AuditKingTextBlock[];
     documents: AuditKingDocument[];
@@ -136,6 +231,7 @@ interface AuditKingStateModel {
     currentMatchIndex: number;
     currentDetailContextLength: number;
     evidenceGroups: AuditKingEvidenceGroup[];
+    pdfLocator: AuditKingPdfLocatorState;
 }
 
 interface AuditKingAppContext {
@@ -154,4 +250,9 @@ interface Window {
     AuditKing: Record<string, any>;
     FlexSearch: any;
     mammoth: any;
+    pdfjsLib: any;
+    PDFLib: any;
+    JSZip: any;
 }
+
+declare const JSZip: any;

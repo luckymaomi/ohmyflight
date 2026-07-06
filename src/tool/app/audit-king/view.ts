@@ -482,6 +482,9 @@
         renderMatches(state);
         renderKeywordEvidences(state);
         renderEvidence(state);
+        if (runtime.PdfLocatorView?.renderPdfLocator) {
+            runtime.PdfLocatorView.renderPdfLocator(state.pdfLocator);
+        }
     }
 
     runtime.View = {

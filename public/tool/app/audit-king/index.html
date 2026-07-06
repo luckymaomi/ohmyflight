@@ -87,11 +87,46 @@
         .folder-preview { min-height: 54px; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; padding: 8px; }
         .folder-preview-grid { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
         .folder-preview-grid span { border: 1px solid #dee2e6; border-radius: 4px; background: #f8f9fa; padding: 2px 7px; font-size: 12px; line-height: 1.6; }
+        .pdf-locator-docs { min-height: 34px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+        .pdf-locator-doc-chip { border: 1px solid #dee2e6; border-radius: 4px; padding: 3px 7px; background: #f8f9fa; font-size: 12px; }
+        .pdf-locator-work-grid { --pdf-workspace-height: clamp(860px, 86vh, 1180px); display: grid; grid-template-columns: minmax(360px, 0.95fr) minmax(420px, 1.05fr); gap: 16px; align-items: stretch; }
+        .pdf-locator-results { height: var(--pdf-workspace-height); overflow: auto; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; padding: 10px; }
+        .pdf-locator-side { height: var(--pdf-workspace-height); min-height: 0; display: flex; flex-direction: column; }
+        .pdf-locator-status { min-width: 0; border: 1px solid #dee2e6; border-radius: 999px; padding: 2px 8px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; background: #f8f9fa; color: #495057; }
+        .pdf-locator-status.trusted { color: #0f5132; background: #d1e7dd; border-color: #badbcc; }
+        .pdf-locator-status.review { color: #664d03; background: #fff3cd; border-color: #ffecb5; }
+        .pdf-locator-status.miss { color: #842029; background: #f8d7da; border-color: #f5c2c7; }
+        .pdf-locator-status.skip { color: #41464b; background: #e2e3e5; border-color: #d3d6d8; }
+        .pdf-locator-evidence { min-width: 260px; max-width: 380px; overflow-wrap: anywhere; }
+        .pdf-slot-card { border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; margin-bottom: 10px; background: #fff; }
+        .pdf-slot-card.active { border-color: #0d6efd; box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.12); }
+        .pdf-slot-head { display: grid; grid-template-columns: auto 76px minmax(150px, 1fr) auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+        .pdf-slot-check { margin: 0; display: flex; align-items: center; }
+        .pdf-slot-sequence { text-align: center; font-weight: 600; }
+        .pdf-slot-meta { display: flex; flex-wrap: wrap; gap: 8px; color: #6c757d; font-size: 12px; margin-bottom: 6px; }
+        .pdf-slot-evidence { height: 132px; overflow: auto; color: #495057; font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; border: 1px solid #eef0f2; border-radius: 6px; background: #fff; padding: 8px 10px; }
+        .pdf-detail-panel { flex: 0 0 auto; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; padding: 12px; margin-bottom: 12px; }
+        .pdf-detail-title { display: flex; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 10px; }
+        .pdf-compare-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+        .pdf-compare-title { font-size: 12px; color: #6c757d; margin-bottom: 6px; }
+        .pdf-original-text { max-height: 180px; overflow: auto; border: 1px solid #eef0f2; border-radius: 6px; padding: 10px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; background: #f8f9fa; }
+        .pdf-segment-list { max-height: 180px; overflow: auto; display: grid; gap: 6px; }
+        .pdf-segment { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 8px; align-items: start; border: 1px solid #dee2e6; border-radius: 6px; padding: 6px 8px; font-size: 12px; line-height: 1.6; }
+        .pdf-segment span { font-weight: 600; }
+        .pdf-segment em { font-style: normal; overflow-wrap: anywhere; }
+        .pdf-segment.matched { border-color: #badbcc; background: #f3fff8; color: #0f5132; }
+        .pdf-segment.missing { border-color: #f5c2c7; background: #fff7f8; color: #842029; }
+        .pdf-preview-panel { flex: 1 1 auto; min-height: 0; overflow: auto; border: 1px solid #dee2e6; border-radius: 6px; background: #f8f9fa; padding: 12px; }
+        .pdf-preview-page { margin: 0 auto 14px; width: fit-content; max-width: 100%; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; padding: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .pdf-preview-page canvas { display: block; max-width: 100%; height: auto; }
+        .pdf-preview-label { color: #6c757d; font-size: 12px; margin-bottom: 6px; }
         @media (max-width: 900px) {
-            .upload-grid, .top-work-grid, .result-grid, .bottom-work-grid { grid-template-columns: 1fr; }
+            .upload-grid, .top-work-grid, .result-grid, .bottom-work-grid, .pdf-locator-work-grid, .pdf-compare-grid { grid-template-columns: 1fr; }
             .upload-status { grid-column: auto; }
             .detail-toolbar { grid-template-columns: 1fr; }
             .panel-scroll { max-height: 480px; }
+            .pdf-locator-results, .pdf-locator-side { height: auto; }
+            .pdf-preview-panel { min-height: 620px; }
         }
     </style>
     <link rel="stylesheet" href="../../../theme.css">
@@ -252,12 +287,74 @@
             </div>
         </section>
     </div>
+
+    <section class="card mt-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-wrap">
+                <div>
+                    <h6 class="card-title mb-1">PDF证据工作区</h6>
+                    <div class="text-muted small" id="pdfLocatorSummary">0 个 PDF / 0 条依据 / 可信 0 / 需确认 0 / 未命中 0 / 跳过 0</div>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <input class="d-none" type="file" id="pdfLocatorPdfInput" accept=".pdf" multiple>
+                    <input class="d-none" type="file" id="pdfLocatorWorkspaceInput" accept=".json,application/json">
+                    <button class="btn btn-sm btn-outline-secondary" id="pdfLocatorUploadBtn">上传PDF</button>
+                    <button class="btn btn-sm btn-outline-primary" id="pdfLocatorBuildFromBasketBtn">从审计篮子生成</button>
+                    <button class="btn btn-sm btn-primary" id="pdfLocatorRunBtn">自动识别</button>
+                    <button class="btn btn-sm btn-outline-secondary" id="pdfLocatorImportWorkspaceBtn">导入工作区</button>
+                    <button class="btn btn-sm btn-outline-secondary" id="pdfLocatorExportWorkspaceBtn">导出工作区</button>
+                    <button class="btn btn-sm btn-outline-primary" id="pdfLocatorExportSelectedBtn">导出勾选</button>
+                    <button class="btn btn-sm btn-outline-primary" id="pdfLocatorExportAllBtn">导出全部</button>
+                    <button class="btn btn-sm btn-outline-danger" id="pdfLocatorClearBtn">清空</button>
+                </div>
+            </div>
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-12 col-lg-3">
+                    <label class="form-label">空槽编号范围</label>
+                    <input class="form-control form-control-sm" id="pdfLocatorRangeInput" value="1.1-1.61" placeholder="例如 1.1-1.61">
+                </div>
+                <div class="col-12 col-lg-auto">
+                    <button class="btn btn-sm btn-outline-secondary w-100" id="pdfLocatorBuildEmptyBtn">生成空槽</button>
+                </div>
+                <div class="col-12 col-lg-auto">
+                    <div class="form-check mb-1">
+                        <input class="form-check-input" type="checkbox" id="pdfLocatorExpandContextInput" checked>
+                        <label class="form-check-label" for="pdfLocatorExpandContextInput">前后各加1页</label>
+                    </div>
+                </div>
+                <div class="col-12 col-lg">
+                    <label class="form-label">已上传 PDF</label>
+                    <div class="pdf-locator-docs" id="pdfLocatorDocumentList"></div>
+                </div>
+            </div>
+            <div class="pdf-locator-work-grid">
+                <div id="pdfLocatorResultList" class="pdf-locator-results">
+                    <div class="empty-panel">从审计篮子生成槽位，或按编号范围生成空槽。</div>
+                </div>
+                <div class="pdf-locator-side">
+                    <div id="pdfLocatorSlotDetail" class="pdf-detail-panel">
+                        <div class="empty-panel">选择一个槽位后查看原文和切片对比。</div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                        <h6 class="card-title mb-0">页面预览</h6>
+                        <small class="text-muted">点击左侧槽位自动刷新</small>
+                    </div>
+                    <div id="pdfLocatorPreview" class="pdf-preview-panel">
+                        <div class="empty-panel">选择 PDF 和页码后预览。</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 </div>
 
 <script src="../../../libs/bootstrap.bundle.min.js"></script>
 <script src="../../../libs/flexsearch.bundle.min.js"></script>
 <script src="../../../libs/mammoth.min.js"></script>
 <script src="../../../libs/xlsx.full.min.js"></script>
+<script src="../../../libs/pdf.min.js"></script>
+<script src="../../../libs/pdf-lib.min.js"></script>
+<script src="../../../libs/jszip.min.js"></script>
 <script src="types.js"></script>
 <script src="text-normalizer.js"></script>
 <script src="document-reader.js"></script>
@@ -268,6 +365,7 @@
 <script src="evidence-basket.js"></script>
 <script src="export.js"></script>
 <script src="keyword-import-export.js"></script>
+<script src="pdf-locator-model.js"></script>
 <script src="state.js"></script>
 <script src="view.js"></script>
 <script src="app-context.js"></script>
@@ -278,6 +376,11 @@
 <script src="keyword-file-actions.js"></script>
 <script src="folder-script-generator.js"></script>
 <script src="folder-script-actions.js"></script>
+<script src="pdf-locator-reader.js"></script>
+<script src="pdf-locator-preview.js"></script>
+<script src="pdf-locator-export.js"></script>
+<script src="pdf-locator-view.js"></script>
+<script src="pdf-locator-actions.js"></script>
 <script src="main.js"></script>
 </body>
 </html>
