@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>校对之王</title>
+    <script src="../../../theme.js"></script>
+    <link rel="stylesheet" href="../../../libs/bootstrap.min.css">
+    <style>
+        body { background: #f6f7f9; color: #212529; }
+        .page-shell { max-width: 1540px; margin: 0 auto; padding: 18px; }
+        .work-section { background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 14px; margin-bottom: 14px; }
+        .section-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+        .upload-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .manual-panel { border: 1px solid #e9ecef; border-radius: 6px; padding: 12px; background: #fbfcfd; }
+        .manual-status { min-height: 22px; color: #6c757d; font-size: 13px; overflow-wrap: anywhere; }
+        .summary-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+        .summary-item { border: 1px solid #e9ecef; border-radius: 6px; background: #fbfcfd; padding: 10px; }
+        .summary-label { color: #6c757d; font-size: 12px; margin-bottom: 4px; }
+        .summary-value { font-size: 22px; font-weight: 700; }
+        .review-workspace { display: grid; grid-template-columns: minmax(300px, 0.72fr) minmax(620px, 1.28fr); gap: 14px; align-items: stretch; }
+        .review-list { height: 760px; overflow: auto; border: 1px solid #dee2e6; border-radius: 6px; background: #fbfcfd; padding: 10px; }
+        .review-card { width: 100%; text-align: left; border: 1px solid #e1e5ea; border-radius: 6px; background: #fff; padding: 10px; margin-bottom: 9px; }
+        .review-card.active { border-color: #0d6efd; box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.12); }
+        .review-card-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .review-card-title { min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .review-card-meta { display: flex; flex-wrap: wrap; gap: 8px; color: #6c757d; font-size: 12px; }
+        .review-card-snippet { margin-top: 7px; color: #495057; font-size: 13px; line-height: 1.55; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+        .review-detail { height: 760px; overflow: auto; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; padding: 12px; }
+        .detail-head { display: flex; justify-content: space-between; gap: 12px; align-items: start; margin-bottom: 12px; }
+        .detail-title { font-weight: 700; font-size: 16px; }
+        .compare-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+        .compare-pane { border: 1px solid #e1e5ea; border-radius: 6px; background: #fbfcfd; min-height: 280px; display: flex; flex-direction: column; }
+        .compare-pane-title { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 9px 11px; border-bottom: 1px solid #e1e5ea; font-size: 13px; color: #495057; }
+        .compare-text { flex: 1 1 auto; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.75; padding: 12px; font-size: 14px; }
+        .mark-focus { background: #fff3cd; border-radius: 3px; box-shadow: inset 0 -2px 0 rgba(102, 77, 3, 0.22); }
+        .mark-deleted { background: #f8d7da; color: #842029; border-radius: 3px; }
+        .mark-added { background: #d1e7dd; color: #0f5132; border-radius: 3px; }
+        .mark-token-missing { background: #f5c2c7; color: #842029; border-radius: 3px; padding: 0 2px; }
+        .mark-token-extra { background: #badbcc; color: #0f5132; border-radius: 3px; padding: 0 2px; }
+        .pdf-preview-panel { margin-top: 12px; border: 1px solid #dee2e6; border-radius: 6px; background: #f8f9fa; padding: 12px; min-height: 220px; overflow: auto; }
+        .pdf-page-preview { width: fit-content; max-width: 100%; margin: 0 auto; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+        .pdf-page-preview canvas { display: block; max-width: 100%; height: auto; }
+        .pdf-page-label, .preview-empty { color: #6c757d; font-size: 13px; margin-bottom: 8px; }
+        .status-pill { display: inline-block; min-width: 52px; text-align: center; border-radius: 999px; padding: 2px 8px; font-size: 12px; border: 1px solid #dee2e6; background: #f8f9fa; }
+        .status-same { color: #0f5132; background: #d1e7dd; border-color: #badbcc; }
+        .status-modified { color: #664d03; background: #fff3cd; border-color: #ffecb5; }
+        .status-deleted { color: #842029; background: #f8d7da; border-color: #f5c2c7; }
+        .status-review { color: #41464b; background: #e2e3e5; border-color: #d3d6d8; }
+        .status-added { color: #0f5132; background: #d1e7dd; border-color: #badbcc; }
+        @media (max-width: 992px) {
+            .upload-grid, .summary-grid, .review-workspace, .compare-grid { grid-template-columns: 1fr; }
+            .review-list, .review-detail { height: auto; max-height: none; }
+        }
+    </style>
+    <link rel="stylesheet" href="../../../theme.css">
+</head>
+<body>
+<main class="page-shell">
+    <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+        <div>
+            <h1 class="h4 mb-1">校对之王</h1>
+            <div class="text-muted small">A 为基准手册，B 为待校对手册。当前支持 docx 全文和文字型 PDF 页码范围。</div>
+        </div>
+        <a class="btn btn-outline-secondary btn-sm" href="../../index.html">返回工具页</a>
+    </div>
+
+    <div id="proofMessage" class="alert alert-secondary py-2 mb-3">上传基准手册 A 和待校对手册 B 后开始比对。</div>
+
+    <section class="work-section">
+        <div class="section-title">手册上传</div>
+        <div class="upload-grid">
+            <div class="manual-panel">
+                <label class="form-label fw-semibold" for="sourceInput">基准手册 A</label>
+                <input class="form-control mb-2" id="sourceInput" type="file" accept=".docx,.pdf">
+                <div class="row g-2 mb-2">
+                    <div class="col">
+                        <input class="form-control form-control-sm" id="sourceStartPage" type="number" min="1" placeholder="PDF起始页">
+                    </div>
+                    <div class="col">
+                        <input class="form-control form-control-sm" id="sourceEndPage" type="number" min="1" placeholder="PDF结束页">
+                    </div>
+                </div>
+                <div id="sourceStatus" class="manual-status">未上传</div>
+            </div>
+            <div class="manual-panel">
+                <label class="form-label fw-semibold" for="targetInput">待校对手册 B</label>
+                <input class="form-control mb-2" id="targetInput" type="file" accept=".docx,.pdf">
+                <div class="row g-2 mb-2">
+                    <div class="col">
+                        <input class="form-control form-control-sm" id="targetStartPage" type="number" min="1" placeholder="PDF起始页">
+                    </div>
+                    <div class="col">
+                        <input class="form-control form-control-sm" id="targetEndPage" type="number" min="1" placeholder="PDF结束页">
+                    </div>
+                </div>
+                <div id="targetStatus" class="manual-status">未上传</div>
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2 mt-3">
+            <button id="compareBtn" class="btn btn-primary">开始比对</button>
+            <button id="exportBtn" class="btn btn-outline-primary" disabled>导出Excel报告</button>
+        </div>
+    </section>
+
+    <section class="work-section">
+        <div class="section-title">统计总览</div>
+        <div id="summaryGrid" class="summary-grid"></div>
+    </section>
+
+    <section class="work-section">
+        <div class="d-flex align-items-center justify-content-between gap-3 mb-2">
+            <div class="section-title mb-0">差异预览</div>
+            <div class="text-muted small">点击左侧差异后，在右侧查看 A/B 上下文和 PDF 页面。</div>
+        </div>
+        <div class="review-workspace">
+            <div id="reviewList" class="review-list">
+                <div class="text-muted text-center py-4">暂无比对结果。</div>
+            </div>
+            <div id="reviewDetail" class="review-detail">
+                <div class="preview-empty">选择一条差异后查看完整上下文。</div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script src="../../../libs/bootstrap.bundle.min.js"></script>
+<script src="../../../libs/flexsearch.bundle.min.js"></script>
+<script src="../../../libs/mammoth.min.js"></script>
+<script src="../../../libs/pdf.min.js"></script>
+<script src="../../../libs/xlsx-js-style.min.js"></script>
+<script src="normalizer.js"></script>
+<script src="segmenter.js"></script>
+<script src="search-index.js"></script>
+<script src="compare-model.js"></script>
+<script src="reader.js"></script>
+<script src="excel-export.js"></script>
+<script src="preview.js"></script>
+<script src="view.js"></script>
+<script src="actions.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

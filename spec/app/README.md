@@ -25,6 +25,8 @@
   给 PDF 批量加图片水印
 - `pdf-tool.md`
   PDF 提取、合并、转图片、图片转 PDF
+- `proof-king.md`
+  对同一本手册新旧版做文字比对并导出差异报告
 - `word-template-filler.md`
   把配置表和 Word 模板打包成可分发小应用
 

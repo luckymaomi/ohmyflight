@@ -4,6 +4,7 @@
 const tools: ToolItem[] = [
     { name: '培训皇帝', desc: '一键排/核/预估培训，皇帝御用', entry: 'training-workbench', status: 'done' },
     { name: '审计之王', desc: '调教手册用。', entry: 'audit-king', status: 'done' },
+    { name: '校对之王', desc: '对同一本手册新旧版做本地文字比对并导出差异报告', entry: 'proof-king', status: 'done' },
     { name: '姓名匹配员工号', desc: '一键识别姓名，匹配对应员工号', entry: 'crew-match-name-id', status: 'done' },
     { name: '锁班皇帝', desc: 'Python脚本，一键批量录入锁班信息', entry: 'lock-entry-helper', status: 'done' },
     { name: '飞行经历/左座经历起落数按天统计', desc: 'Python脚本，一键批量飞行经历/左座经历起落数', entry: 'flight-stats-helper', status: 'done' },
