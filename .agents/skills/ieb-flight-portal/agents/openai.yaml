@@ -1,0 +1,4 @@
+interface:
+  display_name: "IEB Flight Portal"
+  short_description: "IEB飞行门户Playwright自动化与技术资料抓取经验"
+  default_prompt: "使用IEB飞行门户自动化经验，先探测页面结构并验证样例，再编写稳定的Playwright脚本抓取或写回Excel。"
