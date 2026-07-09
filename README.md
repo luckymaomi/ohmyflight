@@ -8,7 +8,7 @@
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-b08d57?style=for-the-badge&labelColor=1c1917">
 </p>
 
-项目地址：https://agentjz.github.io/ohmyflight/
+项目地址：https://luckymaomi.github.io/ohmyflight/
 
 ## 当前工具
 

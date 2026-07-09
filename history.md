@@ -4,7 +4,7 @@
 
 当前代码锚点：`f010547 更新文件夹脚本口径收口`
 
-当前项目地址：`https://agentjz.github.io/ohmyflight/`
+当前项目地址：`https://luckymaomi.github.io/ohmyflight/`
 
 用途：给后续窗口继续理解 ohmyflight。它不是 `spec/`，不是 README，也不是产品宣传。`spec/` 只写当前工具怎么用；这份文件写历史：业务怎么长出来，哪些路试过又删掉，人和 AI 怎么从反复误解走到现在的协作方式。
 
