@@ -1,7 +1,11 @@
 (function () {
-    const runtime = window.ProofKing || (window.ProofKing = {});
+    function start(): void {
+        window.ManualProof.Workspace.bind();
+    }
 
-    document.addEventListener("DOMContentLoaded", () => {
-        runtime.Actions.bind();
-    });
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", start, { once: true });
+        return;
+    }
+    start();
 })();

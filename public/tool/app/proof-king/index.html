@@ -6,100 +6,114 @@
     <title>校对之王</title>
     <script src="../../../theme.js"></script>
     <link rel="stylesheet" href="../../../libs/bootstrap.min.css">
+    <link rel="stylesheet" href="../../../theme.css">
     <style>
-        body { background: #f6f7f9; color: #212529; }
-        .page-shell { max-width: 1540px; margin: 0 auto; padding: 18px; }
+        body { background: #f5f6f8; color: #212529; }
+        .page-shell { max-width: 1600px; margin: 0 auto; padding: 18px; }
         .work-section { background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 14px; margin-bottom: 14px; }
         .section-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
         .upload-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-        .manual-panel { border: 1px solid #e9ecef; border-radius: 6px; padding: 12px; background: #fbfcfd; }
+        .manual-upload { border: 1px solid #e1e5ea; border-radius: 6px; padding: 12px; background: #fbfcfd; }
         .manual-status { min-height: 22px; color: #6c757d; font-size: 13px; overflow-wrap: anywhere; }
-        .summary-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
-        .summary-item { border: 1px solid #e9ecef; border-radius: 6px; background: #fbfcfd; padding: 10px; }
-        .summary-label { color: #6c757d; font-size: 12px; margin-bottom: 4px; }
-        .summary-value { font-size: 22px; font-weight: 700; }
-        .review-workspace { display: grid; grid-template-columns: minmax(300px, 0.72fr) minmax(620px, 1.28fr); gap: 14px; align-items: stretch; }
-        .review-list { height: 760px; overflow: auto; border: 1px solid #dee2e6; border-radius: 6px; background: #fbfcfd; padding: 10px; }
-        .review-card { width: 100%; text-align: left; border: 1px solid #e1e5ea; border-radius: 6px; background: #fff; padding: 10px; margin-bottom: 9px; }
-        .review-card.active { border-color: #0d6efd; box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.12); }
-        .review-card-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; margin-bottom: 6px; }
-        .review-card-title { min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .review-card-meta { display: flex; flex-wrap: wrap; gap: 8px; color: #6c757d; font-size: 12px; }
-        .review-card-snippet { margin-top: 7px; color: #495057; font-size: 13px; line-height: 1.55; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
-        .review-detail { height: 760px; overflow: auto; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; padding: 12px; }
-        .detail-head { display: flex; justify-content: space-between; gap: 12px; align-items: start; margin-bottom: 12px; }
-        .detail-title { font-weight: 700; font-size: 16px; }
-        .compare-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
-        .compare-pane { border: 1px solid #e1e5ea; border-radius: 6px; background: #fbfcfd; min-height: 280px; display: flex; flex-direction: column; }
-        .compare-pane-title { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 9px 11px; border-bottom: 1px solid #e1e5ea; font-size: 13px; color: #495057; }
-        .compare-text { flex: 1 1 auto; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.75; padding: 12px; font-size: 14px; }
-        .mark-focus { background: #fff3cd; border-radius: 3px; box-shadow: inset 0 -2px 0 rgba(102, 77, 3, 0.22); }
-        .mark-deleted { background: #f8d7da; color: #842029; border-radius: 3px; }
-        .mark-added { background: #d1e7dd; color: #0f5132; border-radius: 3px; }
-        .mark-token-missing { background: #f5c2c7; color: #842029; border-radius: 3px; padding: 0 2px; }
-        .mark-token-extra { background: #badbcc; color: #0f5132; border-radius: 3px; padding: 0 2px; }
-        .pdf-preview-panel { margin-top: 12px; border: 1px solid #dee2e6; border-radius: 6px; background: #f8f9fa; padding: 12px; min-height: 220px; overflow: auto; }
-        .pdf-page-preview { width: fit-content; max-width: 100%; margin: 0 auto; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
-        .pdf-page-preview canvas { display: block; max-width: 100%; height: auto; }
-        .pdf-page-label, .preview-empty { color: #6c757d; font-size: 13px; margin-bottom: 8px; }
-        .status-pill { display: inline-block; min-width: 52px; text-align: center; border-radius: 999px; padding: 2px 8px; font-size: 12px; border: 1px solid #dee2e6; background: #f8f9fa; }
-        .status-same { color: #0f5132; background: #d1e7dd; border-color: #badbcc; }
-        .status-modified { color: #664d03; background: #fff3cd; border-color: #ffecb5; }
-        .status-deleted { color: #842029; background: #f8d7da; border-color: #f5c2c7; }
-        .status-review { color: #41464b; background: #e2e3e5; border-color: #d3d6d8; }
-        .status-added { color: #0f5132; background: #d1e7dd; border-color: #badbcc; }
-        @media (max-width: 992px) {
-            .upload-grid, .summary-grid, .review-workspace, .compare-grid { grid-template-columns: 1fr; }
-            .review-list, .review-detail { height: auto; max-height: none; }
+        .summary-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+        .summary-item { border: 1px solid #e2e6ea; border-left-width: 4px; border-radius: 6px; background: #fff; padding: 10px; }
+        .summary-danger { border-left-color: #b02a37; }
+        .summary-primary { border-left-color: #0d6efd; }
+        .summary-warning { border-left-color: #b58105; }
+        .summary-secondary { border-left-color: #6c757d; }
+        .summary-info { border-left-color: #0dcaf0; }
+        .summary-label { color: #6c757d; font-size: 12px; }
+        .summary-value { margin-top: 4px; font-size: 22px; font-weight: 700; }
+        .workbench { display: grid; grid-template-columns: minmax(300px, 0.45fr) minmax(760px, 1.55fr); gap: 14px; min-height: 800px; }
+        .difference-navigation { position: relative; height: 800px; overflow-y: auto; overflow-x: hidden; border: 1px solid #dee2e6; border-radius: 6px; background: #fbfcfd; }
+        .difference-navigation-visible { position: absolute; inset: 0 0 auto; width: 100%; padding: 8px; }
+        .difference-card { display: block; width: 100%; height: 126px; overflow: hidden; text-align: left; border: 1px solid #e1e5ea; border-left-width: 4px; border-radius: 6px; background: #fff; padding: 9px; margin-bottom: 0; }
+        .difference-card.active { border-color: #0d6efd; box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.12); }
+        .difference-my-missing { border-left-color: #b02a37; }
+        .difference-reference-missing { border-left-color: #0d6efd; }
+        .difference-micro { border-left-color: #b58105; }
+        .difference-review { border-left-color: #6c757d; }
+        .difference-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .difference-kind { flex: 0 0 auto; border-radius: 999px; padding: 2px 7px; font-size: 12px; color: #495057; background: #f1f3f5; }
+        .difference-location { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: 13px; }
+        .difference-reason { color: #6c757d; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .difference-text { margin-top: 6px; color: #495057; font-size: 13px; line-height: 1.45; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+        .document-workspace { min-width: 0; height: 800px; overflow: hidden; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; padding: 12px; }
+        .selection-meta { min-height: 44px; display: flex; justify-content: space-between; gap: 12px; align-items: start; margin-bottom: 12px; }
+        .selection-title { font-size: 16px; font-weight: 700; }
+        .selection-location { flex: 0 0 auto; border: 1px solid #dee2e6; border-radius: 5px; padding: 3px 8px; color: #495057; background: #f8f9fa; font-size: 12px; }
+        .manual-panes { height: calc(100% - 56px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+        .manual-pane { min-width: 0; min-height: 0; display: flex; flex-direction: column; border: 1px solid #e1e5ea; border-radius: 6px; background: #fbfcfd; overflow: hidden; }
+        .manual-pane-title { display: flex; justify-content: space-between; gap: 10px; padding: 9px 11px; border-bottom: 1px solid #e1e5ea; color: #495057; font-size: 13px; }
+        .manual-pane-title > div { min-width: 0; display: flex; align-items: center; gap: 7px; }
+        .manual-pane-title span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .index-status { color: #6c757d; font-size: 12px; white-space: nowrap; }
+        .manual-preview { min-width: 0; min-height: 0; flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding: 12px; }
+        .manual-preview .manual-word-page-wrapper { min-width: 0 !important; overflow-x: hidden !important; background: #edf0f3; padding: 12px; }
+        .manual-preview section.manual-word-page { margin: 0 auto 12px !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14); }
+        .word-focus-block { outline: 2px solid #b58105 !important; outline-offset: 2px; background: rgba(255, 243, 205, 0.48) !important; }
+        ::highlight(manual-proof-word-focus-my), ::highlight(manual-proof-word-focus-reference) { color: #842029; background: #f5c2c7; }
+        .pdf-page { width: fit-content; max-width: 100%; margin: 0 auto 12px; padding: 8px; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; }
+        .pdf-page canvas { display: block; max-width: 100%; height: auto; }
+        .pdf-page-label { margin-bottom: 7px; color: #6c757d; font-size: 13px; }
+        .pdf-context { border-top: 1px solid #dee2e6; padding-top: 10px; color: #495057; font-size: 13px; line-height: 1.65; }
+        .pdf-context-title { margin-bottom: 5px; color: #6c757d; font-size: 12px; }
+        .pdf-context-part { margin-top: 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .pdf-context-part span { display: block; color: #6c757d; font-size: 12px; }
+        .preview-empty { padding: 24px 10px; color: #6c757d; text-align: center; font-size: 13px; }
+        @media (max-width: 1100px) {
+            .summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .workbench { grid-template-columns: 1fr; }
+            .difference-navigation, .document-workspace { height: 680px; }
+        }
+        @media (max-width: 760px) {
+            .page-shell { padding: 12px; }
+            .upload-grid, .summary-grid, .manual-panes { grid-template-columns: 1fr; }
+            .manual-panes { height: auto; }
+            .document-workspace { height: auto; }
+            .manual-pane { min-height: 620px; }
+            .selection-meta { align-items: stretch; flex-direction: column; }
+            .selection-location { align-self: flex-start; }
         }
     </style>
-    <link rel="stylesheet" href="../../../theme.css">
 </head>
 <body>
 <main class="page-shell">
     <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
         <div>
             <h1 class="h4 mb-1">校对之王</h1>
-            <div class="text-muted small">A 为基准手册，B 为待校对手册。当前支持 docx 全文和文字型 PDF 页码范围。</div>
+            <div class="text-muted small">本地比对。结构性缺失优先，Word 显示全文，PDF 显示原始页。</div>
         </div>
         <a class="btn btn-outline-secondary btn-sm" href="../../index.html">返回工具页</a>
     </div>
 
-    <div id="proofMessage" class="alert alert-secondary py-2 mb-3">上传基准手册 A 和待校对手册 B 后开始比对。</div>
+    <div id="workspaceMessage" class="alert alert-secondary py-2 mb-3">上传我的手册和参考手册后开始比对。</div>
 
     <section class="work-section">
         <div class="section-title">手册上传</div>
         <div class="upload-grid">
-            <div class="manual-panel">
-                <label class="form-label fw-semibold" for="sourceInput">基准手册 A</label>
-                <input class="form-control mb-2" id="sourceInput" type="file" accept=".docx,.pdf">
+            <div class="manual-upload">
+                <label class="form-label fw-semibold" for="myInput">我的手册</label>
+                <input class="form-control mb-2" id="myInput" type="file" accept=".docx,.pdf">
                 <div class="row g-2 mb-2">
-                    <div class="col">
-                        <input class="form-control form-control-sm" id="sourceStartPage" type="number" min="1" placeholder="PDF起始页">
-                    </div>
-                    <div class="col">
-                        <input class="form-control form-control-sm" id="sourceEndPage" type="number" min="1" placeholder="PDF结束页">
-                    </div>
+                    <div class="col"><input class="form-control form-control-sm" id="myStartPage" type="number" min="1" placeholder="PDF 起始页"></div>
+                    <div class="col"><input class="form-control form-control-sm" id="myEndPage" type="number" min="1" placeholder="PDF 结束页"></div>
                 </div>
-                <div id="sourceStatus" class="manual-status">未上传</div>
+                <div id="myStatus" class="manual-status">未上传</div>
             </div>
-            <div class="manual-panel">
-                <label class="form-label fw-semibold" for="targetInput">待校对手册 B</label>
-                <input class="form-control mb-2" id="targetInput" type="file" accept=".docx,.pdf">
+            <div class="manual-upload">
+                <label class="form-label fw-semibold" for="referenceInput">参考手册</label>
+                <input class="form-control mb-2" id="referenceInput" type="file" accept=".docx,.pdf">
                 <div class="row g-2 mb-2">
-                    <div class="col">
-                        <input class="form-control form-control-sm" id="targetStartPage" type="number" min="1" placeholder="PDF起始页">
-                    </div>
-                    <div class="col">
-                        <input class="form-control form-control-sm" id="targetEndPage" type="number" min="1" placeholder="PDF结束页">
-                    </div>
+                    <div class="col"><input class="form-control form-control-sm" id="referenceStartPage" type="number" min="1" placeholder="PDF 起始页"></div>
+                    <div class="col"><input class="form-control form-control-sm" id="referenceEndPage" type="number" min="1" placeholder="PDF 结束页"></div>
                 </div>
-                <div id="targetStatus" class="manual-status">未上传</div>
+                <div id="referenceStatus" class="manual-status">未上传</div>
             </div>
         </div>
         <div class="d-flex flex-wrap gap-2 mt-3">
-            <button id="compareBtn" class="btn btn-primary">开始比对</button>
-            <button id="exportBtn" class="btn btn-outline-primary" disabled>导出Excel报告</button>
+            <button id="compareButton" class="btn btn-primary" type="button">开始后台比对</button>
+            <button id="exportButton" class="btn btn-outline-primary" type="button" disabled>导出 Excel 报告</button>
         </div>
     </section>
 
@@ -110,34 +124,48 @@
 
     <section class="work-section">
         <div class="d-flex align-items-center justify-content-between gap-3 mb-2">
-            <div class="section-title mb-0">差异预览</div>
-            <div class="text-muted small">点击左侧差异后，在右侧查看 A/B 上下文和 PDF 页面。</div>
+            <div class="section-title mb-0">全文对照</div>
+            <div class="text-muted small">左侧只渲染当前可见差异；所有结果均可滚动访问。</div>
         </div>
-        <div class="review-workspace">
-            <div id="reviewList" class="review-list">
-                <div class="text-muted text-center py-4">暂无比对结果。</div>
+        <div class="workbench">
+            <div id="differenceNavigation" class="difference-navigation">
+                <div id="differenceNavigationSpacer"></div>
+                <div id="differenceNavigationVisible" class="difference-navigation-visible"></div>
             </div>
-            <div id="reviewDetail" class="review-detail">
-                <div class="preview-empty">选择一条差异后查看完整上下文。</div>
+            <div class="document-workspace">
+                <div id="selectionMeta" class="selection-meta"><span class="text-muted">选择一条差异后查看原文。</span></div>
+                <div class="manual-panes">
+                    <section class="manual-pane">
+                        <div class="manual-pane-title">
+                            <div><span>我的手册</span><span id="myIndexStatus" class="index-status"></span></div>
+                            <span id="myPreviewName">全文原文</span>
+                        </div>
+                        <div id="myPreview" class="manual-preview"><div class="preview-empty">上传并完成比对后显示原文。</div></div>
+                    </section>
+                    <section class="manual-pane">
+                        <div class="manual-pane-title">
+                            <div><span>参考手册</span><span id="referenceIndexStatus" class="index-status"></span></div>
+                            <span id="referencePreviewName">全文原文</span>
+                        </div>
+                        <div id="referencePreview" class="manual-preview"><div class="preview-empty">上传并完成比对后显示原文。</div></div>
+                    </section>
+                </div>
             </div>
         </div>
     </section>
 </main>
 
 <script src="../../../libs/bootstrap.bundle.min.js"></script>
-<script src="../../../libs/flexsearch.bundle.min.js"></script>
 <script src="../../../libs/mammoth.min.js"></script>
 <script src="../../../libs/pdf.min.js"></script>
+<script src="../../../libs/jszip.min.js"></script>
+<script src="../../../libs/docx-preview.min.js"></script>
 <script src="../../../libs/xlsx-js-style.min.js"></script>
-<script src="normalizer.js"></script>
-<script src="segmenter.js"></script>
-<script src="search-index.js"></script>
-<script src="compare-model.js"></script>
-<script src="reader.js"></script>
-<script src="excel-export.js"></script>
-<script src="preview.js"></script>
-<script src="view.js"></script>
-<script src="actions.js"></script>
+<script src="manual-reader.js"></script>
+<script src="workspace-navigation.js"></script>
+<script src="document-views.js"></script>
+<script src="excel-report.js"></script>
+<script src="workspace.js"></script>
 <script src="main.js"></script>
 </body>
 </html>
