@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>技术等级运行资格查询助手</title>
+    <script src="../../../theme.js"></script>
+    <link rel="stylesheet" href="../../../libs/bootstrap.min.css">
+    <link rel="stylesheet" href="../../../theme.css">
+    <style>
+        body { background: transparent; padding: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card mb-4">
+            <div class="card-body text-center position-relative">
+                <a href="../../../index.html" class="position-absolute start-0 top-50 translate-middle-y ms-3 text-decoration-none">返回首页</a>
+                <h4 class="card-title mb-1">技术等级运行资格查询助手</h4>
+                <p class="text-muted mb-0 small">按 Excel 员工号逐人查询 IEB 技术等级和运行资格</p>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">输入与结果</h5>
+                <p>只支持 Excel 输入。下载模板后填写 <code>员工号</code> 和可选的 <code>姓名</code> 两列。</p>
+                <p class="mb-0">脚本每查询完一人立即保存结果 Excel。结果包含 <code>处理报告</code>、<code>技术资料明细</code>、<code>汇总</code> 三个 sheet，并额外生成同名文本报告。</p>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">下载</h5>
+                <a href="template.xlsx" download="技术等级运行资格查询模板.xlsx" class="btn btn-outline-secondary">下载 Excel 模板</a>
+                <a href="app.py" download class="btn btn-outline-secondary ms-2">下载 app.py</a>
+                <a href="requirements.txt" download class="btn btn-outline-secondary ms-2">下载 requirements.txt</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">运行</h5>
+                <pre class="bg-light p-2"><code>pip install -r requirements.txt
+playwright install chromium
+python app.py</code></pre>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

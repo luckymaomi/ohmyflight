@@ -38,3 +38,5 @@
   批量录入锁班信息
 - `oa-read-helper.md`
   自动批量点 OA 已阅
+- `qualification-query-helper.md`
+  按员工号批量查询 IEB 技术等级和运行资格并实时输出 Excel
