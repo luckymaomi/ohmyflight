@@ -276,7 +276,7 @@
   }
 
   function computeSheetWidths(rows) {
-    const widths = [];
+    const widths: number[] = [];
     rows.forEach((row) => {
       row.forEach((value, index) => {
         const text = String(value ?? "");
@@ -320,6 +320,11 @@
     return normalizeText(name).replace(/[\\/?*[\]:]/g, " ").trim();
   }
 
+  function errorMessage(error, fallback = "操作失败。") {
+    const message = error instanceof Error ? error.message : String(error ?? "");
+    return message || fallback;
+  }
+
   window.TrainingTool.Utils = {
     normalizeText,
     escapeHtml,
@@ -353,6 +358,7 @@
     computeSheetWidths,
     getSheetBounds,
     buildOutputFileName,
-    sanitizeSheetName
+    sanitizeSheetName,
+    errorMessage
   };
 })();

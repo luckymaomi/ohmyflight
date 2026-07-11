@@ -28,8 +28,16 @@ describe("校对之王顺序对齐", () => {
             ])
         );
 
-        expect(comparison.events.some((event: any) => event.kind === "reference-added" && event.referenceText.includes("第一项"))).toBe(true);
-        expect(comparison.events.some((event: any) => event.kind === "reference-removed" && event.myText.includes("旧规定"))).toBe(true);
+        const added = comparison.events.find((event: any) => event.kind === "reference-added" && event.referenceText.includes("第一项"));
+        const removed = comparison.events.find((event: any) => event.kind === "reference-removed" && event.myText.includes("旧规定"));
+
+        expect(added).toBeTruthy();
+        expect(removed).toBeTruthy();
+        expect(added.contextAnchors).toMatchObject([
+            { position: "before", myUnitId: "my-unit-1", referenceUnitId: "reference-unit-1" },
+            { position: "after", myUnitId: "my-unit-3", referenceUnitId: "reference-unit-4" }
+        ]);
+        expect(removed.contextAnchors).toMatchObject(added.contextAnchors);
     });
 
     it("把同一事项的责任主体和数字变化归为内容修改", () => {
@@ -52,6 +60,18 @@ describe("校对之王顺序对齐", () => {
         expect(modified.referenceText).toContain("各单位");
         expect(modified.myTokensOnly).toContain("20");
         expect(modified.referenceTokensOnly).toContain("24");
+    });
+
+    it("文档开头新增只保留真实存在的共同后文锚点", () => {
+        const comparison = core.compare(
+            manual("my", ["共同后续条款要求记录保存备查。"]),
+            manual("reference", ["参考手册在开头新增的完整要求。", "共同后续条款要求记录保存备查。"])
+        );
+        const added = comparison.events.find((event: any) => event.kind === "reference-added");
+
+        expect(added.contextAnchors).toMatchObject([
+            { position: "after", myUnitId: "my-unit-1", referenceUnitId: "reference-unit-2" }
+        ]);
     });
 
     it("同一参考片段不会被多个我的片段重复占用", () => {

@@ -29,10 +29,11 @@
   }
 
   function getCommonValidityUpdateMonths(projectNames) {
-    if (!state.analysis || !projectNames.length) return [];
+    const analysis = state.analysis;
+    if (!analysis || !projectNames.length) return [];
 
     const selectedProjects = projectNames
-      .map((projectName) => state.analysis.projectMap.get(projectName))
+      .map((projectName) => analysis.projectMap.get(projectName))
       .filter(Boolean);
 
     if (!selectedProjects.length) return [];

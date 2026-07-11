@@ -115,9 +115,9 @@
       if (!dateMap.has(dateKey)) dateMap.set(dateKey, createBucket(dateKey));
       if (!projectMap.has(projectKey)) projectMap.set(projectKey, createBucket(projectKey));
 
-      addToBucket(monthMap.get(monthKey), row);
-      addToBucket(dateMap.get(dateKey), row);
-      addToBucket(projectMap.get(projectKey), row);
+      addToBucket(monthMap.get(monthKey)!, row);
+      addToBucket(dateMap.get(dateKey)!, row);
+      addToBucket(projectMap.get(projectKey)!, row);
     });
 
     return {

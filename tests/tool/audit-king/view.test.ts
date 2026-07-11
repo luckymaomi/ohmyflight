@@ -369,7 +369,7 @@ describe("audit-king view", () => {
       }
     };
     elements.checklistText = {
-      ...createElement(),
+      ...(createElement() as any),
       clientHeight: 200,
       querySelector(selector: string) {
         return selector === ".active-source" ? activeBlock : null;

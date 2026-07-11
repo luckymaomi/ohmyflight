@@ -13,11 +13,11 @@ type BrowserSandbox = Record<string, unknown> & {
 let distFreshChecked = false;
 const buildLockDir = resolveFromRoot(".vitest", "dist-build.lock");
 
-function sleepSync(ms: number) {
+function sleepSync(ms: number): void {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
-function latestMtimeMs(root: string) {
+function latestMtimeMs(root: string): number {
   if (!fs.existsSync(root)) return 0;
   const stat = fs.statSync(root);
   if (stat.isFile()) return stat.mtimeMs;
@@ -30,7 +30,7 @@ function latestMtimeMs(root: string) {
   }, stat.mtimeMs);
 }
 
-function runBuildForDist() {
+function runBuildForDist(): void {
   const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
   const result = spawnSync(npmCommand, ["run", "build"], {
     cwd: projectRoot,
@@ -47,7 +47,7 @@ function runBuildForDist() {
   }
 }
 
-function needsDistBuild() {
+function needsDistBuild(): boolean {
   const distRoot = resolveFromRoot("dist");
   const distMtime = latestMtimeMs(distRoot);
   const sourceMtime = Math.max(
@@ -58,7 +58,7 @@ function needsDistBuild() {
   return !distMtime || distMtime < sourceMtime;
 }
 
-function runWithBuildLock(callback: () => void) {
+function runWithBuildLock(callback: () => void): void {
   fs.mkdirSync(resolveFromRoot(".vitest"), { recursive: true });
   const startedAt = Date.now();
   let ownsLock = false;
@@ -84,7 +84,7 @@ function runWithBuildLock(callback: () => void) {
   }
 }
 
-function ensureDistFresh() {
+function ensureDistFresh(): void {
   if (distFreshChecked) return;
   distFreshChecked = true;
 

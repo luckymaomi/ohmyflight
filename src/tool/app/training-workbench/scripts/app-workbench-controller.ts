@@ -46,7 +46,7 @@
     } catch (error) {
       state.workbenchResult = null;
       renderers.renderResultPlaceholders();
-      controls.setStatus(error.message || "排班总览评估区间无效。", true);
+      controls.setStatus(Utils.errorMessage(error, "排班总览评估区间无效。"), true);
       controls.refreshButtons();
     }
   }

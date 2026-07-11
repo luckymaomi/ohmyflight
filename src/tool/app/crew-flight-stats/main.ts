@@ -24,10 +24,13 @@
     function analyze(context: CrewFlightStatsContext): void {
         if (!context.state.scheduleWorkbook || context.state.rosterNames.length === 0 || context.state.selectedSheets.length === 0) return;
 
-        const sheetRows = context.state.selectedSheets.map(sheetName => ({
-            sheetName,
-            rows: context.XLSX.utils.sheet_to_json<unknown[]>(context.state.scheduleWorkbook?.Sheets[sheetName], { header: 1 })
-        }));
+        const sheetRows = context.state.selectedSheets.flatMap(sheetName => {
+            const sheet = context.state.scheduleWorkbook?.Sheets[sheetName];
+            return sheet ? [{
+                sheetName,
+                rows: context.XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 })
+            }] : [];
+        });
         const analyzeResult = context.logic.analyzeScheduleRows(sheetRows, context.state.rosterNames);
         context.state.statsResult = analyzeResult.statsResult;
         context.state.routes = analyzeResult.routes;

@@ -44,7 +44,7 @@ const App = {
             App.showFieldPreview();
             App.checkReady();
         } catch (error) {
-            App.updateStatus('config', '解析失败: ' + error.message, true);
+            App.updateStatus('config', '解析失败: ' + errorMessage(error), true);
             console.error(error);
         }
     },
@@ -78,13 +78,14 @@ const App = {
         };
 
         let html = '';
-        App.config.fields.forEach(field => {
+        const config = App.config;
+        config.fields.forEach(field => {
             const typeLabel = typeLabels[field.type] || field.type;
             let extra = '';
             if (field.type === 'radio' || field.type === 'checkbox') {
                 extra = ` (${field.options})`;
             } else if (field.type === 'loop') {
-                const subFields = App.config.loopFields[field.name] || [];
+                const subFields = config.loopFields[field.name] || [];
                 extra = ` (${subFields.length}个子字段)`;
             }
             html += `<div class="field-item">
@@ -147,11 +148,15 @@ const App = {
 
         } catch (error) {
             console.error(error);
-            alert('生成失败: ' + error.message);
+            alert('生成失败: ' + errorMessage(error));
             generateBtn.textContent = '生成应用';
             generateBtn.disabled = false;
         }
     }
 };
+
+function errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+}
 
 document.addEventListener('DOMContentLoaded', App.init);

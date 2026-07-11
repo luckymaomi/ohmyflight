@@ -222,17 +222,19 @@
         const requestId = ++state.previewRequestId;
         element("selectionTitle").textContent = `${runtime.Navigation.label(event.kind)} / ${event.title}`;
         element("selectionReason").textContent = event.reason;
-        element("myChangeLocation").textContent = event.myLocation;
-        element("referenceChangeLocation").textContent = event.referenceLocation;
-        element("myChangeText").innerHTML = event.myText ? renderDiff(event.myDiff) : '<span class="missing-text">无对应原文</span>';
-        element("referenceChangeText").innerHTML = event.referenceText ? renderDiff(event.referenceDiff) : '<span class="missing-text">无对应原文</span>';
+        element("myChangeLocation").textContent = selectionLocation(state.myManual, event, "my");
+        element("referenceChangeLocation").textContent = selectionLocation(state.referenceManual, event, "reference");
+        element("myChangeText").innerHTML = renderEventContext(state.myManual, event, "my");
+        element("referenceChangeText").innerHTML = renderEventContext(state.referenceManual, event, "reference");
         element("tokenChanges").textContent = tokenDescription(event);
 
-        const myUnits = unitsFor(state.myManual, event.myUnitIds);
-        const referenceUnits = unitsFor(state.referenceManual, event.referenceUnitIds);
-        await showSource(state.myManual, myUnits, myWordView, myPdfView, "该修订事件在我的手册中没有对应原文。 ");
+        const myUnits = unitsFor(state.myManual, focusUnitIds(event, "my"));
+        const referenceUnits = unitsFor(state.referenceManual, focusUnitIds(event, "reference"));
+        await Promise.all([
+            showSource(state.myManual, myUnits, myWordView, myPdfView, "该修订事件在我的手册中没有对应原文。 "),
+            showSource(state.referenceManual, referenceUnits, referenceWordView, referencePdfView, "该修订事件在参考手册中没有对应原文。 ")
+        ]);
         if (requestId !== state.previewRequestId) return;
-        await showSource(state.referenceManual, referenceUnits, referenceWordView, referencePdfView, "该修订事件在参考手册中没有对应原文。 ");
     }
 
     async function showSource(manual: LocalManual, units: ManualUnit[], wordView: any, pdfView: any, emptyMessage: string): Promise<void> {
@@ -249,8 +251,68 @@
         return segments.map((segment) => `<span class="diff-${segment.kind}">${escapeHtml(segment.text)}</span>`).join("");
     }
 
+    function renderEventContext(manual: LocalManual, event: RevisionEvent, role: ManualRole): string {
+        const eventText = role === "my" ? event.myText : event.referenceText;
+        const difference = role === "my" ? event.myDiff : event.referenceDiff;
+        const unitIds = role === "my" ? event.myUnitIds : event.referenceUnitIds;
+        if (event.contextAnchors.length && (event.kind === "reference-added" || event.kind === "reference-removed")) {
+            return renderAnchoredContext(event, role, eventText, difference);
+        }
+        if (!eventText) return '<span class="missing-text">无对应原文</span>';
+        const context = runtime.DocumentViews.buildContextWindow(manual, unitIds, eventText);
+        if (!context) return `<span class="context-focus">${renderDiff(difference)}</span>`;
+        return [
+            `<span class="context-neighbor">${escapeHtml(context.before)}</span>`,
+            `<span class="context-focus">${renderDiff(difference)}</span>`,
+            `<span class="context-neighbor">${escapeHtml(context.after)}</span>`
+        ].join("");
+    }
+
+    function renderAnchoredContext(
+        event: RevisionEvent,
+        role: ManualRole,
+        eventText: string,
+        difference: DiffSegment[]
+    ): string {
+        const before = event.contextAnchors.find((anchor) => anchor.position === "before");
+        const after = event.contextAnchors.find((anchor) => anchor.position === "after");
+        const anchorText = (anchor: RevisionContextAnchor) => role === "my" ? anchor.myText : anchor.referenceText;
+        const blocks: string[] = [];
+        if (before) blocks.push(contextBlock("共同前文", anchorText(before), "context-anchor"));
+        if (eventText) {
+            blocks.push(`<span class="context-block context-focus">${renderDiff(difference)}</span>`);
+        } else {
+            const label = event.kind === "reference-added" ? "参考手册在此处新增内容" : "参考手册在此处删除内容";
+            blocks.push(contextBlock("对应位置", label, "context-insertion"));
+        }
+        if (after) blocks.push(contextBlock("共同后文", anchorText(after), "context-anchor"));
+        return blocks.join("");
+    }
+
+    function contextBlock(label: string, value: string, className: string): string {
+        return `<span class="context-block ${className}"><span class="context-block-label">${escapeHtml(label)}</span>${escapeHtml(value)}</span>`;
+    }
+
+    function focusUnitIds(event: RevisionEvent, role: ManualRole): string[] {
+        const eventUnitIds = role === "my" ? event.myUnitIds : event.referenceUnitIds;
+        if (eventUnitIds.length) return eventUnitIds;
+        return Array.from(new Set(event.contextAnchors.map((anchor) => role === "my" ? anchor.myUnitId : anchor.referenceUnitId)));
+    }
+
+    function selectionLocation(manual: LocalManual, event: RevisionEvent, role: ManualRole): string {
+        const eventLocation = role === "my" ? event.myLocation : event.referenceLocation;
+        if (eventLocation !== "无对应原文") return eventLocation;
+        const contextUnits = unitsFor(manual, focusUnitIds(event, role));
+        if (!contextUnits.length) return eventLocation;
+        const first = contextUnits[0];
+        const last = contextUnits[contextUnits.length - 1];
+        const describe = (unit: ManualUnit) => unit.pageNumber ? `第 ${unit.pageNumber} 页` : `第 ${unit.index} 段`;
+        const range = describe(first) === describe(last) ? describe(first) : `${describe(first)} - ${describe(last)}`;
+        return `对应位置附近：${range}`;
+    }
+
     function tokenDescription(event: RevisionEvent): string {
-        const parts = [];
+        const parts: string[] = [];
         if (event.myTokensOnly.length) parts.push(`我的手册独有：${event.myTokensOnly.join("、")}`);
         if (event.referenceTokensOnly.length) parts.push(`参考手册独有：${event.referenceTokensOnly.join("、")}`);
         return parts.join("；");

@@ -4,6 +4,7 @@
     class WordReaderView {
         private manualId = "";
         private unitElements = new Map<string, HTMLElement>();
+        private focusRequestId = 0;
 
         constructor(private readonly container: HTMLElement) {}
 
@@ -15,10 +16,31 @@
                 return;
             }
             if (this.manualId !== manual.id) this.renderManual(manual);
+            const requestId = ++this.focusRequestId;
             this.container.querySelectorAll(".word-unit-focus").forEach((element) => element.classList.remove("word-unit-focus"));
             const focused = focusUnitIds.map((id) => this.unitElements.get(id)).filter(Boolean) as HTMLElement[];
             focused.forEach((element) => element.classList.add("word-unit-focus"));
-            focused[0]?.scrollIntoView({ behavior: "smooth", block: "center" });
+            const firstFocused = focused[0];
+            if (!firstFocused) return;
+            requestAnimationFrame(() => {
+                if (requestId !== this.focusRequestId || !firstFocused.classList.contains("word-unit-focus")) return;
+                this.container.scrollTop = Math.max(0, firstFocused.offsetTop - this.container.clientHeight / 2);
+                requestAnimationFrame(() => this.centerFocusedUnit(firstFocused, requestId));
+            });
+        }
+
+        private centerFocusedUnit(firstFocused: HTMLElement, requestId: number): void {
+            if (requestId !== this.focusRequestId || !firstFocused.classList.contains("word-unit-focus")) return;
+                const containerRect = this.container.getBoundingClientRect();
+                const targetRect = firstFocused.getBoundingClientRect();
+                const top = calculateCenteredScrollTop(
+                    this.container.scrollTop,
+                    containerRect.top,
+                    this.container.clientHeight,
+                    targetRect.top,
+                    targetRect.height
+                );
+                this.container.scrollTo({ top, behavior: "smooth" });
         }
 
         private renderManual(manual: LocalManual): void {
@@ -38,6 +60,7 @@
             });
             fragment.appendChild(paper);
             this.container.replaceChildren(fragment);
+            this.container.scrollTop = 0;
         }
     }
 
@@ -60,21 +83,15 @@
             const pageNumber = focusUnits.find((unit) => unit.pageNumber)?.pageNumber;
             if (!pageNumber) {
                 this.container.innerHTML = `<div class="preview-empty">${escapeHtml(emptyMessage)}</div>`;
+                this.container.scrollTop = 0;
                 return;
             }
             const requestId = ++this.requestId;
             this.container.innerHTML = '<div class="preview-empty">正在读取 PDF 原始页...</div>';
             const pageElement = await this.getPage(manual, pageNumber);
             if (requestId !== this.requestId) return;
-            const context = manual.units
-                .filter((unit) => unit.pageNumber === pageNumber)
-                .map((unit) => unit.text)
-                .join("\n");
-            const focusText = focusUnits.map((unit) => unit.text).join("\n");
-            const contextElement = document.createElement("div");
-            contextElement.className = "pdf-text-context";
-            contextElement.innerHTML = renderContext(context, focusText);
-            this.container.replaceChildren(pageElement, contextElement);
+            this.container.replaceChildren(pageElement);
+            this.container.scrollTop = 0;
         }
 
         private getPage(manual: LocalManual, pageNumber: number): Promise<HTMLElement> {
@@ -104,15 +121,64 @@
         }
     }
 
-    function renderContext(source: string, focus: string, radius = 260): string {
-        const range = findNormalizedRange(source, focus);
+    function buildContextWindow(
+        manual: Pick<LocalManual, "units">,
+        focusUnitIds: string[],
+        focusText: string,
+        radius = 260
+    ): { before: string; focus: string; after: string } | null {
+        const focusIds = new Set(focusUnitIds);
+        const focusIndexes = manual.units
+            .map((unit, index) => focusIds.has(unit.id) ? index : -1)
+            .filter((index) => index >= 0);
+        if (!focusIndexes.length) return null;
+
+        const firstIndex = Math.min(...focusIndexes);
+        const lastIndex = Math.max(...focusIndexes);
+        const beforeSource = joinUnitText(manual.units.slice(0, firstIndex));
+        const selectedSource = joinUnitText(manual.units.slice(firstIndex, lastIndex + 1));
+        const afterSource = joinUnitText(manual.units.slice(lastIndex + 1));
+        const exactStart = focusText ? selectedSource.indexOf(focusText) : -1;
+        const range = exactStart >= 0
+            ? { start: exactStart, end: exactStart + focusText.length }
+            : findNormalizedRange(selectedSource, focusText);
+
         if (!range) {
-            return `<div class="context-title">提取文字上下文</div><div>${escapeHtml(source.slice(0, radius * 2))}</div>`;
+            return {
+                before: beforeSource.slice(-radius),
+                focus: focusText || selectedSource,
+                after: afterSource.slice(0, radius)
+            };
         }
-        const before = source.slice(Math.max(0, range.start - radius), range.start);
-        const selected = source.slice(range.start, range.end);
-        const after = source.slice(range.end, range.end + radius);
-        return `<div class="context-title">提取文字上下文</div><div>${escapeHtml(before)}<mark>${escapeHtml(selected)}</mark>${escapeHtml(after)}</div>`;
+
+        const before = joinContextText(beforeSource, selectedSource.slice(0, range.start));
+        const after = joinContextText(selectedSource.slice(range.end), afterSource);
+        return {
+            before: before.slice(-radius),
+            focus: selectedSource.slice(range.start, range.end),
+            after: after.slice(0, radius)
+        };
+    }
+
+    function joinUnitText(units: Array<Pick<ManualUnit, "text">>): string {
+        return units.map((unit) => unit.text).filter(Boolean).join("\n");
+    }
+
+    function joinContextText(first: string, second: string): string {
+        if (!first) return second;
+        if (!second) return first;
+        return `${first}\n${second}`;
+    }
+
+    function calculateCenteredScrollTop(
+        currentScrollTop: number,
+        containerTop: number,
+        containerHeight: number,
+        targetTop: number,
+        targetHeight: number
+    ): number {
+        const targetOffset = targetTop - containerTop;
+        return Math.max(0, Math.round(currentScrollTop + targetOffset - (containerHeight - targetHeight) / 2));
     }
 
     function findNormalizedRange(source: string, focus: string): { start: number; end: number } | null {
@@ -147,5 +213,11 @@
             .replace(/'/g, "&#39;");
     }
 
-    runtime.DocumentViews = { WordReaderView, PdfPageView, findNormalizedRange };
+    runtime.DocumentViews = {
+        WordReaderView,
+        PdfPageView,
+        buildContextWindow,
+        calculateCenteredScrollTop,
+        findNormalizedRange
+    };
 })();

@@ -2,10 +2,11 @@
   const runtime = window.ImageTool || (window.ImageTool = {} as ImageToolRuntimeRegistry);
 
   function initCompress(): void {
-    const tools = runtime.shared;
-    if (!tools) {
+    const shared = runtime.shared;
+    if (!shared) {
       throw new Error("Image tool shared runtime is unavailable");
     }
+    const tools: ImageToolSharedApi = shared;
 
     const images: ImageToolImageItem[] = [];
     const listEl = tools.getElement<HTMLElement>("compressList");
@@ -27,9 +28,9 @@
       void compress();
     });
     tools.getElement<HTMLButtonElement>("compressClearBtn").addEventListener("click", () => {
-      images.length = 0;
+      tools.clearImageItems(images);
       render();
-      resultsEl.innerHTML = "";
+      tools.clearRenderedResults(resultsEl);
     });
 
     function addImages(files: File[]): void {
@@ -44,7 +45,7 @@
 
     function render(): void {
       tools.renderImageList(images, listEl, optionsEl, (index) => {
-        images.splice(index, 1);
+        tools.removeImageItem(images, index);
         render();
         void updatePreview();
       });
@@ -94,7 +95,7 @@
     }
 
     async function compress(): Promise<void> {
-      resultsEl.innerHTML = "";
+      tools.clearRenderedResults(resultsEl);
 
       for (const image of images) {
         try {

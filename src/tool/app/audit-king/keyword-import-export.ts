@@ -192,8 +192,9 @@
         const sheetName = workbook.SheetNames?.find((name: string) => name === "手册证据");
         if (!sheetName) return [];
         const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, raw: true, defval: "" }) as unknown[][];
+        type EvidenceRow = { keywordOrder: number | null; keywordText: string; evidenceOrder: number; evidence: AuditKingManualEvidence };
         return rowsToObjects(rows)
-            .map((row, rowIndex) => {
+            .map((row, rowIndex): EvidenceRow | null => {
                 const evidence = buildManualEvidence(row);
                 if (!evidence) return null;
                 return {
@@ -203,7 +204,7 @@
                     evidence
                 };
             })
-            .filter((item): item is { keywordOrder: number | null; keywordText: string; evidenceOrder: number | null; evidence: AuditKingManualEvidence } => !!item)
+            .filter((item): item is EvidenceRow => item !== null)
             .sort((left, right) => {
                 const leftOrder = left.evidenceOrder ?? 0;
                 const rightOrder = right.evidenceOrder ?? 0;

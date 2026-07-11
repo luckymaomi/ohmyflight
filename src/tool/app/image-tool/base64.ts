@@ -2,10 +2,11 @@
   const runtime = window.ImageTool || (window.ImageTool = {} as ImageToolRuntimeRegistry);
 
   function initBase64(): void {
-    const tools = runtime.shared;
-    if (!tools) {
+    const shared = runtime.shared;
+    if (!shared) {
       throw new Error("Image tool shared runtime is unavailable");
     }
+    const tools: ImageToolSharedApi = shared;
 
     let imageBlob: Blob | null = null;
 
@@ -69,7 +70,7 @@
           }
 
           imageBlob = blob;
-          tools.getElement<HTMLImageElement>("b64Output").src = URL.createObjectURL(blob);
+          tools.setObjectUrl(tools.getElement<HTMLImageElement>("b64Output"), blob);
           tools.getElement<HTMLElement>("b64Info").textContent = `${image.width}x${image.height} | ${tools.formatSize(blob.size)}`;
           tools.getElement<HTMLElement>("b64FromResult").classList.remove("hidden");
         }, "image/png");

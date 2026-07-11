@@ -1,11 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 
-export function walkFiles(rootDir, extensions) {
-  const results = [];
-  const normalizedExtensions = new Set((extensions || []).map((item) => item.toLowerCase()));
+export function walkFiles(rootDir: string, extensions: string[] = []): string[] {
+  const results: string[] = [];
+  const normalizedExtensions = new Set(extensions.map((item: string) => item.toLowerCase()));
 
-  function visit(currentPath) {
+  function visit(currentPath: string): void {
     const entries = fs.readdirSync(currentPath, { withFileTypes: true });
 
     entries.forEach((entry) => {

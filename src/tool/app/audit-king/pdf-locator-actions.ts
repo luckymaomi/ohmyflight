@@ -47,7 +47,9 @@
 
     function setSlots(context: AuditKingAppContext, slots: AuditKingPdfLocatorSlot[], message: string): void {
         context.state.pdfLocator.slots = slots;
-        context.state.pdfLocator.results = slots.map((slot) => slot.result).filter(Boolean);
+        context.state.pdfLocator.results = slots
+            .map((slot) => slot.result)
+            .filter((result): result is AuditKingPdfLocatorResult => result !== undefined);
         context.state.pdfLocator.summary = runtime.PdfLocatorModel.summarizeResults(context.state.pdfLocator.results);
         context.state.pdfLocator.selectedSlotId = slots[0]?.id || "";
         render(context);
@@ -61,7 +63,9 @@
     function updateSlot(context: AuditKingAppContext, slotId: string, patch: Partial<AuditKingPdfLocatorSlot>): void {
         context.state.pdfLocator.slots = runtime.PdfLocatorModel.updateSlotField(context.state.pdfLocator.slots, slotId, patch);
         selectFirstSlotIfNeeded(context.state);
-        context.state.pdfLocator.results = context.state.pdfLocator.slots.map((slot) => slot.result).filter(Boolean);
+        context.state.pdfLocator.results = context.state.pdfLocator.slots
+            .map((slot) => slot.result)
+            .filter((result): result is AuditKingPdfLocatorResult => result !== undefined);
         context.state.pdfLocator.summary = runtime.PdfLocatorModel.summarizeResults(context.state.pdfLocator.results);
         render(context);
     }

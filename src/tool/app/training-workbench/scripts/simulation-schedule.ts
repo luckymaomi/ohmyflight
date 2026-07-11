@@ -2,7 +2,7 @@
   const Utils = window.TrainingTool.Utils;
 
   let sequence = 1;
-  let records = [];
+  let records: any[] = [];
 
   function normalizeRecord(input) {
     const projectName = Utils.normalizeProjectName(input.projectName);

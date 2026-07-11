@@ -116,7 +116,7 @@
   }
 
   function rankOfTone(tone) {
-    return TONE_ORDER.has(tone) ? TONE_ORDER.get(tone) : 99;
+    return TONE_ORDER.get(tone) ?? 99;
   }
 
   function chooseWorstTone(currentTone, nextTone) {

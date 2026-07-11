@@ -196,6 +196,7 @@
     requiredPeople.forEach((person) => {
       const role = classifyRole(person.techInfo);
       const item = roleMap.get(role) || roleMap.get("未识别");
+      if (!item) return;
       const keys = collectPersonKeys(person);
       item.required += 1;
       if (keys.some((key) => attendedKeys.has(key))) {

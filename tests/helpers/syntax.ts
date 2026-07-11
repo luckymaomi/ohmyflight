@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 
-export function assertJavaScriptSyntax(filePath, preferredMode = "auto") {
-  const args = [];
+export function assertJavaScriptSyntax(filePath: string, preferredMode = "auto"): void {
+  const args: string[] = [];
   if (preferredMode === "module") {
     args.push("--experimental-default-type=module");
   }
@@ -11,7 +11,7 @@ export function assertJavaScriptSyntax(filePath, preferredMode = "auto") {
   });
 }
 
-export function assertPythonSyntax(filePaths) {
+export function assertPythonSyntax(filePaths: string[]): void {
   if (!filePaths.length) return;
 
   const script = [

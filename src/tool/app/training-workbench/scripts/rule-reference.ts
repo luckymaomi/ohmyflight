@@ -4,10 +4,16 @@
   const RuleEngine = window.TrainingTool.RuleEngine;
 
   const elements = {
-    projectBody: document.getElementById("projectBody"),
-    excelGuideBody: document.getElementById("excelGuideBody"),
-    caseSections: document.getElementById("caseSections")
+    projectBody: requireElement("projectBody"),
+    excelGuideBody: requireElement("excelGuideBody"),
+    caseSections: requireElement("caseSections")
   };
+
+  function requireElement(id: string): HTMLElement {
+    const element = document.getElementById(id);
+    if (!element) throw new Error(`培训规则页缺少 ${id}。`);
+    return element;
+  }
 
   function getRuleMap() {
     return new Map(Config.PROJECT_RULES.map((rule) => [rule.canonical, rule]));

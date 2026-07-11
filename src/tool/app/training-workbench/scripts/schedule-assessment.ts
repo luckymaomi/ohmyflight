@@ -123,7 +123,7 @@
   }
 
   function buildCandidateMatches(project, candidate, extraProjectRows: ExtraProjectRow[] = []) {
-    const sources = [];
+    const sources: any[] = [];
     if (project.sheetInfo && project.sheetInfo.rows) {
       sources.push({
         sheetInfo: project.sheetInfo,
@@ -234,7 +234,7 @@
   }
 
   function buildAssessmentRows(analysis, project, stageStart, stageEnd, extraProjectRows: ExtraProjectRow[] = []) {
-    const rows = [];
+    const rows: any[] = [];
 
     analysis.peopleInfo.rows.forEach((row) => {
       const employeeId = Utils.normalizeText(row.cells[analysis.peopleIndex.employeeColumnIndex]);
@@ -336,7 +336,7 @@
   function buildRows(analysis, options: { today?: Date; stageEnd?: Date; extraProjectRows?: ExtraProjectRow[] } = {}) {
     const stageStart = options.today || createTodayDate();
     const stageEnd = options.stageEnd || getDefaultStageEnd(stageStart);
-    const rows = [];
+    const rows: any[] = [];
     const extraProjectRows = options.extraProjectRows || [];
 
     analysis.projects

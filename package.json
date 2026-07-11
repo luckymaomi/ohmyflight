@@ -4,16 +4,19 @@
   "scripts": {
     "build": "tsx scripts/build.mts",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "tsx scripts/build.mts && vitest run",
+    "test": "npm run build && npm run test:unit && npm run test:python",
+    "test:unit": "vitest run",
+    "test:python": "python -m unittest discover -s tests/python -p test_*.py",
     "test:watch": "tsx scripts/build.mts && vitest",
     "test:smoke": "tsx scripts/build.mts && vitest run tests/smoke",
-    "test:tool": "tsx scripts/build.mts && vitest run tests/tool"
+    "test:tool": "tsx scripts/build.mts && vitest run tests/tool",
+    "verify": "npm run typecheck && npm test"
   },
   "devDependencies": {
-    "@types/node": "^24.6.0",
-    "tsx": "^4.20.6",
+    "@types/node": "^22.20.1",
+    "tsx": "^4.23.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.0",
+    "vitest": "^4.1.10",
     "xlsx-js-style": "^1.2.0"
   },
   "dependencies": {

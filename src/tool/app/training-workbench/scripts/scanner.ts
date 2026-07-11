@@ -148,9 +148,9 @@
   }
 
   function splitProjectRowsByRecordedStatus(sheetInfo) {
-    const recordedRows = [];
-    const pendingRows = [];
-    const validityUpdateRows = [];
+    const recordedRows: any[] = [];
+    const pendingRows: any[] = [];
+    const validityUpdateRows: any[] = [];
 
     sheetInfo.rows.forEach((row) => {
       const recordState = TrainingRecordPolicy.classify(row, sheetInfo);

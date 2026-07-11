@@ -3,14 +3,14 @@
   const WorkbenchStatus = window.TrainingTool.WorkbenchStatus;
   const runtime = window.TrainingToolApp;
   const elements = runtime.elements;
-  let workbenchStatusChart = null;
-  let workbenchProjectChart = null;
-  let workbenchMonthChart = null;
-  let scheduledDistributionDateChart = null;
-  let annualTrainingDateChart = null;
-  let crmParticipationChart = null;
-  let crmMonthlyChart = null;
-  let crmRoleChart = null;
+  let workbenchStatusChart: any = null;
+  let workbenchProjectChart: any = null;
+  let workbenchMonthChart: any = null;
+  let scheduledDistributionDateChart: any = null;
+  let annualTrainingDateChart: any = null;
+  let crmParticipationChart: any = null;
+  let crmMonthlyChart: any = null;
+  let crmRoleChart: any = null;
 
   function getEcharts() {
     return window.echarts || null;

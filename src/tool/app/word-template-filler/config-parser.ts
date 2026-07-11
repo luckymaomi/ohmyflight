@@ -22,7 +22,7 @@ const ConfigParser = {
                     const config = ConfigParser.parseWorkbook(workbook);
                     resolve(config);
                 } catch (error) {
-                    reject(new Error('Excel解析失败: ' + error.message));
+                    reject(new Error('Excel解析失败: ' + (error instanceof Error ? error.message : String(error))));
                 }
             };
             reader.onerror = () => reject(new Error('文件读取失败'));

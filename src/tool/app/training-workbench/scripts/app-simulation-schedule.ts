@@ -114,7 +114,7 @@
       const added = SimulationSchedule.addMany(buildRecordsFromSelection());
       refreshWorkbenchWithSimulation(`已加入 ${added.length} 条模拟排班记录。`);
     } catch (error) {
-      runtime.controls.setStatus(error.message || "加入模拟排班失败。", true);
+      runtime.controls.setStatus(Utils.errorMessage(error, "加入模拟排班失败。"), true);
     }
   }
 

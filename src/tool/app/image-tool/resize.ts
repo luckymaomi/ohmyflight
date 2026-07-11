@@ -2,10 +2,11 @@
   const runtime = window.ImageTool || (window.ImageTool = {} as ImageToolRuntimeRegistry);
 
   function initResize(): void {
-    const tools = runtime.shared;
-    if (!tools) {
+    const shared = runtime.shared;
+    if (!shared) {
       throw new Error("Image tool shared runtime is unavailable");
     }
+    const tools: ImageToolSharedApi = shared;
 
     const images: ImageToolImageItem[] = [];
     const listEl = tools.getElement<HTMLElement>("resizeList");
@@ -30,9 +31,9 @@
       void doResize();
     });
     tools.getElement<HTMLButtonElement>("resizeClearBtn").addEventListener("click", () => {
-      images.length = 0;
+      tools.clearImageItems(images);
       render();
-      resultsEl.innerHTML = "";
+      tools.clearRenderedResults(resultsEl);
     });
 
     function addImages(files: File[]): void {
@@ -47,7 +48,7 @@
 
     function render(): void {
       tools.renderImageList(images, listEl, optionsEl, (index) => {
-        images.splice(index, 1);
+        tools.removeImageItem(images, index);
         render();
         void updatePreview();
       });
@@ -61,7 +62,9 @@
     ): Promise<ImageToolImageProcessResult> {
       return new Promise<ImageToolImageProcessResult>((resolve) => {
         const image = new Image();
+        const sourceUrl = URL.createObjectURL(file);
         image.onload = async () => {
+          URL.revokeObjectURL(sourceUrl);
           let width = targetWidth;
           let height = targetHeight;
           if (keepRatio) {
@@ -87,7 +90,8 @@
             resolve({ blob, width, height });
           }, "image/png");
         };
-        image.src = URL.createObjectURL(file);
+        image.onerror = () => URL.revokeObjectURL(sourceUrl);
+        image.src = sourceUrl;
       });
     }
 
@@ -126,7 +130,7 @@
       const targetHeight = parseInt(heightInput.value, 10);
       const keepRatio = keepRatioInput.checked;
 
-      resultsEl.innerHTML = "";
+      tools.clearRenderedResults(resultsEl);
       for (const image of images) {
         const result = await resizeImage(image.file, targetWidth, targetHeight, keepRatio);
         tools.renderResultItem(

@@ -10,7 +10,7 @@
     label: item.status
   }));
 
-  let currentSummaryRows = [];
+  let currentSummaryRows: any[] = [];
   let selectedProject = "";
   let selectedStatus = "";
 

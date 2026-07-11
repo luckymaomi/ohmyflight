@@ -32,6 +32,34 @@
     URL.revokeObjectURL(url);
   }
 
+  function setObjectUrl(element: HTMLImageElement, value: Blob | File | null): void {
+    const previous = element.dataset.objectUrl;
+    if (previous) URL.revokeObjectURL(previous);
+    if (!value) {
+      delete element.dataset.objectUrl;
+      element.removeAttribute("src");
+      return;
+    }
+    const url = URL.createObjectURL(value);
+    element.dataset.objectUrl = url;
+    element.src = url;
+  }
+
+  function clearImageItems(images: ImageToolImageItem[]): void {
+    images.forEach((image) => URL.revokeObjectURL(image.url));
+    images.length = 0;
+  }
+
+  function removeImageItem(images: ImageToolImageItem[], index: number): void {
+    const [removed] = images.splice(index, 1);
+    if (removed) URL.revokeObjectURL(removed.url);
+  }
+
+  function clearRenderedResults(container: HTMLElement): void {
+    container.querySelectorAll<HTMLImageElement>("img[data-object-url]").forEach((image) => setObjectUrl(image, null));
+    container.replaceChildren();
+  }
+
   function setupUpload(
     areaId: string,
     inputId: string,
@@ -91,11 +119,12 @@
     const item = document.createElement("div");
     item.className = "result-item";
     item.innerHTML = `
-      <img src="${URL.createObjectURL(blob)}">
+      <img>
       <span class="meta">${text}</span>
       <button class="btn btn-outline-secondary btn-sm">下载</button>
     `;
 
+    setObjectUrl(item.querySelector("img") as HTMLImageElement, blob);
     const downloadButton = item.querySelector("button") as HTMLButtonElement;
     downloadButton.onclick = () => downloadBlob(blob, filename);
     container.appendChild(item);
@@ -107,6 +136,10 @@
     formatSize,
     getBaseName,
     downloadBlob,
+    setObjectUrl,
+    clearImageItems,
+    removeImageItem,
+    clearRenderedResults,
     setupUpload,
     renderImageList,
     renderResultItem

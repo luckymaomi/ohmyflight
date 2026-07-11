@@ -30,14 +30,14 @@
         .summary-modified { border-left-color: #b58105; }
         .summary-review { border-left-color: #6c757d; }
         .summary-same { border-left-color: #0d6efd; }
-        .workbench { display: grid; grid-template-columns: 340px minmax(0, 1fr); height: 1120px; border: 1px solid #dfe3e7; background: #fff; }
-        .queue { min-width: 0; display: flex; flex-direction: column; border-right: 1px solid #dfe3e7; background: #fafbfc; }
-        .queue-toolbar { padding: 10px; border-bottom: 1px solid #dfe3e7; }
+        .workbench { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 12px; height: clamp(1180px, calc(90vh + 340px), 1380px); align-items: stretch; }
+        .queue { min-width: 0; min-height: 0; height: 100%; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #dfe3e7; border-radius: 6px; background: #fff; }
+        .queue-toolbar { padding: 10px; border-bottom: 1px solid #dfe3e7; background: #fff; }
         .filter-bar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin-bottom: 8px; }
         .filter-button { padding: 5px 7px; border: 1px solid #ced4da; background: #fff; color: #495057; font-size: 12px; }
         .filter-button.active { border-color: #0d6efd; color: #0d6efd; background: #eef5ff; font-weight: 650; }
         .queue-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; color: #6c757d; font-size: 12px; }
-        .event-navigation { position: relative; min-height: 0; flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; }
+        .event-navigation { position: relative; min-height: 0; flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; background: #fff; }
         .event-visible { position: absolute; inset: 0 0 auto; padding: 6px; }
         .event-row { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto auto; gap: 2px 7px; width: 100%; height: 112px; padding: 8px; border: 1px solid #e0e4e8; border-left-width: 4px; background: #fff; text-align: left; overflow: hidden; }
         .event-row.active { border-color: #0d6efd; background: #f4f8ff; box-shadow: inset 0 0 0 1px #0d6efd; }
@@ -50,17 +50,24 @@
         .event-location { grid-column: 1 / -1; color: #6c757d; font-size: 11px; }
         .event-excerpt { grid-column: 1 / -1; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; color: #495057; font-size: 12px; line-height: 1.45; }
         .navigation-empty { padding: 24px 12px; color: #6c757d; text-align: center; font-size: 13px; }
-        .review { min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+        .review { min-width: 0; min-height: 0; height: 100%; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #dfe3e7; border-radius: 6px; background: #fff; }
         .selection-head { min-height: 66px; padding: 10px 12px; border-bottom: 1px solid #dfe3e7; }
         .selection-head h2 { margin: 0 0 3px; font-size: 16px; }
         .selection-head p { margin: 0; color: #6c757d; font-size: 12px; }
         .token-changes { margin-top: 4px; color: #842029; font-size: 12px; }
         .change-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-bottom: 1px solid #dfe3e7; }
-        .change-side { min-width: 0; min-height: 170px; padding: 10px 12px; }
+        .change-side { min-width: 0; min-height: 210px; padding: 10px 12px; }
         .change-side + .change-side { border-left: 1px solid #dfe3e7; }
         .change-side-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 7px; font-size: 12px; font-weight: 650; }
         .change-location { color: #6c757d; font-weight: 400; }
-        .change-text { max-height: 220px; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.7; }
+        .change-text { height: 210px; overflow-y: auto; overflow-x: hidden; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.7; }
+        .context-neighbor { color: #5f6871; }
+        .context-focus { color: #212529; background: #fff8db; }
+        .context-block { display: block; margin-bottom: 7px; padding: 6px 8px; border-left: 3px solid transparent; }
+        .context-block:last-child { margin-bottom: 0; }
+        .context-block-label { display: block; margin-bottom: 2px; color: #6c757d; font-size: 11px; font-weight: 650; }
+        .context-anchor { border-left-color: #0d6efd; background: #eef5ff; color: #20364f; }
+        .context-insertion { border: 1px dashed #b58105; background: #fff8db; color: #664d03; font-weight: 650; text-align: center; }
         .diff-removed { color: #842029; background: #f8d7da; text-decoration: line-through; }
         .diff-added { color: #0f5132; background: #d1e7dd; }
         .diff-equal { color: #343a40; }
@@ -68,20 +75,17 @@
         .source-grid { min-height: 0; flex: 1 1 auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .source-pane { min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
         .source-pane + .source-pane { border-left: 1px solid #dfe3e7; }
-        .source-title { min-height: 38px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 10px; border-bottom: 1px solid #dfe3e7; background: #f8f9fa; font-size: 12px; }
+        .source-title { min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 10px; border-bottom: 1px solid #dfe3e7; background: #f8f9fa; font-size: 12px; }
         .source-title span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #6c757d; }
-        .source-view { min-width: 0; min-height: 0; flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding: 12px; background: #e9ecef; }
+        .source-view { min-width: 0; min-height: 0; flex: 1 1 auto; overflow-y: scroll; overflow-x: hidden; padding: 12px; background: #e9ecef; scrollbar-gutter: stable; }
         .word-reader-paper { width: min(100%, 760px); min-height: 100%; margin: 0 auto; padding: 34px 42px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.16); }
         .word-unit { margin: 0 0 10px; content-visibility: auto; contain-intrinsic-size: auto 48px; color: #212529; font-size: 13px; line-height: 1.75; text-align: justify; overflow-wrap: anywhere; }
         .word-heading { margin-top: 18px; font-size: 15px; font-weight: 700; text-align: left; }
         .word-table-row { padding: 5px 7px; border: 1px solid #dfe3e7; margin-bottom: -1px; background: #fff; }
-        .word-unit-focus { outline: 2px solid #dc3545; outline-offset: 3px; background: #fff3cd; }
+        .word-unit-focus { outline: 3px solid #dc3545; outline-offset: 4px; background: #fff3cd; box-shadow: 0 0 0 7px rgba(220, 53, 69, .12); }
         .pdf-page-shell { width: fit-content; max-width: 100%; margin: 0 auto 12px; padding: 8px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.16); }
         .pdf-page-shell canvas { display: block; max-width: 100%; height: auto; }
         .pdf-page-label { margin-bottom: 6px; color: #6c757d; font-size: 12px; }
-        .pdf-text-context { max-width: 760px; margin: 0 auto; padding: 10px; background: #fff; font-size: 12px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
-        .context-title { margin-bottom: 5px; color: #6c757d; font-weight: 650; }
-        .pdf-text-context mark { background: #fff3cd; color: #842029; }
         .preview-empty { padding: 28px 12px; color: #6c757d; text-align: center; }
         @media (max-width: 1200px) {
             .workbench { grid-template-columns: 300px minmax(0, 1fr); }
@@ -90,9 +94,11 @@
         @media (max-width: 900px) {
             .upload-grid, .change-grid, .source-grid { grid-template-columns: 1fr; }
             .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            .workbench { display: block; height: auto; }
-            .queue { height: 560px; border-right: 0; border-bottom: 1px solid #dfe3e7; }
-            .review { height: 1100px; }
+            .workbench { grid-template-columns: 1fr; height: auto; }
+            .queue { height: 520px; }
+            .review { height: auto; }
+            .source-grid { height: auto; }
+            .source-view { height: 560px; flex: 0 0 auto; }
             .change-side + .change-side, .source-pane + .source-pane { border-left: 0; border-top: 1px solid #dfe3e7; }
         }
     </style>
@@ -129,7 +135,7 @@
     <div id="summaryGrid" class="summary-grid"></div>
 
     <section class="workbench">
-        <aside class="queue">
+        <section class="queue" aria-label="修订事件列表">
             <div class="queue-toolbar">
                 <div id="filterBar" class="filter-bar">
                     <button class="filter-button active" data-filter="all" type="button">全部</button>
@@ -142,7 +148,7 @@
                 <div class="queue-meta"><span>修订待办</span><span id="resultCount"></span></div>
             </div>
             <div id="eventNavigation" class="event-navigation"><div id="eventSpacer"></div><div id="eventVisible" class="event-visible"></div></div>
-        </aside>
+        </section>
 
         <section class="review">
             <div class="selection-head">
@@ -151,12 +157,12 @@
                 <div id="tokenChanges" class="token-changes"></div>
             </div>
             <div class="change-grid">
-                <div class="change-side"><div class="change-side-head"><span>我的手册完整原文</span><span id="myChangeLocation" class="change-location"></span></div><div id="myChangeText" class="change-text"><span class="missing-text">等待选择</span></div></div>
-                <div class="change-side"><div class="change-side-head"><span>参考手册完整原文</span><span id="referenceChangeLocation" class="change-location"></span></div><div id="referenceChangeText" class="change-text"><span class="missing-text">等待选择</span></div></div>
+                <div class="change-side"><div class="change-side-head"><span>我的手册原文及上下文</span><span id="myChangeLocation" class="change-location"></span></div><div id="myChangeText" class="change-text"><span class="missing-text">等待选择</span></div></div>
+                <div class="change-side"><div class="change-side-head"><span>参考手册原文及上下文</span><span id="referenceChangeLocation" class="change-location"></span></div><div id="referenceChangeText" class="change-text"><span class="missing-text">等待选择</span></div></div>
             </div>
             <div class="source-grid">
-                <section class="source-pane"><div class="source-title"><strong>我的手册原文</strong><span id="mySourceName">我的手册原文</span></div><div id="mySource" class="source-view"><div class="preview-empty">上传文件后显示原文。</div></div></section>
-                <section class="source-pane"><div class="source-title"><strong>参考手册原文</strong><span id="referenceSourceName">参考手册原文</span></div><div id="referenceSource" class="source-view"><div class="preview-empty">上传文件后显示原文。</div></div></section>
+                <section class="source-pane"><div class="source-title"><strong>我的手册完整原稿</strong><span id="mySourceName">我的手册原文</span></div><div id="mySource" class="source-view"><div class="preview-empty">上传文件后显示原文。</div></div></section>
+                <section class="source-pane"><div class="source-title"><strong>参考手册完整原稿</strong><span id="referenceSourceName">参考手册原文</span></div><div id="referenceSource" class="source-view"><div class="preview-empty">上传文件后显示原文。</div></div></section>
             </div>
         </section>
     </section>

@@ -1,11 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 
-export function readHtmlFile(htmlFilePath) {
+export function readHtmlFile(htmlFilePath: string): string {
   return fs.readFileSync(htmlFilePath, "utf8");
 }
 
-export function collectLocalAssetPaths(htmlFilePath) {
+export function collectLocalAssetPaths(htmlFilePath: string): string[] {
   const html = readHtmlFile(htmlFilePath);
   const matches = [...html.matchAll(/(?:src|href)=["']([^"']+)["']/g)];
 
@@ -18,7 +18,7 @@ export function collectLocalAssetPaths(htmlFilePath) {
     .map((value) => path.resolve(path.dirname(htmlFilePath), value));
 }
 
-export function collectScriptReferences(htmlFilePath) {
+export function collectScriptReferences(htmlFilePath: string): Array<{ src: string; type: "module" | "script"; path: string }> {
   const html = readHtmlFile(htmlFilePath);
   const matches = [...html.matchAll(/<script\b([^>]*)\bsrc=["']([^"']+)["'][^>]*>/gi)];
 
@@ -28,7 +28,7 @@ export function collectScriptReferences(htmlFilePath) {
       const source = match[2];
       return {
         src: source,
-        type: /type=["']module["']/i.test(attrs) ? "module" : "script"
+        type: /type=["']module["']/i.test(attrs) ? "module" as const : "script" as const
       };
     })
     .filter((item) => !/^(?:https?:|data:|javascript:)/i.test(item.src))

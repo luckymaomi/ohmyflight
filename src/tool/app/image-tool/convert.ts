@@ -2,10 +2,11 @@
   const runtime = window.ImageTool || (window.ImageTool = {} as ImageToolRuntimeRegistry);
 
   function initConvert(): void {
-    const tools = runtime.shared;
-    if (!tools) {
+    const shared = runtime.shared;
+    if (!shared) {
       throw new Error("Image tool shared runtime is unavailable");
     }
+    const tools: ImageToolSharedApi = shared;
 
     const images: ImageToolImageItem[] = [];
     const listEl = tools.getElement<HTMLElement>("convertList");
@@ -26,9 +27,9 @@
       void convert();
     });
     tools.getElement<HTMLButtonElement>("convertClearBtn").addEventListener("click", () => {
-      images.length = 0;
+      tools.clearImageItems(images);
       render();
-      resultsEl.innerHTML = "";
+      tools.clearRenderedResults(resultsEl);
     });
 
     function addImages(files: File[]): void {
@@ -43,7 +44,7 @@
 
     function render(): void {
       tools.renderImageList(images, listEl, optionsEl, (index) => {
-        images.splice(index, 1);
+        tools.removeImageItem(images, index);
         render();
         void updatePreview();
       });
@@ -52,7 +53,9 @@
     function convertImage(file: File, format: string, quality: number): Promise<ImageToolImageProcessResult> {
       return new Promise<ImageToolImageProcessResult>((resolve) => {
         const image = new Image();
+        const sourceUrl = URL.createObjectURL(file);
         image.onload = () => {
+          URL.revokeObjectURL(sourceUrl);
           const canvas = document.createElement("canvas");
           canvas.width = image.width;
           canvas.height = image.height;
@@ -66,7 +69,8 @@
             resolve({ blob, width: image.width, height: image.height });
           }, mime, quality);
         };
-        image.src = URL.createObjectURL(file);
+        image.onerror = () => URL.revokeObjectURL(sourceUrl);
+        image.src = sourceUrl;
       });
     }
 
@@ -100,7 +104,7 @@
       const format = tools.getElement<HTMLSelectElement>("convertFormat").value;
       const quality = Number(qualitySlider.value) / 100;
 
-      resultsEl.innerHTML = "";
+      tools.clearRenderedResults(resultsEl);
       for (const image of images) {
         const result = await convertImage(image.file, format, quality);
         const extension = format === "jpeg" ? "jpg" : format;

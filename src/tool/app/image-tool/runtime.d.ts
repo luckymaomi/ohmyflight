@@ -22,6 +22,10 @@ interface ImageToolSharedApi {
   formatSize(bytes: number): string;
   getBaseName(filename: string): string;
   downloadBlob(blob: Blob, filename: string): void;
+  setObjectUrl(element: HTMLImageElement, value: Blob | File | null): void;
+  clearImageItems(images: ImageToolImageItem[]): void;
+  removeImageItem(images: ImageToolImageItem[], index: number): void;
+  clearRenderedResults(container: HTMLElement): void;
   setupUpload(
     areaId: string,
     inputId: string,

@@ -39,7 +39,7 @@ interface Window {
   };
 }
 
-declare var tools: ToolItem[] | undefined;
+declare var tools: ToolItem[];
 
 declare const CONFIG: SiteConfig;
 declare const XLSX: XlsxGlobal;

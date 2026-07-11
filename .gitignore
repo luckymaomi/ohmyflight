@@ -1,7 +1,6 @@
 node_modules/
 # dist/ 是构建产物；GitHub Pages 由 Actions 从 dist/ 自动部署
 dist/
-public/downloads/*.zip
 coverage/
 .vite/
 .vitest/

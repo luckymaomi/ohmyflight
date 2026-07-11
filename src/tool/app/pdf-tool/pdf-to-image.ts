@@ -2,10 +2,11 @@
   const runtime = window.PdfTool || (window.PdfTool = {} as PdfToolRuntimeRegistry);
 
   function initPdfToImage(): void {
-    const tools = runtime.shared;
-    if (!tools) {
+    const shared = runtime.shared;
+    if (!shared) {
       throw new Error("PDF tool shared runtime is unavailable");
     }
+    const tools: PdfToolSharedApi = shared;
 
     const state = {
       files: [] as PdfToolPdfToImageFile[],

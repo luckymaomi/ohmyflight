@@ -127,8 +127,8 @@
     const selectedProjects = resolveSelectedProjects(analysis, projectNames);
     const today = RuleEngine.createTodayDate();
 
-    const detailRows = [];
-    const skippedRows = [];
+    const detailRows: any[] = [];
+    const skippedRows: any[] = [];
     const updatedRowMap = new Map();
     let matchedRecordedCount = 0;
     let updatedCount = 0;

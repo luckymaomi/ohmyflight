@@ -660,7 +660,8 @@
         }
         const normalizedStart = Math.min(Math.trunc(startPage), Math.trunc(endPage));
         const normalizedEnd = Math.max(Math.trunc(startPage), Math.trunc(endPage));
-        if (normalizedStart < 1 || normalizedEnd > documentItem.pageCount) {
+        const pageCount = documentItem.pageCount ?? documentItem.pages.length;
+        if (normalizedStart < 1 || normalizedEnd > pageCount) {
             return { ...baseTask, startPage: normalizedStart, endPage: normalizedEnd, skippedReason: "页码超出 PDF 范围。" };
         }
         return {

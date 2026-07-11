@@ -83,7 +83,7 @@
       projects.renderEmptyState();
       renderers.renderWorkbookHealth();
       renderers.renderAnnualTrainingStats();
-      controls.setStatus(error.message || "工作簿读取失败。", true);
+      controls.setStatus(Utils.errorMessage(error, "工作簿读取失败。"), true);
     } finally {
       controls.setBusy(false);
     }
@@ -143,7 +143,7 @@
       controls.setStatus("有效期更新预览已生成，确认无误后可导出 Excel。");
     } catch (error) {
       controls.clearPendingExport();
-      controls.setStatus(error.message || "生成有效期更新预览失败。", true);
+      controls.setStatus(Utils.errorMessage(error, "生成有效期更新预览失败。"), true);
     } finally {
       controls.setBusy(false);
     }
@@ -164,7 +164,7 @@
       workbenchController.renderWorkbenchView();
       controls.setStatus("排班总览扫描完成。");
     } catch (error) {
-      controls.setStatus(error.message || "排班总览扫描失败。", true);
+      controls.setStatus(Utils.errorMessage(error, "排班总览扫描失败。"), true);
     } finally {
       controls.setBusy(false);
     }
@@ -180,7 +180,7 @@
       window.XLSX.writeFile(state.pendingExport, state.pendingExportName);
       controls.setStatus(`${state.pendingExportLabel}已导出：${state.pendingExportName}`);
     } catch (error) {
-      controls.setStatus(error.message || "导出 Excel 失败。", true);
+      controls.setStatus(Utils.errorMessage(error, "导出 Excel 失败。"), true);
     }
   }
 
@@ -202,7 +202,7 @@
         "当前筛选总览"
       );
     } catch (error) {
-      controls.setStatus(error.message || "导出当前筛选总览失败。", true);
+      controls.setStatus(Utils.errorMessage(error, "导出当前筛选总览失败。"), true);
     }
   }
 
@@ -220,7 +220,7 @@
         "人员明细"
       );
     } catch (error) {
-      controls.setStatus(error.message || "导出人员明细失败。", true);
+      controls.setStatus(Utils.errorMessage(error, "导出人员明细失败。"), true);
     }
   }
 
@@ -237,7 +237,7 @@
         "CRM未参加人员"
       );
     } catch (error) {
-      controls.setStatus(error.message || "导出 CRM 未参加人员失败。", true);
+      controls.setStatus(Utils.errorMessage(error, "导出 CRM 未参加人员失败。"), true);
     }
   }
 

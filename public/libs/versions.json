@@ -1,96 +1,101 @@
 {
-  "说明": "记录各第三方库的版本和来源，方便以后升级",
-  "更新日期": "2026-03-20",
+  "说明": "记录 public/libs 当前实际托管的第三方资源，版本未知时不推测",
+  "更新日期": "2026-07-11",
   "libraries": {
-    "coreui": {
-      "version": "5.2.0",
-      "files": ["coreui.min.css", "coreui.bundle.min.js"],
-      "source": "https://coreui.io/",
-      "cdn": "https://cdn.jsdelivr.net/npm/@coreui/coreui@5.2.0/dist/"
+    "bootstrap": {
+      "version": "5.3.3",
+      "files": ["bootstrap.min.css", "bootstrap.bundle.min.js"],
+      "source": "https://getbootstrap.com/"
     },
-    "simplebar": {
-      "version": "6.2.5",
-      "files": ["simplebar.min.css", "simplebar.min.js"],
-      "source": "https://github.com/Grsmto/simplebar",
-      "cdn": "https://cdn.jsdelivr.net/npm/simplebar@6.2.5/dist/"
+    "browser-image-compression": {
+      "version": "2.0.2",
+      "files": ["browser-image-compression.min.js"],
+      "source": "https://github.com/Donaldcwl/browser-image-compression"
     },
-    "xlsx": {
-      "version": "0.20.3",
-      "files": ["xlsx.full.min.js", "xlsx.bundle.js"],
-      "source": "https://sheetjs.com/",
-      "cdn": "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/"
-    },
-    "xlsx-js-style": {
-      "version": "1.2.0",
-      "files": ["xlsx-js-style.min.js"],
-      "source": "https://github.com/gitbrent/xlsx-js-style",
-      "cdn": "https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/"
-    },
-    "echarts": {
-      "version": "5.5.1",
-      "files": ["echarts.min.js"],
-      "source": "https://echarts.apache.org/",
-      "cdn": "https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/"
-    },
-    "pdf-lib": {
-      "version": "1.17.1",
-      "files": ["pdf-lib.min.js"],
-      "source": "https://pdf-lib.js.org/",
-      "cdn": "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/"
-    },
-    "pdfjs": {
-      "version": "4.8.69",
-      "files": ["pdf.min.js", "pdf.worker.min.js"],
-      "source": "https://mozilla.github.io/pdf.js/",
-      "cdn": "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/"
-    },
-    "docxtemplater": {
-      "version": "3.50.0",
-      "files": ["docxtemplater.min.js"],
-      "source": "https://docxtemplater.com/",
-      "cdn": "https://cdn.jsdelivr.net/npm/docxtemplater@3.50.0/build/"
-    },
-    "pizzip": {
-      "version": "3.1.7",
-      "files": ["pizzip.min.js"],
-      "source": "https://github.com/open-xml-templating/pizzip",
-      "cdn": "https://cdn.jsdelivr.net/npm/pizzip@3.1.7/dist/"
-    },
-    "jszip": {
-      "version": "3.10.1",
-      "files": ["jszip.min.js"],
-      "source": "https://stuk.github.io/jszip/",
-      "cdn": "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/"
-    },
-    "mammoth": {
-      "version": "1.8.0",
-      "files": ["mammoth.min.js"],
-      "source": "https://github.com/mwilliamson/mammoth.js",
-      "cdn": "https://cdn.jsdelivr.net/npm/mammoth@1.8.0/"
+    "cropperjs": {
+      "version": "1.6.1",
+      "files": ["cropper.min.css", "cropper.min.js"],
+      "source": "https://github.com/fengyuanchen/cropperjs"
     },
     "docx-preview": {
       "version": "0.4.0",
       "files": ["docx-preview.min.js", "docx-preview.LICENSE.txt"],
-      "source": "https://github.com/VolodymyrBaydalka/docxjs",
-      "cdn": "https://cdn.jsdelivr.net/npm/docx-preview@0.4.0/dist/"
+      "source": "https://github.com/VolodymyrBaydalka/docxjs"
+    },
+    "docxtemplater": {
+      "version": "3.50.0",
+      "files": ["docxtemplater.min.js"],
+      "source": "https://docxtemplater.com/"
+    },
+    "echarts": {
+      "version": "5.5.1",
+      "files": ["echarts.min.js"],
+      "source": "https://echarts.apache.org/"
     },
     "flexsearch": {
-      "version": "0.8.215",
+      "version": "0.8.214",
       "files": ["flexsearch.bundle.min.js", "flexsearch.LICENSE.txt"],
-      "source": "https://github.com/nextapps-de/flexsearch",
-      "cdn": "https://cdn.jsdelivr.net/npm/flexsearch@0.8.215/dist/"
+      "source": "https://github.com/nextapps-de/flexsearch"
+    },
+    "html2canvas": {
+      "version": "1.4.1",
+      "files": ["html2canvas.min.js"],
+      "source": "https://html2canvas.hertzen.com/"
+    },
+    "jszip": {
+      "version": "3.10.1",
+      "files": ["jszip.min.js"],
+      "source": "https://stuk.github.io/jszip/"
+    },
+    "mammoth": {
+      "version": "1.8.0",
+      "files": ["mammoth.min.js"],
+      "source": "https://github.com/mwilliamson/mammoth.js"
     },
     "marked": {
       "version": "15.0.12",
       "files": ["marked.min.js"],
-      "source": "https://marked.js.org/",
-      "cdn": "https://cdn.jsdelivr.net/npm/marked@15.0.12/"
+      "source": "https://marked.js.org/"
     },
     "noto-serif-sc-home-hero": {
       "version": "Google Fonts subset",
       "files": ["noto-serif-sc-home-hero.ttf"],
-      "source": "https://fonts.google.com/specimen/Noto+Serif+SC",
-      "notes": "Subset used for the home hero title only"
+      "source": "https://fonts.google.com/specimen/Noto+Serif+SC"
+    },
+    "pdf-lib": {
+      "version": "1.17.1",
+      "files": ["pdf-lib.min.js"],
+      "source": "https://pdf-lib.js.org/"
+    },
+    "pdfjs": {
+      "version": "4.8.69",
+      "files": ["pdf.min.js", "pdf.worker.min.js"],
+      "source": "https://mozilla.github.io/pdf.js/"
+    },
+    "pica": {
+      "version": "本地文件未标注",
+      "files": ["pica.min.js"],
+      "source": "https://github.com/nodeca/pica"
+    },
+    "pizzip": {
+      "version": "3.1.7",
+      "files": ["pizzip.min.js"],
+      "source": "https://github.com/open-xml-templating/pizzip"
+    },
+    "tsparticles": {
+      "version": "2.12.0",
+      "files": ["tsparticles.bundle.min.js"],
+      "source": "https://github.com/tsparticles/tsparticles"
+    },
+    "xlsx": {
+      "version": "0.20.3",
+      "files": ["xlsx.full.min.js"],
+      "source": "https://sheetjs.com/"
+    },
+    "xlsx-js-style": {
+      "version": "1.2.0 / SheetJS 0.18.5",
+      "files": ["xlsx.bundle.js", "xlsx-js-style.min.js"],
+      "source": "https://github.com/gitbrent/xlsx-js-style"
     }
   }
 }

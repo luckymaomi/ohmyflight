@@ -51,6 +51,20 @@ interface DiffSegment {
     text: string;
 }
 
+interface RevisionContextAnchor {
+    position: "before" | "after";
+    mySliceId: string;
+    referenceSliceId: string;
+    myUnitId: string;
+    referenceUnitId: string;
+    myText: string;
+    referenceText: string;
+    myUnitIndex: number;
+    referenceUnitIndex: number;
+    myPageNumber?: number;
+    referencePageNumber?: number;
+}
+
 interface RevisionEvent {
     id: string;
     kind: RevisionKind;
@@ -68,6 +82,7 @@ interface RevisionEvent {
     referenceTokensOnly: string[];
     myDiff: DiffSegment[];
     referenceDiff: DiffSegment[];
+    contextAnchors: RevisionContextAnchor[];
     reason: string;
 }
 

@@ -34,7 +34,12 @@
         const orderedMatches = deduplicateMatches(matches);
         reportProgress?.({ phase: "正在聚合完整修订事件", completed: 0, total: 1 });
         const rawEvents = buildEvents(mySlices, referenceSlices, orderedMatches);
-        const events = mergeRelatedEvents(rawEvents, mySlices, referenceSlices)
+        const events = attachContextAnchors(
+            mergeRelatedEvents(rawEvents, mySlices, referenceSlices),
+            mySlices,
+            referenceSlices,
+            orderedMatches
+        )
             .sort((left, right) => eventPriority(left.kind) - eventPriority(right.kind)
                 || firstSliceIndex(left, mySlices, referenceSlices) - firstSliceIndex(right, mySlices, referenceSlices));
         const sameSliceCount = orderedMatches.filter((match) => match.exact).length;
@@ -329,7 +334,61 @@
             referenceTokensOnly: tokenDifference.rightOnly,
             myDiff: diff.left,
             referenceDiff: diff.right,
+            contextAnchors: [],
             reason: reason(kind, tokenDifference.leftOnly.length > 0 || tokenDifference.rightOnly.length > 0)
+        };
+    }
+
+    function attachContextAnchors(
+        events: RevisionEvent[],
+        mySlices: ComparisonSlice[],
+        referenceSlices: ComparisonSlice[],
+        matches: Anchor[]
+    ): RevisionEvent[] {
+        const myIndexes = new Map(mySlices.map((slice, index) => [slice.id, index]));
+        const referenceIndexes = new Map(referenceSlices.map((slice, index) => [slice.id, index]));
+        return events.map((event) => {
+            if (event.kind !== "reference-added" && event.kind !== "reference-removed") return event;
+            const usesReference = event.kind === "reference-added";
+            const ids = usesReference ? event.referenceSliceIds : event.mySliceIds;
+            const indexes = ids
+                .map((id) => (usesReference ? referenceIndexes : myIndexes).get(id))
+                .filter((index): index is number => index !== undefined);
+            if (!indexes.length) return event;
+            const firstIndex = Math.min(...indexes);
+            const lastIndex = Math.max(...indexes);
+            const sideIndex = (match: Anchor) => usesReference ? match.referenceIndex : match.myIndex;
+            const exactMatches = matches.filter((match) => match.exact);
+            const before = exactMatches.filter((match) => sideIndex(match) < firstIndex).at(-1);
+            const after = exactMatches.find((match) => sideIndex(match) > lastIndex);
+            const contextAnchors = [
+                before && makeContextAnchor("before", before, mySlices, referenceSlices),
+                after && makeContextAnchor("after", after, mySlices, referenceSlices)
+            ].filter(Boolean) as RevisionContextAnchor[];
+            return { ...event, contextAnchors };
+        });
+    }
+
+    function makeContextAnchor(
+        position: "before" | "after",
+        match: Anchor,
+        mySlices: ComparisonSlice[],
+        referenceSlices: ComparisonSlice[]
+    ): RevisionContextAnchor {
+        const mySlice = mySlices[match.myIndex];
+        const referenceSlice = referenceSlices[match.referenceIndex];
+        return {
+            position,
+            mySliceId: mySlice.id,
+            referenceSliceId: referenceSlice.id,
+            myUnitId: mySlice.unitId,
+            referenceUnitId: referenceSlice.unitId,
+            myText: mySlice.text,
+            referenceText: referenceSlice.text,
+            myUnitIndex: mySlice.unitIndex,
+            referenceUnitIndex: referenceSlice.unitIndex,
+            myPageNumber: mySlice.pageNumber,
+            referencePageNumber: referenceSlice.pageNumber
         };
     }
 
