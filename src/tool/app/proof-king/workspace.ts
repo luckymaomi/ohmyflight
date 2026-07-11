@@ -5,26 +5,24 @@
         myManual: LocalManual | null;
         referenceManual: LocalManual | null;
         comparison: ManualComparison | null;
-        entries: DifferenceNavigationEntry[];
-        entryById: Map<string, DifferenceNavigationEntry>;
-        selectedDifferenceId: string;
+        visibleEvents: RevisionEvent[];
+        selectedId: string;
+        filter: RevisionKind | "all";
+        query: string;
         worker: Worker | null;
-        comparisonRequestId: number;
+        requestId: number;
         previewRequestId: number;
-        message: string;
-        messageTone: "secondary" | "success" | "danger" | "info";
     } = {
         myManual: null,
         referenceManual: null,
         comparison: null,
-        entries: [],
-        entryById: new Map(),
-        selectedDifferenceId: "",
+        visibleEvents: [],
+        selectedId: "",
+        filter: "all",
+        query: "",
         worker: null,
-        comparisonRequestId: 0,
-        previewRequestId: 0,
-        message: "上传我的手册和参考手册后开始比对。",
-        messageTone: "secondary"
+        requestId: 0,
+        previewRequestId: 0
     };
 
     let myWordView: any;
@@ -33,103 +31,95 @@
     let referencePdfView: any;
     let navigationFrame: number | null = null;
 
-    function getElement<T extends HTMLElement>(id: string): T {
-        const element = document.getElementById(id);
-        if (!element) throw new Error(`页面缺少 ${id}。`);
-        return element as T;
-    }
-
     function bind(): void {
-        myWordView = new runtime.DocumentViews.WordManualView(
-            getElement("myPreview"),
-            "manual-proof-word-focus-my",
-            (message: string) => { setIndexStatus("my", message); }
-        );
-        referenceWordView = new runtime.DocumentViews.WordManualView(
-            getElement("referencePreview"),
-            "manual-proof-word-focus-reference",
-            (message: string) => { setIndexStatus("reference", message); }
-        );
-        myPdfView = new runtime.DocumentViews.PdfManualView(getElement("myPreview"));
-        referencePdfView = new runtime.DocumentViews.PdfManualView(getElement("referencePreview"));
+        myWordView = new runtime.DocumentViews.WordReaderView(element("mySource"));
+        referenceWordView = new runtime.DocumentViews.WordReaderView(element("referenceSource"));
+        myPdfView = new runtime.DocumentViews.PdfPageView(element("mySource"));
+        referencePdfView = new runtime.DocumentViews.PdfPageView(element("referenceSource"));
 
-        getElement<HTMLInputElement>("myInput").addEventListener("change", () => {
-            void safely(() => loadManual("my"));
-        });
-        getElement<HTMLInputElement>("referenceInput").addEventListener("change", () => {
-            void safely(() => loadManual("reference"));
-        });
-        getElement<HTMLButtonElement>("compareButton").addEventListener("click", () => {
-            void safely(startComparison);
-        });
-        getElement<HTMLButtonElement>("exportButton").addEventListener("click", () => {
+        input("myInput").addEventListener("change", () => void safely(() => loadManual("my")));
+        input("referenceInput").addEventListener("change", () => void safely(() => loadManual("reference")));
+        button("compareButton").addEventListener("click", () => void safely(startComparison));
+        button("exportButton").addEventListener("click", () => {
             if (state.comparison) runtime.ExcelReport.exportWorkbook(state.comparison);
         });
-        getElement<HTMLElement>("differenceNavigation").addEventListener("scroll", scheduleNavigationRender);
-        getElement<HTMLElement>("differenceNavigation").addEventListener("click", (event) => {
-            const target = event.target as HTMLElement;
-            const card = target.closest<HTMLElement>("[data-difference-id]");
-            if (!card?.dataset.differenceId) return;
-            void safely(() => selectDifference(card.dataset.differenceId || ""));
+        input("eventSearch").addEventListener("input", () => {
+            state.query = input("eventSearch").value;
+            applyFilter();
         });
-        renderAll();
+        element("filterBar").addEventListener("click", (event) => {
+            const target = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-filter]");
+            if (!target?.dataset.filter) return;
+            state.filter = target.dataset.filter as RevisionKind | "all";
+            applyFilter();
+        });
+        element("eventNavigation").addEventListener("scroll", scheduleNavigation);
+        element("eventNavigation").addEventListener("click", (event) => {
+            const target = (event.target as HTMLElement).closest<HTMLElement>("[data-event-id]");
+            if (!target?.dataset.eventId) return;
+            state.selectedId = target.dataset.eventId;
+            renderNavigation();
+            void safely(renderSelection);
+        });
+        renderState();
     }
 
     async function loadManual(role: ManualRole): Promise<void> {
-        const input = getElement<HTMLInputElement>(role === "my" ? "myInput" : "referenceInput");
-        const file = input.files?.[0];
+        const fileInput = input(role === "my" ? "myInput" : "referenceInput");
+        const file = fileInput.files?.[0];
         if (!file) return;
         setMessage(`正在读取${role === "my" ? "我的手册" : "参考手册"}：${file.name}`, "info");
-        const manual = await runtime.ManualReader.readManual(file, role, getPdfRange(role));
+        const manual = await runtime.ManualReader.readManual(file, role, pdfRange(role));
         if (role === "my") state.myManual = manual;
         else state.referenceManual = manual;
         clearComparison();
-        setMessage(`${role === "my" ? "我的手册" : "参考手册"}读取完成：${manual.name}`, "success");
-        renderAll();
+        setMessage(`${role === "my" ? "我的手册" : "参考手册"}读取完成，共 ${manual.units.length} 个原文单元。`, "success");
+        renderState();
+        await showInitialManual(manual);
+    }
+
+    async function showInitialManual(manual: LocalManual): Promise<void> {
+        const wordView = manual.role === "my" ? myWordView : referenceWordView;
+        const pdfView = manual.role === "my" ? myPdfView : referencePdfView;
+        if (manual.format === "docx") wordView.show(manual, []);
+        else await pdfView.show(manual, manual.units.slice(0, 1), "完成比对后按差异定位 PDF 原页。 ");
     }
 
     async function startComparison(): Promise<void> {
-        if (!state.myManual || !state.referenceManual) {
-            throw new Error("请先上传我的手册和参考手册。");
-        }
-        stopWorker();
+        if (!state.myManual || !state.referenceManual) throw new Error("请先上传我的手册和参考手册。 ");
         clearComparison();
-        state.comparisonRequestId += 1;
-        const requestId = state.comparisonRequestId;
+        state.requestId += 1;
+        const requestId = state.requestId;
         const worker = new Worker("comparison-worker.js");
         state.worker = worker;
-        setMessage("正在后台比对，页面仍可继续操作。", "info");
-        renderAll();
-
+        button("compareButton").disabled = true;
+        setMessage("正在后台建立原文锚点和顺序对应，页面仍可操作。", "info");
         worker.addEventListener("message", (event: MessageEvent<ComparisonWorkerProgress | ComparisonWorkerSuccess | ComparisonWorkerFailure>) => {
             const response = event.data;
-            if (!response || response.requestId !== state.comparisonRequestId) return;
+            if (!response || response.requestId !== state.requestId) return;
             if (response.type === "progress") {
                 const { phase, completed, total } = response.progress;
-                setMessage(total > 0 ? `${phase}：${completed}/${total}` : phase, "info");
-                renderMessage();
-                return;
-            }
-            if (response.type === "failure") {
-                stopWorker();
-                setMessage(response.message, "danger");
-                renderMessage();
+                setMessage(`${phase}${total ? `：${completed}/${total}` : ""}`, "info");
                 return;
             }
             stopWorker();
+            button("compareButton").disabled = false;
+            if (response.type === "failure") {
+                setMessage(response.message, "danger");
+                return;
+            }
             state.comparison = response.comparison;
-            state.entries = runtime.WorkspaceNavigation.createEntries(response.comparison);
-            state.entryById = new Map(state.entries.map((entry: DifferenceNavigationEntry) => [entry.id, entry]));
-            state.selectedDifferenceId = state.entries[0]?.id || "";
-            setMessage(`比对完成：共 ${state.entries.length} 条需重点复核差异。`, "success");
-            renderAll();
-            if (state.selectedDifferenceId) void safely(renderSelectedDifference);
+            state.filter = "all";
+            state.query = "";
+            input("eventSearch").value = "";
+            applyFilter();
+            setMessage(`比对完成：整理为 ${response.comparison.events.length} 个修订事件。`, "success");
         });
         worker.addEventListener("error", () => {
-            if (requestId !== state.comparisonRequestId) return;
+            if (requestId !== state.requestId) return;
             stopWorker();
-            setMessage("后台比对线程异常终止，请重新开始比对。", "danger");
-            renderMessage();
+            button("compareButton").disabled = false;
+            setMessage("后台比对异常终止，请重新开始。", "danger");
         });
         worker.postMessage({
             type: "compare",
@@ -139,144 +129,84 @@
         } as ComparisonWorkerRequest);
     }
 
-    async function selectDifference(id: string): Promise<void> {
-        if (!state.entryById.has(id)) return;
-        state.selectedDifferenceId = id;
-        renderNavigation();
-        await renderSelectedDifference();
-    }
-
-    async function renderSelectedDifference(): Promise<void> {
-        const entry = state.entryById.get(state.selectedDifferenceId);
-        if (!entry || !state.comparison || !state.myManual || !state.referenceManual) return;
-        const requestId = ++state.previewRequestId;
-        renderSelectionMeta(entry);
-        const mySliceMap = new Map(state.comparison.mySlices.map((slice) => [slice.id, slice]));
-        const referenceSliceMap = new Map(state.comparison.referenceSlices.map((slice) => [slice.id, slice]));
-        const myFocus = entry.mySliceIds.map((id) => mySliceMap.get(id)).filter((slice): slice is ManualSlice => !!slice);
-        const referenceFocus = entry.referenceSliceIds.map((id) => referenceSliceMap.get(id)).filter((slice): slice is ManualSlice => !!slice);
-
-        await renderManualPreview(
-            state.myManual,
-            state.comparison.mySlices,
-            myFocus,
-            myWordView,
-            myPdfView,
-            "当前差异在我的手册中没有可靠定位。"
-        );
-        if (requestId !== state.previewRequestId) return;
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-        await renderManualPreview(
-            state.referenceManual,
-            state.comparison.referenceSlices,
-            referenceFocus,
-            referenceWordView,
-            referencePdfView,
-            "当前差异在参考手册中没有可靠定位。"
-        );
-    }
-
-    async function renderManualPreview(
-        manual: LocalManual,
-        manualSlices: ManualSlice[],
-        focusSlices: ManualSlice[],
-        wordView: any,
-        pdfView: any,
-        emptyMessage: string
-    ): Promise<void> {
-        if (manual.format === "docx") {
-            await wordView.show(manual, manualSlices, focusSlices);
-            return;
+    function applyFilter(): void {
+        state.visibleEvents = state.comparison
+            ? runtime.Navigation.filterEvents(state.comparison.events, state.filter, state.query)
+            : [];
+        if (!state.visibleEvents.some((event) => event.id === state.selectedId)) {
+            state.selectedId = state.visibleEvents[0]?.id || "";
         }
-        await pdfView.show(manual, focusSlices, emptyMessage);
+        element("eventNavigation").scrollTop = 0;
+        renderState();
+        if (state.selectedId) void safely(renderSelection);
     }
 
-    function renderAll(): void {
-        renderMessage();
+    function renderState(): void {
         renderManualStatus();
         renderSummary();
+        renderFilters();
         renderNavigation();
-        renderSelectionMeta(state.entryById.get(state.selectedDifferenceId));
-        getElement<HTMLButtonElement>("exportButton").disabled = !state.comparison;
-    }
-
-    function renderMessage(): void {
-        const message = getElement<HTMLElement>("workspaceMessage");
-        message.className = `alert alert-${state.messageTone} py-2 mb-3`;
-        message.textContent = state.message;
+        button("exportButton").disabled = !state.comparison;
+        if (!state.selectedId) renderEmptySelection();
     }
 
     function renderManualStatus(): void {
-        getElement<HTMLElement>("myStatus").textContent = describeManual(state.myManual);
-        getElement<HTMLElement>("referenceStatus").textContent = describeManual(state.referenceManual);
-        getElement<HTMLElement>("myPreviewName").textContent = state.myManual?.name || "全文原文";
-        getElement<HTMLElement>("referencePreviewName").textContent = state.referenceManual?.name || "全文原文";
-        setIndexStatus("my", describeIndexState(state.myManual));
-        setIndexStatus("reference", describeIndexState(state.referenceManual));
+        element("myStatus").textContent = manualStatus(state.myManual);
+        element("referenceStatus").textContent = manualStatus(state.referenceManual);
+        element("mySourceName").textContent = state.myManual?.name || "我的手册原文";
+        element("referenceSourceName").textContent = state.referenceManual?.name || "参考手册原文";
     }
 
-    function describeManual(manual: LocalManual | null): string {
+    function manualStatus(manual: LocalManual | null): string {
         if (!manual) return "未上传";
-        const type = manual.format === "docx" ? "Word 全文预览" : `PDF 原页 / 共 ${manual.pageCount || 0} 页`;
-        return `${manual.name} / ${type} / ${manual.units.length} 个文本单元`;
-    }
-
-    function describeIndexState(manual: LocalManual | null): string {
-        if (!manual) return "";
-        return manual.format === "docx" ? "定位索引待建立" : "PDF 原页预览";
-    }
-
-    function setIndexStatus(role: ManualRole, message: string): void {
-        const element = getElement<HTMLElement>(role === "my" ? "myIndexStatus" : "referenceIndexStatus");
-        element.textContent = message;
-        element.dataset.ready = message.startsWith("定位索引已建立") ? "true" : "false";
+        const format = manual.format === "docx" ? "Word 全文阅读" : `PDF 原页，共 ${manual.pageCount} 页`;
+        return `${manual.name} / ${format} / ${manual.units.length} 个原文单元`;
     }
 
     function renderSummary(): void {
-        const summary = getElement<HTMLElement>("summaryGrid");
-        if (!state.comparison) {
-            summary.innerHTML = "";
-            return;
-        }
-        const values = [
-            ["我的手册缺失", state.comparison.summary.myMissingBlockCount, "danger"],
-            ["参考手册缺失", state.comparison.summary.referenceMissingBlockCount, "primary"],
-            ["微调", state.comparison.summary.microCount, "warning"],
-            ["需确认", state.comparison.summary.reviewCount, "secondary"],
-            ["覆盖率", runtime.ExcelReport.formatPercent(state.comparison.summary.myCoverageRate), "info"]
-        ];
-        summary.innerHTML = values.map(([label, value, tone]) => `
-            <div class="summary-item summary-${escapeHtml(tone)}">
-                <div class="summary-label">${escapeHtml(label)}</div>
-                <div class="summary-value">${escapeHtml(value)}</div>
-            </div>
+        const summary = state.comparison?.summary;
+        const values: Array<[string, number, string]> = summary ? [
+            ["参考新增", summary.referenceAddedCount, "added"],
+            ["参考删除", summary.referenceRemovedCount, "removed"],
+            ["内容修改", summary.modifiedCount, "modified"],
+            ["待确认", summary.reviewCount, "review"],
+            ["顺序一致", summary.sameSliceCount, "same"]
+        ] : [];
+        element("summaryGrid").innerHTML = values.map(([label, value, tone]) => `
+            <div class="summary-item summary-${tone}"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>
         `).join("");
     }
 
-    function renderNavigation(): void {
-        const navigation = getElement<HTMLElement>("differenceNavigation");
-        const spacer = getElement<HTMLElement>("differenceNavigationSpacer");
-        const visible = getElement<HTMLElement>("differenceNavigationVisible");
-        if (!state.entries.length) {
-            spacer.style.height = "0";
-            visible.replaceChildren();
-            navigation.classList.remove("has-results");
-            return;
-        }
-        navigation.classList.add("has-results");
-        const range = runtime.WorkspaceNavigation.calculateWindow(
-            navigation.scrollTop,
-            navigation.clientHeight,
-            state.entries.length
-        ) as VirtualNavigationWindow;
-        spacer.style.height = `${range.totalHeight}px`;
-        visible.style.transform = `translateY(${range.offsetTop}px)`;
-        visible.innerHTML = state.entries.slice(range.start, range.end)
-            .map((entry) => renderNavigationCard(entry, entry.id === state.selectedDifferenceId))
-            .join("");
+    function renderFilters(): void {
+        element("filterBar").querySelectorAll<HTMLElement>("[data-filter]").forEach((item) => {
+            item.classList.toggle("active", item.dataset.filter === state.filter);
+        });
+        element("resultCount").textContent = state.comparison ? `${state.visibleEvents.length} 项` : "";
     }
 
-    function scheduleNavigationRender(): void {
+    function renderNavigation(): void {
+        const navigation = element("eventNavigation");
+        const spacer = element("eventSpacer");
+        const visible = element("eventVisible");
+        if (!state.visibleEvents.length) {
+            spacer.style.height = "0";
+            visible.innerHTML = state.comparison ? '<div class="navigation-empty">当前筛选没有修订事件。</div>' : '<div class="navigation-empty">完成比对后显示修订事件。</div>';
+            return;
+        }
+        const range = runtime.Navigation.calculateWindow(navigation.scrollTop, navigation.clientHeight, state.visibleEvents.length) as VirtualWindow;
+        spacer.style.height = `${range.totalHeight}px`;
+        visible.style.transform = `translateY(${range.offsetTop}px)`;
+        visible.innerHTML = state.visibleEvents.slice(range.start, range.end).map((event) => `
+            <button type="button" class="event-row event-${event.kind}${event.id === state.selectedId ? " active" : ""}" data-event-id="${escapeHtml(event.id)}">
+                <span class="event-kind">${escapeHtml(runtime.Navigation.label(event.kind))}</span>
+                <strong>${escapeHtml(event.title)}</strong>
+                <span class="event-location">${escapeHtml(event.referenceLocation !== "无对应原文" ? event.referenceLocation : event.myLocation)}</span>
+                <span class="event-excerpt">${escapeHtml(event.referenceText || event.myText)}</span>
+            </button>
+        `).join("");
+    }
+
+    function scheduleNavigation(): void {
         if (navigationFrame !== null) return;
         navigationFrame = requestAnimationFrame(() => {
             navigationFrame = null;
@@ -284,39 +214,62 @@
         });
     }
 
-    function renderNavigationCard(entry: DifferenceNavigationEntry, selected: boolean): string {
-        const label = runtime.WorkspaceNavigation.statusLabel(entry.kind);
-        return `
-            <button class="difference-card difference-${escapeHtml(entry.kind)}${selected ? " active" : ""}" data-difference-id="${escapeHtml(entry.id)}" type="button">
-                <div class="difference-card-head">
-                    <span class="difference-kind">${escapeHtml(label)}</span>
-                    <span class="difference-location">${escapeHtml(entry.location)}</span>
-                </div>
-                <div class="difference-reason">${escapeHtml(entry.reason)}</div>
-                <div class="difference-text">${escapeHtml(entry.text)}</div>
-            </button>
-        `;
+    async function renderSelection(): Promise<void> {
+        const comparison = state.comparison;
+        const event = state.visibleEvents.find((item) => item.id === state.selectedId)
+            || comparison?.events.find((item) => item.id === state.selectedId);
+        if (!comparison || !event || !state.myManual || !state.referenceManual) return;
+        const requestId = ++state.previewRequestId;
+        element("selectionTitle").textContent = `${runtime.Navigation.label(event.kind)} / ${event.title}`;
+        element("selectionReason").textContent = event.reason;
+        element("myChangeLocation").textContent = event.myLocation;
+        element("referenceChangeLocation").textContent = event.referenceLocation;
+        element("myChangeText").innerHTML = event.myText ? renderDiff(event.myDiff) : '<span class="missing-text">无对应原文</span>';
+        element("referenceChangeText").innerHTML = event.referenceText ? renderDiff(event.referenceDiff) : '<span class="missing-text">无对应原文</span>';
+        element("tokenChanges").textContent = tokenDescription(event);
+
+        const myUnits = unitsFor(state.myManual, event.myUnitIds);
+        const referenceUnits = unitsFor(state.referenceManual, event.referenceUnitIds);
+        await showSource(state.myManual, myUnits, myWordView, myPdfView, "该修订事件在我的手册中没有对应原文。 ");
+        if (requestId !== state.previewRequestId) return;
+        await showSource(state.referenceManual, referenceUnits, referenceWordView, referencePdfView, "该修订事件在参考手册中没有对应原文。 ");
     }
 
-    function renderSelectionMeta(entry: DifferenceNavigationEntry | undefined): void {
-        const meta = getElement<HTMLElement>("selectionMeta");
-        if (!entry) {
-            meta.innerHTML = `<span class="text-muted">选择一条差异后查看原文。</span>`;
-            return;
-        }
-        meta.innerHTML = `
-            <div>
-                <div class="selection-title">${escapeHtml(runtime.WorkspaceNavigation.statusLabel(entry.kind))}</div>
-                <div class="text-muted small">${escapeHtml(entry.reason)}</div>
-            </div>
-            <span class="selection-location">${escapeHtml(entry.location)}</span>
-        `;
+    async function showSource(manual: LocalManual, units: ManualUnit[], wordView: any, pdfView: any, emptyMessage: string): Promise<void> {
+        if (manual.format === "docx") wordView.show(manual, units.map((unit) => unit.id));
+        else await pdfView.show(manual, units, emptyMessage);
     }
 
-    function getPdfRange(role: ManualRole): { startPage: number | ""; endPage: number | "" } {
+    function unitsFor(manual: LocalManual, ids: string[]): ManualUnit[] {
+        const idSet = new Set(ids);
+        return manual.units.filter((unit) => idSet.has(unit.id));
+    }
+
+    function renderDiff(segments: DiffSegment[]): string {
+        return segments.map((segment) => `<span class="diff-${segment.kind}">${escapeHtml(segment.text)}</span>`).join("");
+    }
+
+    function tokenDescription(event: RevisionEvent): string {
+        const parts = [];
+        if (event.myTokensOnly.length) parts.push(`我的手册独有：${event.myTokensOnly.join("、")}`);
+        if (event.referenceTokensOnly.length) parts.push(`参考手册独有：${event.referenceTokensOnly.join("、")}`);
+        return parts.join("；");
+    }
+
+    function renderEmptySelection(): void {
+        element("selectionTitle").textContent = "选择一项修订事件";
+        element("selectionReason").textContent = "新增和删除排在前面；一致内容默认不进入待办。";
+        element("myChangeLocation").textContent = "";
+        element("referenceChangeLocation").textContent = "";
+        element("myChangeText").innerHTML = '<span class="missing-text">等待选择</span>';
+        element("referenceChangeText").innerHTML = '<span class="missing-text">等待选择</span>';
+        element("tokenChanges").textContent = "";
+    }
+
+    function pdfRange(role: ManualRole): { startPage: number | ""; endPage: number | "" } {
         const prefix = role === "my" ? "my" : "reference";
-        const start = Number(getElement<HTMLInputElement>(`${prefix}StartPage`).value);
-        const end = Number(getElement<HTMLInputElement>(`${prefix}EndPage`).value);
+        const start = Number(input(`${prefix}StartPage`).value);
+        const end = Number(input(`${prefix}EndPage`).value);
         return {
             startPage: Number.isFinite(start) && start > 0 ? Math.trunc(start) : "",
             endPage: Number.isFinite(end) && end > 0 ? Math.trunc(end) : ""
@@ -326,9 +279,8 @@
     function clearComparison(): void {
         stopWorker();
         state.comparison = null;
-        state.entries = [];
-        state.entryById.clear();
-        state.selectedDifferenceId = "";
+        state.visibleEvents = [];
+        state.selectedId = "";
         state.previewRequestId += 1;
     }
 
@@ -342,13 +294,27 @@
             await action();
         } catch (error) {
             setMessage(error instanceof Error ? error.message : String(error), "danger");
-            renderMessage();
         }
     }
 
-    function setMessage(message: string, tone: typeof state.messageTone): void {
-        state.message = message;
-        state.messageTone = tone;
+    function setMessage(message: string, tone: "secondary" | "info" | "success" | "danger"): void {
+        const target = element("workspaceMessage");
+        target.className = `alert alert-${tone} py-2 mb-3`;
+        target.textContent = message;
+    }
+
+    function element(id: string): HTMLElement {
+        const value = document.getElementById(id);
+        if (!value) throw new Error(`页面缺少 ${id}。`);
+        return value;
+    }
+
+    function input(id: string): HTMLInputElement {
+        return element(id) as HTMLInputElement;
+    }
+
+    function button(id: string): HTMLButtonElement {
+        return element(id) as HTMLButtonElement;
     }
 
     function escapeHtml(value: unknown): string {
@@ -360,8 +326,5 @@
             .replace(/'/g, "&#39;");
     }
 
-    runtime.Workspace = {
-        bind,
-        state
-    };
+    runtime.Workspace = { bind, state };
 })();

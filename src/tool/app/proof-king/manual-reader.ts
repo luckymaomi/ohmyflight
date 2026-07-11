@@ -1,100 +1,76 @@
 (function () {
     const runtime = window.ManualProof || (window.ManualProof = {});
 
-    function manualId(role: ManualRole, file: File): string {
-        const safeName = (file.name || "manual").replace(/[^\w\u4e00-\u9fa5-]+/g, "-");
-        return `${role}-${Date.now()}-${safeName}`;
-    }
-
-    function detectTitle(line: string, currentTitle: string): string {
-        const text = String(line || "").trim();
-        if (/^\d+(?:\.\d+){1,6}\s*\S{0,60}$/.test(text)) return text;
-        if (/^[第附]?[一二三四五六七八九十百\d]+[章节条]\s*\S{0,60}$/.test(text)) return text;
-        return currentTitle;
-    }
-
-    function splitWordUnits(text: string, id: string): ManualTextUnit[] {
-        let title = "";
-        const units: ManualTextUnit[] = [];
-        String(text || "")
-            .replace(/\r\n/g, "\n")
-            .split(/\n+/)
-            .map((line) => line.trim())
-            .filter(Boolean)
-            .forEach((line) => {
-                title = detectTitle(line, title);
-                units.push({
-                    id: `${id}-unit-${units.length + 1}`,
-                    manualId: id,
-                    unitIndex: units.length + 1,
-                    title,
-                    text: line
-                });
-            });
-        return units;
-    }
-
-    function normalizePdfRange(startPage: number | "", endPage: number | "", pageCount: number): { start: number; end: number } {
-        const startValue = Number(startPage);
-        const endValue = Number(endPage);
-        const first = Number.isFinite(startValue) && startValue > 0 ? Math.trunc(startValue) : 1;
-        const last = Number.isFinite(endValue) && endValue > 0 ? Math.trunc(endValue) : pageCount;
-        const start = Math.max(1, Math.min(first, last));
-        const end = Math.min(pageCount, Math.max(first, last));
-        if (start > end) throw new Error("PDF 页码范围无效。");
-        return { start, end };
+    function makeManualId(role: ManualRole, file: File): string {
+        const name = (file.name || "manual").replace(/[^0-9a-zA-Z\u4e00-\u9fff-]+/g, "-");
+        return `${role}-${Date.now()}-${name}`;
     }
 
     async function readManual(file: File, role: ManualRole, range: { startPage: number | ""; endPage: number | "" }): Promise<LocalManual> {
         if (/\.docx$/i.test(file.name)) return readWord(file, role);
         if (/\.pdf$/i.test(file.name)) return readPdf(file, role, range);
-        throw new Error("当前只支持 .docx 和文字型 .pdf。");
+        throw new Error("仅支持标准 .docx 和带文字层的 .pdf。 ");
     }
 
     async function readWord(file: File, role: ManualRole): Promise<LocalManual> {
-        if (!window.mammoth?.extractRawText) throw new Error("页面缺少 Word 读取组件。");
-        const id = manualId(role, file);
-        const wordPreviewData = await file.arrayBuffer();
-        const extracted = await window.mammoth.extractRawText({ arrayBuffer: wordPreviewData.slice(0) });
+        if (!window.mammoth?.extractRawText) throw new Error("页面缺少 Word 文字读取组件。 ");
+        const id = makeManualId(role, file);
+        const data = await file.arrayBuffer();
+        const extracted = await window.mammoth.extractRawText({ arrayBuffer: data });
         const units = splitWordUnits(extracted.value || "", id);
         if (!units.length) throw new Error(`${file.name} 未提取到可比对文字。`);
-        return {
-            id,
-            role,
-            name: file.name,
-            format: "docx",
-            units,
-            wordPreviewData
-        };
+        return { id, role, name: file.name, format: "docx", units };
     }
 
-    async function readPdf(file: File, role: ManualRole, requestedRange: { startPage: number | ""; endPage: number | "" }): Promise<LocalManual> {
-        if (!window.pdfjsLib) throw new Error("页面缺少 PDF 读取组件。");
+    function splitWordUnits(value: unknown, manualId: string): ManualUnit[] {
+        const units: ManualUnit[] = [];
+        let currentTitle = "";
+        String(value ?? "")
+            .replace(/\r\n?/g, "\n")
+            .split(/\n+/)
+            .map((line) => line.replace(/\s+/g, " ").trim())
+            .filter(Boolean)
+            .forEach((line) => {
+                if (looksLikeTitle(line)) currentTitle = line;
+                units.push({
+                    id: `${manualId}-unit-${units.length + 1}`,
+                    manualId,
+                    index: units.length + 1,
+                    kind: line.includes("\t") ? "table-row" : "paragraph",
+                    text: line.replace(/\t+/g, " | "),
+                    title: currentTitle
+                });
+            });
+        return units;
+    }
+
+    function looksLikeTitle(value: string): boolean {
+        const text = value.trim();
+        if (/^\d+(?:\.\d+){1,6}(?:\s+\S.*)?$/.test(text)) return true;
+        if (/^第[一二三四五六七八九十百\d]+[章节条](?:\s+\S.*)?$/.test(text)) return true;
+        return text.length >= 2 && text.length <= 28 && !/[。；，！？!?：:]$/.test(text);
+    }
+
+    async function readPdf(
+        file: File,
+        role: ManualRole,
+        requestedRange: { startPage: number | ""; endPage: number | "" }
+    ): Promise<LocalManual> {
+        if (!window.pdfjsLib) throw new Error("页面缺少 PDF 读取组件。 ");
         window.pdfjsLib.GlobalWorkerOptions.workerSrc = "../../../libs/pdf.worker.min.js";
-        const id = manualId(role, file);
+        const id = makeManualId(role, file);
         const data = await file.arrayBuffer();
-        const pdfDocument = await window.pdfjsLib.getDocument({ data: data.slice(0) }).promise;
+        const pdfDocument = await window.pdfjsLib.getDocument({ data }).promise;
         const range = normalizePdfRange(requestedRange.startPage, requestedRange.endPage, pdfDocument.numPages);
-        const units: ManualTextUnit[] = [];
+        const pages: PdfLineRecord[][] = [];
         for (let pageNumber = range.start; pageNumber <= range.end; pageNumber += 1) {
             const page = await pdfDocument.getPage(pageNumber);
-            const textContent = await page.getTextContent();
-            const text = (textContent.items || [])
-                .map((item: any) => String(item?.str || ""))
-                .filter(Boolean)
-                .join("\n");
-            units.push({
-                id: `${id}-page-${pageNumber}`,
-                manualId: id,
-                unitIndex: units.length + 1,
-                title: `第 ${pageNumber} 页`,
-                pageNumber,
-                text
-            });
+            const content = await page.getTextContent();
+            const viewport = page.getViewport({ scale: 1 });
+            pages.push(groupPdfItemsIntoLines(content.items || [], pageNumber, viewport.height));
         }
-        if (!units.some((unit) => unit.text.trim())) {
-            throw new Error(`${file.name} 没有可读取文字层，暂不支持扫描件或图片 PDF。`);
-        }
+        const units = extractPdfUnitsFromPages(pages, id);
+        if (!units.length) throw new Error(`${file.name} 没有可读取文字层，暂不支持扫描件或图片 PDF。`);
         return {
             id,
             role,
@@ -106,24 +82,170 @@
         };
     }
 
+    function groupPdfItemsIntoLines(items: any[], pageNumber: number, pageHeight: number): PdfLineRecord[] {
+        const groups = new Map<number, Array<{ text: string; x: number; width: number; y: number }>>();
+        items.forEach((item) => {
+            const text = String(item?.str || "").trim();
+            const transform = item?.transform || [];
+            const x = Number(transform[4]);
+            const y = Number(transform[5]);
+            if (!text || !Number.isFinite(x) || !Number.isFinite(y)) return;
+            const key = Math.round(y / 2) * 2;
+            const values = groups.get(key) || [];
+            values.push({ text, x, width: Number(item?.width) || 0, y });
+            groups.set(key, values);
+        });
+        return Array.from(groups.entries())
+            .sort((left, right) => right[0] - left[0])
+            .map(([_key, lineItems]) => {
+                lineItems.sort((left, right) => left.x - right.x);
+                const text = joinPdfLineItems(lineItems);
+                const first = lineItems[0];
+                return {
+                    pageNumber,
+                    text,
+                    x: first.x,
+                    y: first.y,
+                    topRatio: 1 - first.y / Math.max(1, pageHeight)
+                };
+            })
+            .filter((line) => !!line.text);
+    }
+
+    function joinPdfLineItems(items: Array<{ text: string; x: number; width: number }>): string {
+        let result = "";
+        let previousEnd = 0;
+        items.forEach((item) => {
+            const needsSpace = !!result && item.x - previousEnd > 3 && /[0-9a-zA-Z]$/.test(result) && /^[0-9a-zA-Z]/.test(item.text);
+            result += `${needsSpace ? " " : ""}${item.text}`;
+            previousEnd = Math.max(previousEnd, item.x + item.width);
+        });
+        return result.replace(/\s+/g, " ").trim();
+    }
+
+    function extractPdfUnitsFromPages(pages: PdfLineRecord[][], manualId: string): ManualUnit[] {
+        const repeated = repeatedMarginLines(pages);
+        const units: ManualUnit[] = [];
+        let currentTitle = "";
+        let paragraph = "";
+        let paragraphPage: number | undefined;
+        const flush = () => {
+            const text = paragraph.replace(/\s+/g, " ").trim();
+            paragraph = "";
+            if (!text || paragraphPage === undefined) return;
+            if (looksLikeTitle(text)) currentTitle = text;
+            units.push({
+                id: `${manualId}-unit-${units.length + 1}`,
+                manualId,
+                index: units.length + 1,
+                kind: "pdf-paragraph",
+                text,
+                title: currentTitle,
+                pageNumber: paragraphPage
+            });
+            paragraphPage = undefined;
+        };
+        pages.forEach((pageLines) => {
+            const lines = pageLines.filter((line) => {
+                const normalized = normalizeLine(line.text);
+                if (!normalized) return false;
+                if (line.topRatio < 0.08 || line.topRatio > 0.9) return false;
+                if (marginKeys(line.text).some((key) => repeated.has(key))) return false;
+                if ((line.topRatio < 0.14 || line.topRatio > 0.88) && /^\d{1,4}$/.test(line.text.trim())) return false;
+                return true;
+            });
+            lines.forEach((line) => {
+                const value = line.text.trim();
+                const clause = parseClauseLine(value);
+                if (clause) {
+                    flush();
+                    if (clause.text && clause.text.length <= 40 && !/[。；！？!?]$/.test(clause.text)) {
+                        currentTitle = `${clause.number} ${clause.text}`;
+                    } else if (!currentTitle) {
+                        currentTitle = clause.number;
+                    }
+                    if (clause.text) {
+                        paragraph = clause.text;
+                        paragraphPage = line.pageNumber;
+                        if (/[。；！？!?]$/.test(clause.text)) flush();
+                    }
+                    return;
+                }
+                if (!paragraph) paragraphPage = line.pageNumber;
+                paragraph = appendPdfLine(paragraph, value);
+                if (/[。；！？!?]$/.test(value) || normalizeLine(paragraph).length >= 420) flush();
+            });
+        });
+        flush();
+        return units;
+    }
+
+    function appendPdfLine(current: string, next: string): string {
+        if (!current) return next;
+        const needsSpace = /[0-9a-zA-Z]$/.test(current) && /^[0-9a-zA-Z]/.test(next);
+        return `${current}${needsSpace ? " " : ""}${next}`;
+    }
+
+    function repeatedMarginLines(pages: PdfLineRecord[][]): Set<string> {
+        const pageIndexes = new Map<string, Set<number>>();
+        pages.forEach((lines, pageIndex) => {
+            lines.forEach((line) => {
+                if (line.topRatio >= 0.14 && line.topRatio <= 0.88) return;
+                marginKeys(line.text).forEach((key) => {
+                    const indexes = pageIndexes.get(key) || new Set<number>();
+                    indexes.add(pageIndex);
+                    pageIndexes.set(key, indexes);
+                });
+            });
+        });
+        const threshold = Math.max(3, Math.ceil(pages.length * 0.25));
+        return new Set(Array.from(pageIndexes.entries()).filter(([, indexes]) => indexes.size >= threshold).map(([text]) => text));
+    }
+
+    function marginKeys(value: string): string[] {
+        const normalized = normalizeLine(value);
+        if (!normalized) return [];
+        const generic = normalized.replace(/\d+/g, "#");
+        const keys = new Set([normalized, generic]);
+        if (generic.length >= 8) keys.add(generic.slice(0, 10));
+        return Array.from(keys);
+    }
+
+    function normalizeLine(value: string): string {
+        return value.normalize("NFKC").toLowerCase().replace(/[^0-9a-z\u4e00-\u9fff]+/g, "");
+    }
+
+    function parseClauseLine(value: string): { number: string; text: string } | null {
+        const match = value.trim().match(/^((?:第[一二三四五六七八九十百\d]+[章节条]|\d+(?:\.\d+){1,6}))\s*(.*)$/);
+        return match ? { number: match[1], text: match[2].trim() } : null;
+    }
+
+    function normalizePdfRange(startPage: number | "", endPage: number | "", pageCount: number): { start: number; end: number } {
+        const rawStart = Number(startPage);
+        const rawEnd = Number(endPage);
+        const first = Number.isFinite(rawStart) && rawStart > 0 ? Math.trunc(rawStart) : 1;
+        const last = Number.isFinite(rawEnd) && rawEnd > 0 ? Math.trunc(rawEnd) : pageCount;
+        return {
+            start: Math.max(1, Math.min(first, last, pageCount)),
+            end: Math.max(1, Math.min(Math.max(first, last), pageCount))
+        };
+    }
+
     function toWorkerManual(manual: LocalManual): WorkerManual {
         return {
             id: manual.id,
             name: manual.name,
-            units: manual.units.map((unit) => ({
-                id: unit.id,
-                manualId: unit.manualId,
-                unitIndex: unit.unitIndex,
-                title: unit.title,
-                pageNumber: unit.pageNumber,
-                text: unit.text
-            }))
+            units: manual.units.map((unit) => ({ ...unit }))
         };
     }
 
     runtime.ManualReader = {
         readManual,
         splitWordUnits,
+        groupPdfItemsIntoLines,
+        extractPdfUnitsFromPages,
+        repeatedMarginLines,
+        marginKeys,
         normalizePdfRange,
         toWorkerManual
     };

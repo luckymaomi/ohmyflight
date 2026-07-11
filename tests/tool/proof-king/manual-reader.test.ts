@@ -2,28 +2,42 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { loadBrowserScripts } from "../../helpers/browser-context";
 
-describe("校对之王手册读取器", () => {
+describe("校对之王文档读取", () => {
     let reader: any;
 
     beforeAll(() => {
-        const context = loadBrowserScripts([
-            "tool/app/proof-king/manual-reader.js"
-        ]);
+        const context = loadBrowserScripts(["tool/app/proof-king/manual-reader.js"]);
         reader = (context as any).ManualProof.ManualReader;
     });
 
-    it("按稳定段落和标题拆分 Word 文本单元", () => {
-        const units = reader.splitWordUnits("1.1 总则\n\n本章规定运行控制要求。\n\n第二章 记录\n保存记录。", "my-manual");
+    it("Word 全文按稳定原文单元读取并保留当前标题", () => {
+        const units = reader.splitWordUnits("3.1 总则\n本章规定训练要求。\n检查程序\n保存记录。", "my");
+        expect(units).toHaveLength(4);
+        expect(units[1]).toMatchObject({ title: "3.1 总则", text: "本章规定训练要求。" });
+        expect(units[3]).toMatchObject({ title: "检查程序" });
+    });
+
+    it("通用过滤跨页重复页眉并把 PDF 视觉行重建为段落", () => {
+        const pages = [1, 2, 3, 4].map((pageNumber) => [
+            line(pageNumber, "统一手册页眉", 0.05),
+            line(pageNumber, "飞行人员应完成", 0.3),
+            line(pageNumber, `第${pageNumber}项检查。`, 0.34),
+            line(pageNumber, String(30 + pageNumber), 0.94)
+        ]);
+        const units = reader.extractPdfUnitsFromPages(pages, "reference");
 
         expect(units).toHaveLength(4);
-        expect(units[0]).toMatchObject({ id: "my-manual-unit-1", title: "1.1 总则" });
-        expect(units[1]).toMatchObject({ title: "1.1 总则", text: "本章规定运行控制要求。" });
-        expect(units[2]).toMatchObject({ title: "第二章 记录" });
+        expect(units[0].text).toBe("飞行人员应完成第1项检查。");
+        expect(units.every((unit: any) => !unit.text.includes("统一手册页眉"))).toBe(true);
     });
 
     it("规范 PDF 页码范围", () => {
-        expect(reader.normalizePdfRange("", "", 10)).toEqual({ start: 1, end: 10 });
-        expect(reader.normalizePdfRange(8, 3, 10)).toEqual({ start: 3, end: 8 });
-        expect(reader.normalizePdfRange(0, 99, 10)).toEqual({ start: 1, end: 10 });
+        expect(reader.normalizePdfRange("", "", 20)).toEqual({ start: 1, end: 20 });
+        expect(reader.normalizePdfRange(8, 3, 20)).toEqual({ start: 3, end: 8 });
+        expect(reader.normalizePdfRange(0, 99, 20)).toEqual({ start: 1, end: 20 });
     });
 });
+
+function line(pageNumber: number, text: string, topRatio: number) {
+    return { pageNumber, text, x: 10, y: 10, topRatio };
+}

@@ -29,9 +29,12 @@
 - 新增或修改工具、业务规则、spec、测试、构建时，看 `.agents/skills/ohmyflight-dev/SKILL.md`。
 - 涉及培训皇帝/培训工作台/培训 Excel/培训规则时，看 `.agents/skills/training-workbench/SKILL.md`。
 - 涉及页面 UI、表格、卡片、筛选区、结果区、统计摘要或用户指出页面混乱难看时，看 `.agents/skills/ui-clarity/SKILL.md`。
-- 涉及 Playwright 临时脚本、内网页面查询、Excel 批量查询时，看 `.agents/skills/playwright-probe/SKILL.md`。
+- 涉及 Excel 读取、导出、表头映射、日期解析或 openpyxl/SheetJS 时，看 `.agents/skills/excel-dev/SKILL.md`。
+- 涉及 IEB/飞行门户、Playwright 页面探测、员工号查询、技术等级/运行资格抓取或 Excel 批量写回时，看 `.agents/skills/flight-portal-probe/SKILL.md`。
+- 涉及两本 Word/PDF 手册的新增、删除和修改比对时，看 `.agents/skills/compare-manuals/SKILL.md`。
 - 涉及 docx 读取、分析、修改或生成时，看 `.agents/skills/docx-report/SKILL.md`。
 - 涉及面试人员名单整理成锁班导入模板时，看 `.agents/skills/interview-lock-list/SKILL.md`。
+- 涉及人员结构统计和 Word 报告结果核对时，看 `.agents/skills/personnel-report-check/SKILL.md`。
 - 如果 skill 和 owner 当前明确需求冲突，以 owner 当前需求为准，并说明冲突点。
 
 ## Spec、测试与完成标准

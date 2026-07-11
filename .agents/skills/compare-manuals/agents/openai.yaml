@@ -1,0 +1,4 @@
+interface:
+  display_name: "手册差异比对"
+  short_description: "独立核对 Word/PDF 手册的新增、删除与修改"
+  default_prompt: "Use $compare-manuals to compare the provided manuals and produce an evidence-based difference report."

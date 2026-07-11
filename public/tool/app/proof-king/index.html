@@ -8,161 +8,166 @@
     <link rel="stylesheet" href="../../../libs/bootstrap.min.css">
     <link rel="stylesheet" href="../../../theme.css">
     <style>
-        body { background: #f5f6f8; color: #212529; }
-        .page-shell { max-width: 1600px; margin: 0 auto; padding: 18px; }
-        .work-section { background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 14px; margin-bottom: 14px; }
-        .section-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
-        .upload-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-        .manual-upload { border: 1px solid #e1e5ea; border-radius: 6px; padding: 12px; background: #fbfcfd; }
-        .manual-status { min-height: 22px; color: #6c757d; font-size: 13px; overflow-wrap: anywhere; }
-        .summary-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
-        .summary-item { border: 1px solid #e2e6ea; border-left-width: 4px; border-radius: 6px; background: #fff; padding: 10px; }
-        .summary-danger { border-left-color: #b02a37; }
-        .summary-primary { border-left-color: #0d6efd; }
-        .summary-warning { border-left-color: #b58105; }
-        .summary-secondary { border-left-color: #6c757d; }
-        .summary-info { border-left-color: #0dcaf0; }
-        .summary-label { color: #6c757d; font-size: 12px; }
-        .summary-value { margin-top: 4px; font-size: 22px; font-weight: 700; }
-        .workbench { display: grid; grid-template-columns: minmax(300px, 0.45fr) minmax(760px, 1.55fr); gap: 14px; min-height: 800px; }
-        .difference-navigation { position: relative; height: 800px; overflow-y: auto; overflow-x: hidden; border: 1px solid #dee2e6; border-radius: 6px; background: #fbfcfd; }
-        .difference-navigation-visible { position: absolute; inset: 0 0 auto; width: 100%; padding: 8px; }
-        .difference-card { display: block; width: 100%; height: 126px; overflow: hidden; text-align: left; border: 1px solid #e1e5ea; border-left-width: 4px; border-radius: 6px; background: #fff; padding: 9px; margin-bottom: 0; }
-        .difference-card.active { border-color: #0d6efd; box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.12); }
-        .difference-my-missing { border-left-color: #b02a37; }
-        .difference-reference-missing { border-left-color: #0d6efd; }
-        .difference-micro { border-left-color: #b58105; }
-        .difference-review { border-left-color: #6c757d; }
-        .difference-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-        .difference-kind { flex: 0 0 auto; border-radius: 999px; padding: 2px 7px; font-size: 12px; color: #495057; background: #f1f3f5; }
-        .difference-location { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: 13px; }
-        .difference-reason { color: #6c757d; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .difference-text { margin-top: 6px; color: #495057; font-size: 13px; line-height: 1.45; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
-        .document-workspace { min-width: 0; height: 800px; overflow: hidden; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; padding: 12px; }
-        .selection-meta { min-height: 44px; display: flex; justify-content: space-between; gap: 12px; align-items: start; margin-bottom: 12px; }
-        .selection-title { font-size: 16px; font-weight: 700; }
-        .selection-location { flex: 0 0 auto; border: 1px solid #dee2e6; border-radius: 5px; padding: 3px 8px; color: #495057; background: #f8f9fa; font-size: 12px; }
-        .manual-panes { height: calc(100% - 56px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
-        .manual-pane { min-width: 0; min-height: 0; display: flex; flex-direction: column; border: 1px solid #e1e5ea; border-radius: 6px; background: #fbfcfd; overflow: hidden; }
-        .manual-pane-title { display: flex; justify-content: space-between; gap: 10px; padding: 9px 11px; border-bottom: 1px solid #e1e5ea; color: #495057; font-size: 13px; }
-        .manual-pane-title > div { min-width: 0; display: flex; align-items: center; gap: 7px; }
-        .manual-pane-title span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .index-status { color: #6c757d; font-size: 12px; white-space: nowrap; }
-        .manual-preview { min-width: 0; min-height: 0; flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding: 12px; }
-        .manual-preview .manual-word-page-wrapper { min-width: 0 !important; overflow-x: hidden !important; background: #edf0f3; padding: 12px; }
-        .manual-preview section.manual-word-page { margin: 0 auto 12px !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14); }
-        .word-focus-block { outline: 2px solid #b58105 !important; outline-offset: 2px; background: rgba(255, 243, 205, 0.48) !important; }
-        ::highlight(manual-proof-word-focus-my), ::highlight(manual-proof-word-focus-reference) { color: #842029; background: #f5c2c7; }
-        .pdf-page { width: fit-content; max-width: 100%; margin: 0 auto 12px; padding: 8px; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; }
-        .pdf-page canvas { display: block; max-width: 100%; height: auto; }
-        .pdf-page-label { margin-bottom: 7px; color: #6c757d; font-size: 13px; }
-        .pdf-context { border-top: 1px solid #dee2e6; padding-top: 10px; color: #495057; font-size: 13px; line-height: 1.65; }
-        .pdf-context-title { margin-bottom: 5px; color: #6c757d; font-size: 12px; }
-        .pdf-context-part { margin-top: 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
-        .pdf-context-part span { display: block; color: #6c757d; font-size: 12px; }
-        .preview-empty { padding: 24px 10px; color: #6c757d; text-align: center; font-size: 13px; }
-        @media (max-width: 1100px) {
-            .summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-            .workbench { grid-template-columns: 1fr; }
-            .difference-navigation, .document-workspace { height: 680px; }
+        body { background: #f4f5f7; color: #212529; }
+        .page-shell { max-width: 1760px; margin: 0 auto; padding: 16px; }
+        .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+        .topbar h1 { margin: 0; font-size: 22px; }
+        .topbar p { margin: 3px 0 0; color: #6c757d; font-size: 13px; }
+        .section { margin-bottom: 12px; border: 1px solid #dfe3e7; background: #fff; }
+        .section-body { padding: 12px; }
+        .upload-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .upload-side { min-width: 0; padding: 10px; border: 1px solid #e2e5e8; background: #fafbfc; }
+        .upload-title { margin-bottom: 7px; font-weight: 650; }
+        .range-row { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 7px; }
+        .manual-status { min-height: 20px; margin-top: 7px; color: #6c757d; font-size: 12px; overflow-wrap: anywhere; }
+        .actions { display: flex; gap: 8px; margin-top: 10px; }
+        .summary-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+        .summary-item { min-height: 62px; padding: 9px 11px; border: 1px solid #dfe3e7; border-left-width: 4px; background: #fff; }
+        .summary-item span { display: block; color: #6c757d; font-size: 12px; }
+        .summary-item strong { display: block; margin-top: 3px; font-size: 21px; }
+        .summary-added { border-left-color: #198754; }
+        .summary-removed { border-left-color: #b02a37; }
+        .summary-modified { border-left-color: #b58105; }
+        .summary-review { border-left-color: #6c757d; }
+        .summary-same { border-left-color: #0d6efd; }
+        .workbench { display: grid; grid-template-columns: 340px minmax(0, 1fr); height: 1120px; border: 1px solid #dfe3e7; background: #fff; }
+        .queue { min-width: 0; display: flex; flex-direction: column; border-right: 1px solid #dfe3e7; background: #fafbfc; }
+        .queue-toolbar { padding: 10px; border-bottom: 1px solid #dfe3e7; }
+        .filter-bar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin-bottom: 8px; }
+        .filter-button { padding: 5px 7px; border: 1px solid #ced4da; background: #fff; color: #495057; font-size: 12px; }
+        .filter-button.active { border-color: #0d6efd; color: #0d6efd; background: #eef5ff; font-weight: 650; }
+        .queue-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; color: #6c757d; font-size: 12px; }
+        .event-navigation { position: relative; min-height: 0; flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; }
+        .event-visible { position: absolute; inset: 0 0 auto; padding: 6px; }
+        .event-row { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto auto; gap: 2px 7px; width: 100%; height: 112px; padding: 8px; border: 1px solid #e0e4e8; border-left-width: 4px; background: #fff; text-align: left; overflow: hidden; }
+        .event-row.active { border-color: #0d6efd; background: #f4f8ff; box-shadow: inset 0 0 0 1px #0d6efd; }
+        .event-reference-added { border-left-color: #198754; }
+        .event-reference-removed { border-left-color: #b02a37; }
+        .event-modified { border-left-color: #b58105; }
+        .event-review { border-left-color: #6c757d; }
+        .event-kind { align-self: start; padding: 1px 5px; background: #edf0f2; color: #495057; font-size: 11px; }
+        .event-row strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+        .event-location { grid-column: 1 / -1; color: #6c757d; font-size: 11px; }
+        .event-excerpt { grid-column: 1 / -1; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; color: #495057; font-size: 12px; line-height: 1.45; }
+        .navigation-empty { padding: 24px 12px; color: #6c757d; text-align: center; font-size: 13px; }
+        .review { min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+        .selection-head { min-height: 66px; padding: 10px 12px; border-bottom: 1px solid #dfe3e7; }
+        .selection-head h2 { margin: 0 0 3px; font-size: 16px; }
+        .selection-head p { margin: 0; color: #6c757d; font-size: 12px; }
+        .token-changes { margin-top: 4px; color: #842029; font-size: 12px; }
+        .change-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-bottom: 1px solid #dfe3e7; }
+        .change-side { min-width: 0; min-height: 170px; padding: 10px 12px; }
+        .change-side + .change-side { border-left: 1px solid #dfe3e7; }
+        .change-side-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 7px; font-size: 12px; font-weight: 650; }
+        .change-location { color: #6c757d; font-weight: 400; }
+        .change-text { max-height: 220px; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.7; }
+        .diff-removed { color: #842029; background: #f8d7da; text-decoration: line-through; }
+        .diff-added { color: #0f5132; background: #d1e7dd; }
+        .diff-equal { color: #343a40; }
+        .missing-text { color: #adb5bd; font-style: italic; }
+        .source-grid { min-height: 0; flex: 1 1 auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .source-pane { min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+        .source-pane + .source-pane { border-left: 1px solid #dfe3e7; }
+        .source-title { min-height: 38px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 10px; border-bottom: 1px solid #dfe3e7; background: #f8f9fa; font-size: 12px; }
+        .source-title span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #6c757d; }
+        .source-view { min-width: 0; min-height: 0; flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding: 12px; background: #e9ecef; }
+        .word-reader-paper { width: min(100%, 760px); min-height: 100%; margin: 0 auto; padding: 34px 42px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.16); }
+        .word-unit { margin: 0 0 10px; content-visibility: auto; contain-intrinsic-size: auto 48px; color: #212529; font-size: 13px; line-height: 1.75; text-align: justify; overflow-wrap: anywhere; }
+        .word-heading { margin-top: 18px; font-size: 15px; font-weight: 700; text-align: left; }
+        .word-table-row { padding: 5px 7px; border: 1px solid #dfe3e7; margin-bottom: -1px; background: #fff; }
+        .word-unit-focus { outline: 2px solid #dc3545; outline-offset: 3px; background: #fff3cd; }
+        .pdf-page-shell { width: fit-content; max-width: 100%; margin: 0 auto 12px; padding: 8px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.16); }
+        .pdf-page-shell canvas { display: block; max-width: 100%; height: auto; }
+        .pdf-page-label { margin-bottom: 6px; color: #6c757d; font-size: 12px; }
+        .pdf-text-context { max-width: 760px; margin: 0 auto; padding: 10px; background: #fff; font-size: 12px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .context-title { margin-bottom: 5px; color: #6c757d; font-weight: 650; }
+        .pdf-text-context mark { background: #fff3cd; color: #842029; }
+        .preview-empty { padding: 28px 12px; color: #6c757d; text-align: center; }
+        @media (max-width: 1200px) {
+            .workbench { grid-template-columns: 300px minmax(0, 1fr); }
+            .word-reader-paper { padding: 26px 28px; }
         }
-        @media (max-width: 760px) {
-            .page-shell { padding: 12px; }
-            .upload-grid, .summary-grid, .manual-panes { grid-template-columns: 1fr; }
-            .manual-panes { height: auto; }
-            .document-workspace { height: auto; }
-            .manual-pane { min-height: 620px; }
-            .selection-meta { align-items: stretch; flex-direction: column; }
-            .selection-location { align-self: flex-start; }
+        @media (max-width: 900px) {
+            .upload-grid, .change-grid, .source-grid { grid-template-columns: 1fr; }
+            .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .workbench { display: block; height: auto; }
+            .queue { height: 560px; border-right: 0; border-bottom: 1px solid #dfe3e7; }
+            .review { height: 1100px; }
+            .change-side + .change-side, .source-pane + .source-pane { border-left: 0; border-top: 1px solid #dfe3e7; }
         }
     </style>
 </head>
 <body>
 <main class="page-shell">
-    <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
-        <div>
-            <h1 class="h4 mb-1">校对之王</h1>
-            <div class="text-muted small">本地比对。结构性缺失优先，Word 显示全文，PDF 显示原始页。</div>
-        </div>
+    <header class="topbar">
+        <div><h1>校对之王</h1><p>按原文顺序发现参考新增、参考删除和内容修改。</p></div>
         <a class="btn btn-outline-secondary btn-sm" href="../../index.html">返回工具页</a>
-    </div>
+    </header>
 
     <div id="workspaceMessage" class="alert alert-secondary py-2 mb-3">上传我的手册和参考手册后开始比对。</div>
 
-    <section class="work-section">
-        <div class="section-title">手册上传</div>
-        <div class="upload-grid">
-            <div class="manual-upload">
-                <label class="form-label fw-semibold" for="myInput">我的手册</label>
-                <input class="form-control mb-2" id="myInput" type="file" accept=".docx,.pdf">
-                <div class="row g-2 mb-2">
-                    <div class="col"><input class="form-control form-control-sm" id="myStartPage" type="number" min="1" placeholder="PDF 起始页"></div>
-                    <div class="col"><input class="form-control form-control-sm" id="myEndPage" type="number" min="1" placeholder="PDF 结束页"></div>
+    <section class="section">
+        <div class="section-body">
+            <div class="upload-grid">
+                <div class="upload-side">
+                    <div class="upload-title">我的手册</div>
+                    <input id="myInput" class="form-control form-control-sm" type="file" accept=".docx,.pdf">
+                    <div class="range-row"><input id="myStartPage" class="form-control form-control-sm" type="number" min="1" placeholder="PDF 起始页"><input id="myEndPage" class="form-control form-control-sm" type="number" min="1" placeholder="PDF 结束页"></div>
+                    <div id="myStatus" class="manual-status">未上传</div>
                 </div>
-                <div id="myStatus" class="manual-status">未上传</div>
-            </div>
-            <div class="manual-upload">
-                <label class="form-label fw-semibold" for="referenceInput">参考手册</label>
-                <input class="form-control mb-2" id="referenceInput" type="file" accept=".docx,.pdf">
-                <div class="row g-2 mb-2">
-                    <div class="col"><input class="form-control form-control-sm" id="referenceStartPage" type="number" min="1" placeholder="PDF 起始页"></div>
-                    <div class="col"><input class="form-control form-control-sm" id="referenceEndPage" type="number" min="1" placeholder="PDF 结束页"></div>
+                <div class="upload-side">
+                    <div class="upload-title">参考手册</div>
+                    <input id="referenceInput" class="form-control form-control-sm" type="file" accept=".docx,.pdf">
+                    <div class="range-row"><input id="referenceStartPage" class="form-control form-control-sm" type="number" min="1" placeholder="PDF 起始页"><input id="referenceEndPage" class="form-control form-control-sm" type="number" min="1" placeholder="PDF 结束页"></div>
+                    <div id="referenceStatus" class="manual-status">未上传</div>
                 </div>
-                <div id="referenceStatus" class="manual-status">未上传</div>
             </div>
-        </div>
-        <div class="d-flex flex-wrap gap-2 mt-3">
-            <button id="compareButton" class="btn btn-primary" type="button">开始后台比对</button>
-            <button id="exportButton" class="btn btn-outline-primary" type="button" disabled>导出 Excel 报告</button>
+            <div class="actions"><button id="compareButton" class="btn btn-primary btn-sm" type="button">开始比对</button><button id="exportButton" class="btn btn-outline-primary btn-sm" type="button" disabled>导出 Excel</button></div>
         </div>
     </section>
 
-    <section class="work-section">
-        <div class="section-title">统计总览</div>
-        <div id="summaryGrid" class="summary-grid"></div>
-    </section>
+    <div id="summaryGrid" class="summary-grid"></div>
 
-    <section class="work-section">
-        <div class="d-flex align-items-center justify-content-between gap-3 mb-2">
-            <div class="section-title mb-0">全文对照</div>
-            <div class="text-muted small">左侧只渲染当前可见差异；所有结果均可滚动访问。</div>
-        </div>
-        <div class="workbench">
-            <div id="differenceNavigation" class="difference-navigation">
-                <div id="differenceNavigationSpacer"></div>
-                <div id="differenceNavigationVisible" class="difference-navigation-visible"></div>
-            </div>
-            <div class="document-workspace">
-                <div id="selectionMeta" class="selection-meta"><span class="text-muted">选择一条差异后查看原文。</span></div>
-                <div class="manual-panes">
-                    <section class="manual-pane">
-                        <div class="manual-pane-title">
-                            <div><span>我的手册</span><span id="myIndexStatus" class="index-status"></span></div>
-                            <span id="myPreviewName">全文原文</span>
-                        </div>
-                        <div id="myPreview" class="manual-preview"><div class="preview-empty">上传并完成比对后显示原文。</div></div>
-                    </section>
-                    <section class="manual-pane">
-                        <div class="manual-pane-title">
-                            <div><span>参考手册</span><span id="referenceIndexStatus" class="index-status"></span></div>
-                            <span id="referencePreviewName">全文原文</span>
-                        </div>
-                        <div id="referencePreview" class="manual-preview"><div class="preview-empty">上传并完成比对后显示原文。</div></div>
-                    </section>
+    <section class="workbench">
+        <aside class="queue">
+            <div class="queue-toolbar">
+                <div id="filterBar" class="filter-bar">
+                    <button class="filter-button active" data-filter="all" type="button">全部</button>
+                    <button class="filter-button" data-filter="reference-added" type="button">参考新增</button>
+                    <button class="filter-button" data-filter="reference-removed" type="button">参考删除</button>
+                    <button class="filter-button" data-filter="modified" type="button">内容修改</button>
+                    <button class="filter-button" data-filter="review" type="button">待确认</button>
                 </div>
+                <input id="eventSearch" class="form-control form-control-sm" type="search" placeholder="在修订事件中搜索">
+                <div class="queue-meta"><span>修订待办</span><span id="resultCount"></span></div>
             </div>
-        </div>
+            <div id="eventNavigation" class="event-navigation"><div id="eventSpacer"></div><div id="eventVisible" class="event-visible"></div></div>
+        </aside>
+
+        <section class="review">
+            <div class="selection-head">
+                <h2 id="selectionTitle">选择一项修订事件</h2>
+                <p id="selectionReason">新增和删除排在前面；一致内容默认不进入待办。</p>
+                <div id="tokenChanges" class="token-changes"></div>
+            </div>
+            <div class="change-grid">
+                <div class="change-side"><div class="change-side-head"><span>我的手册完整原文</span><span id="myChangeLocation" class="change-location"></span></div><div id="myChangeText" class="change-text"><span class="missing-text">等待选择</span></div></div>
+                <div class="change-side"><div class="change-side-head"><span>参考手册完整原文</span><span id="referenceChangeLocation" class="change-location"></span></div><div id="referenceChangeText" class="change-text"><span class="missing-text">等待选择</span></div></div>
+            </div>
+            <div class="source-grid">
+                <section class="source-pane"><div class="source-title"><strong>我的手册原文</strong><span id="mySourceName">我的手册原文</span></div><div id="mySource" class="source-view"><div class="preview-empty">上传文件后显示原文。</div></div></section>
+                <section class="source-pane"><div class="source-title"><strong>参考手册原文</strong><span id="referenceSourceName">参考手册原文</span></div><div id="referenceSource" class="source-view"><div class="preview-empty">上传文件后显示原文。</div></div></section>
+            </div>
+        </section>
     </section>
 </main>
 
 <script src="../../../libs/bootstrap.bundle.min.js"></script>
 <script src="../../../libs/mammoth.min.js"></script>
 <script src="../../../libs/pdf.min.js"></script>
-<script src="../../../libs/jszip.min.js"></script>
-<script src="../../../libs/docx-preview.min.js"></script>
 <script src="../../../libs/xlsx-js-style.min.js"></script>
 <script src="manual-reader.js"></script>
-<script src="workspace-navigation.js"></script>
+<script src="navigation.js"></script>
 <script src="document-views.js"></script>
 <script src="excel-report.js"></script>
 <script src="workspace.js"></script>
