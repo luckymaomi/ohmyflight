@@ -12,25 +12,11 @@
     }
 
     function normalizeLooseChar(char: string): string {
-        const normalized = char.normalize("NFKC");
-        const map: Record<string, string> = {
-            "（": "(",
-            "）": ")",
-            "，": ",",
-            "。": ".",
-            "；": ";",
-            "：": ":",
-            "、": ",",
-            "“": "\"",
-            "”": "\"",
-            "‘": "'",
-            "’": "'"
-        };
-        return map[normalized] || normalized;
+        return char.normalize("NFKC").toLowerCase();
     }
 
     function isIgnoredLooseChar(char: string): boolean {
-        return /\s/u.test(char);
+        return /[\s\p{P}\p{S}]/u.test(char);
     }
 
     function buildLooseIndex(value: unknown): { normalized: string; offsetMap: LooseIndexItem[] } {
@@ -45,12 +31,9 @@
             const originalEnd = originalStart + char.length;
             originalOffset = originalEnd;
 
-            if (isIgnoredLooseChar(char)) {
-                return;
-            }
-
             const normalizedText = normalizeLooseChar(char);
             Array.from(normalizedText).forEach((normalizedChar) => {
+                if (isIgnoredLooseChar(normalizedChar)) return;
                 normalized += normalizedChar;
                 offsetMap.push({
                     originalStart,

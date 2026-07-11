@@ -12,8 +12,8 @@ describe("audit-king highlight", () => {
 
   it("keeps overlapping manual keywords visible", () => {
     const segments = highlight.buildHighlightSegments("ABCD", [
-      { keywordId: "kw-1", color: "#f59e0b", start: 0, end: 3 },
-      { keywordId: "kw-2", color: "#22c55e", start: 1, end: 4 }
+      { checkItemId: "kw-1", color: "#f59e0b", start: 0, end: 3 },
+      { checkItemId: "kw-2", color: "#22c55e", start: 1, end: 4 }
     ]);
 
     expect(segments).toEqual([
@@ -25,8 +25,8 @@ describe("audit-king highlight", () => {
 
   it("keeps manual evidence ranges separate from keyword ranges", () => {
     const segments = highlight.buildHighlightSegments("ABCDEFG", [
-      { keywordId: "kw-1", color: "#ffd666", start: 1, end: 3 },
-      { keywordId: "kw-1", evidenceId: "evidence-1", kind: "manual-evidence", color: "#198754", start: 2, end: 6 }
+      { checkItemId: "kw-1", color: "#ffd666", start: 1, end: 3 },
+      { checkItemId: "kw-1", evidenceId: "evidence-1", kind: "manual-evidence", color: "#198754", start: 2, end: 6 }
     ]);
 
     expect(segments).toEqual([

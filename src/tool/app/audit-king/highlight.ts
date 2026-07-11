@@ -38,8 +38,8 @@
             const active = normalizedRanges.filter((range) => range.start < end && range.end > start);
             segments.push({
                 text: text.slice(start, end),
-                keywordIds: active.filter((range) => range.kind !== "manual-evidence").map((range) => range.keywordId),
-                evidenceIds: active.filter((range) => range.kind === "manual-evidence").map((range) => range.evidenceId || range.keywordId),
+                keywordIds: active.filter((range) => range.kind !== "manual-evidence").map((range) => range.checkItemId),
+                evidenceIds: active.filter((range) => range.kind === "manual-evidence").map((range) => range.evidenceId || range.checkItemId),
                 colors: active.map((range) => range.color)
             });
         }

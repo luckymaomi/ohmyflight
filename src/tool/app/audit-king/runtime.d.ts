@@ -5,6 +5,7 @@ interface AuditKingTextBlock {
     blockIndex: number;
     title: string;
     text: string;
+    pageNumber?: number;
 }
 
 interface AuditKingDocument {
@@ -12,19 +13,11 @@ interface AuditKingDocument {
     name: string;
     blocks: AuditKingTextBlock[];
     enabled?: boolean;
+    format?: "docx" | "pdf";
+    pageCount?: number;
 }
 
-interface AuditKingKeyword {
-    id: string;
-    text: string;
-    label?: string;
-    color: string;
-    enabled: boolean;
-    source?: AuditKingKeywordSource;
-    evidences?: AuditKingManualEvidence[];
-}
-
-interface AuditKingKeywordSource {
+interface AuditKingCheckItemSource {
     blockId?: string;
     blockIndex?: number;
     start?: number;
@@ -34,16 +27,6 @@ interface AuditKingKeywordSource {
     afterText?: string;
 }
 
-interface AuditKingImportedKeyword {
-    text: string;
-    order?: number;
-    label?: string;
-    color?: string;
-    enabled?: boolean;
-    source?: AuditKingKeywordSource;
-    evidences?: AuditKingManualEvidence[];
-}
-
 interface AuditKingManualEvidence {
     id?: string;
     sourceType?: "summary" | "selection" | "";
@@ -51,6 +34,7 @@ interface AuditKingManualEvidence {
     documentName: string;
     blockId?: string;
     blockIndex?: number;
+    pageNumber?: number;
     title?: string;
     start?: number;
     end?: number;
@@ -63,15 +47,47 @@ interface AuditKingManualEvidence {
     note?: string;
 }
 
+interface AuditKingAuditEvidence {
+    id: string;
+    content: string;
+    note: string;
+    sourceEvidenceId?: string;
+}
+
+interface AuditKingCheckItem {
+    id: string;
+    code: string;
+    name: string;
+    keyword: string;
+    color: string;
+    enabled: boolean;
+    source?: AuditKingCheckItemSource;
+    manualEvidences: AuditKingManualEvidence[];
+    auditEvidences: AuditKingAuditEvidence[];
+}
+
+interface AuditKingImportedCheckItem {
+    order?: number;
+    code?: string;
+    name?: string;
+    keyword?: string;
+    color?: string;
+    enabled?: boolean;
+    source?: AuditKingCheckItemSource;
+    manualEvidences?: AuditKingManualEvidence[];
+    auditEvidences?: AuditKingAuditEvidence[];
+}
+
 interface AuditKingMatch {
     id: string;
-    keywordId: string;
+    checkItemId: string;
     keywordText: string;
     keywordColor: string;
     documentId: string;
     documentName: string;
     blockId: string;
     blockIndex: number;
+    pageNumber?: number;
     title: string;
     start: number;
     end: number;
@@ -82,7 +98,7 @@ interface AuditKingMatch {
 
 interface AuditKingSearchResult {
     matches: AuditKingMatch[];
-    countsByKeyword: Record<string, number>;
+    countsByCheckItem: Record<string, number>;
 }
 
 interface AuditKingIndexedBlock extends AuditKingTextBlock {
@@ -102,7 +118,7 @@ interface AuditKingDocumentIndex {
 }
 
 interface AuditKingHighlightRange {
-    keywordId: string;
+    checkItemId: string;
     color: string;
     start: number;
     end: number;
@@ -118,6 +134,12 @@ interface AuditKingEvidenceEntry {
 interface AuditKingEvidenceGroup {
     id: string;
     title: string;
+    items: AuditKingEvidenceEntry[];
+}
+
+interface AuditKingImportedAuditGroup {
+    code: string;
+    name: string;
     items: AuditKingEvidenceEntry[];
 }
 
@@ -212,25 +234,19 @@ interface AuditKingPdfLocatorState {
     slots: AuditKingPdfLocatorSlot[];
     selectedSlotId: string;
     expandContextPages: boolean;
-    summary: {
-        trusted: number;
-        review: number;
-        miss: number;
-        skip: number;
-    };
+    summary: { trusted: number; review: number; miss: number; skip: number };
 }
 
 interface AuditKingStateModel {
     checklistBlocks: AuditKingTextBlock[];
     documents: AuditKingDocument[];
     documentIndex: AuditKingDocumentIndex | null;
-    keywords: AuditKingKeyword[];
+    checkItems: AuditKingCheckItem[];
     searchResult: AuditKingSearchResult;
-    currentKeywordId: string;
+    currentCheckItemId: string;
     documentFilterId: string;
     currentMatchIndex: number;
     currentDetailContextLength: number;
-    evidenceGroups: AuditKingEvidenceGroup[];
     pdfLocator: AuditKingPdfLocatorState;
 }
 

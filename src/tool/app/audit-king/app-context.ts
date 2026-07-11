@@ -13,8 +13,8 @@
                 ? runtime.State.getEnabledDocuments(state)
                 : state.documents.filter((documentItem) => documentItem.enabled !== false);
             const result = state.documentIndex
-                ? runtime.SearchEngine.searchIndex(state.documentIndex, state.keywords)
-                : runtime.SearchEngine.searchDocuments(enabledDocuments, state.keywords);
+                ? runtime.SearchEngine.searchIndex(state.documentIndex, state.checkItems)
+                : runtime.SearchEngine.searchDocuments(enabledDocuments, state.checkItems);
             runtime.State.setSearchResult(state, result);
         }
 
@@ -27,7 +27,7 @@
 
         function getFilteredMatches(): AuditKingMatch[] {
             return runtime.SearchEngine.filterMatches(state.searchResult.matches, {
-                keywordId: state.currentKeywordId,
+                checkItemId: state.currentCheckItemId,
                 documentId: state.documentFilterId
             });
         }

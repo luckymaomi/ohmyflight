@@ -104,7 +104,13 @@
         snippets: string[];
     }
 
-    const SKIP_PATTERNS = ["不适用", "不涉及", "无机长", "无飞行机械员", "无此机型"];
+    function hooks(): {
+        ignoreLine?: (line: string) => boolean;
+        weakSegment?: (text: string) => boolean;
+        skipContent?: (content: string) => boolean;
+    } {
+        return runtime.PdfLocatorHooks || {};
+    }
 
     function normalizeLine(value: string): string {
         return String(value || "")
@@ -117,12 +123,10 @@
 
     function isPageFurniture(line: string): boolean {
         if (!line) return true;
-        if (line.includes("中国南方货运航空") || line.includes("china southern cargo")) return true;
-        if (line.includes("csg-flt") || line.includes("版本号") || line.includes("修订号")) return true;
         if (/^20\d{2}\/\d{1,2}\/\d{1,2}$/.test(line)) return true;
         if (/^\d{1,4}$/.test(line)) return true;
         if (/^《[^》]{1,20}》$/.test(line)) return true;
-        return false;
+        return hooks().ignoreLine?.(line) === true;
     }
 
     function stripStructuralPrefix(line: string): string {
@@ -166,8 +170,7 @@
 
     function isWeakSegment(text: string): boolean {
         if (text.length < 6) return true;
-        const weakWords = ["进入条件", "飞行经历", "执照", "课程安排", "训练资料", "教学方法", "体检合格证"];
-        return text.length < 10 && weakWords.includes(text);
+        return hooks().weakSegment?.(text) === true;
     }
 
     function buildEvidenceSegments(content: string): PdfLocatorSegment[] {
@@ -346,10 +349,14 @@
 
     function isSkippable(content: string): boolean {
         const value = String(content || "").trim();
-        return !value || SKIP_PATTERNS.some((pattern) => value.includes(pattern));
+        return !value || hooks().skipContent?.(value) === true;
     }
 
-    function locateEvidenceInDocuments(target: PdfLocatorTarget, documents: PdfLocatorDocument[]): PdfLocatorResult {
+    function locateEvidenceInDocuments(
+        target: PdfLocatorTarget,
+        documents: PdfLocatorDocument[],
+        preparedWindows?: WindowCandidate[]
+    ): PdfLocatorResult {
         if (isSkippable(target.content)) {
             return {
                 sequence: target.sequence,
@@ -383,8 +390,7 @@
             };
         }
 
-        const candidates = (documents || [])
-            .flatMap((documentItem) => makePageWindows(documentItem, 3))
+        const candidates = (preparedWindows || (documents || []).flatMap((documentItem) => makePageWindows(documentItem, 3)))
             .map((windowItem) => scoreWindow(windowItem, segments))
             .filter((windowItem) => windowItem.matchedSegments > 0)
             .sort((a, b) => b.score - a.score
@@ -419,11 +425,13 @@
     }
 
     function locateTargets(targets: PdfLocatorTarget[], documents: PdfLocatorDocument[]): PdfLocatorResult[] {
-        return (targets || []).map((target) => locateEvidenceInDocuments(target, documents));
+        const preparedWindows = (documents || []).flatMap((documentItem) => makePageWindows(documentItem, 3));
+        return (targets || []).map((target) => locateEvidenceInDocuments(target, documents, preparedWindows));
     }
 
     function locateSlots(slots: PdfLocatorSlot[], documents: PdfLocatorDocument[], options: LocateSlotsOptions = {}): PdfLocatorSlot[] {
         const expandContextPages = options.expandContextPages !== false;
+        const preparedWindows = (documents || []).flatMap((documentItem) => makePageWindows(documentItem, 3));
         return (slots || []).map((slot) => {
             if (!slot.content.trim()) {
                 return {
@@ -449,7 +457,7 @@
                 title: slot.title,
                 content: slot.content,
                 note: slot.note
-            }, documents);
+            }, documents, preparedWindows);
             const documentItem = documents.find((item) => item.id === result.pdfId);
             const expandedRange = expandContextPages && documentItem ? expandResultPageRange(result, documentItem) : null;
             return {

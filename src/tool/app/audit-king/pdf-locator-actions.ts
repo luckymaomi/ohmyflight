@@ -141,13 +141,14 @@
         });
 
         context.getElement<HTMLButtonElement>("pdfLocatorBuildFromBasketBtn").addEventListener("click", () => {
-            if (!context.state.evidenceGroups.length) {
+            const evidenceGroups = context.runtime.State.buildEvidenceGroups(context.state);
+            if (!evidenceGroups.length) {
                 context.runtime.View.renderStatus("请先在审计篮子中导入或填写依据。", "error");
                 return;
             }
             setSlots(
                 context,
-                runtime.PdfLocatorModel.buildSlotsFromEvidenceGroups(context.state.evidenceGroups),
+                runtime.PdfLocatorModel.buildSlotsFromEvidenceGroups(evidenceGroups),
                 "已从审计篮子生成 PDF 证据槽。"
             );
         });
@@ -171,11 +172,12 @@
                 return;
             }
             if (!context.state.pdfLocator.slots.length) {
-                if (!context.state.evidenceGroups.length) {
+                const evidenceGroups = context.runtime.State.buildEvidenceGroups(context.state);
+                if (!evidenceGroups.length) {
                     context.runtime.View.renderStatus("请先从审计篮子生成槽位，或生成空槽。", "error");
                     return;
                 }
-                context.state.pdfLocator.slots = runtime.PdfLocatorModel.buildSlotsFromEvidenceGroups(context.state.evidenceGroups);
+                context.state.pdfLocator.slots = runtime.PdfLocatorModel.buildSlotsFromEvidenceGroups(evidenceGroups);
             }
             const slots = runtime.PdfLocatorModel.locateSlots(context.state.pdfLocator.slots, context.state.pdfLocator.documents, {
                 expandContextPages: context.state.pdfLocator.expandContextPages

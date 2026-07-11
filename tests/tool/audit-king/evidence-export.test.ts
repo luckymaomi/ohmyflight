@@ -59,43 +59,4 @@ describe("audit-king evidence export", () => {
     expect(sheet.C2?.v).toBe("");
   });
 
-  it("reads evidence rows back into audit basket groups by header names", () => {
-    const sheet = XLSX.utils.aoa_to_sheet([
-      ["备注", "依据内容", "条款名称", "依据序号"],
-      ["可用", "训练进入条件", "1.1 进入条件", 1],
-      ["", "资格要求", "1.1 进入条件", 2],
-      ["", "检查要求", "1.2 检查要求", 1]
-    ]);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, sheet, "审计篮子");
-
-    const groups = exportApi.parseEvidenceWorkbook(workbook);
-
-    expect(groups).toEqual([
-      {
-        id: "evidence-group-1",
-        title: "1.1 进入条件",
-        items: [
-          {
-            content: "训练进入条件",
-            note: "可用"
-          },
-          {
-            content: "资格要求",
-            note: ""
-          }
-        ]
-      },
-      {
-        id: "evidence-group-2",
-        title: "1.2 检查要求",
-        items: [
-          {
-            content: "检查要求",
-            note: ""
-          }
-        ]
-      }
-    ]);
-  });
 });

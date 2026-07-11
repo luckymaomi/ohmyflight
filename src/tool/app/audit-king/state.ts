@@ -8,30 +8,17 @@
             checklistBlocks: [],
             documents: [],
             documentIndex: null,
-            keywords: [],
-            searchResult: {
-                matches: [],
-                countsByKeyword: {}
-            },
-            currentKeywordId: "all",
+            checkItems: [],
+            searchResult: { matches: [], countsByCheckItem: {} },
+            currentCheckItemId: "all",
             documentFilterId: "all",
             currentMatchIndex: 0,
             currentDetailContextLength: DEFAULT_DETAIL_CONTEXT_LENGTH,
-            evidenceGroups: [],
             pdfLocator: runtime.PdfLocatorModel?.createState
                 ? runtime.PdfLocatorModel.createState()
                 : {
-                    documents: [],
-                    results: [],
-                    slots: [],
-                    selectedSlotId: "",
-                    expandContextPages: true,
-                    summary: {
-                        trusted: 0,
-                        review: 0,
-                        miss: 0,
-                        skip: 0
-                    }
+                    documents: [], results: [], slots: [], selectedSlotId: "", expandContextPages: true,
+                    summary: { trusted: 0, review: 0, miss: 0, skip: 0 }
                 }
         };
     }
@@ -44,133 +31,100 @@
         state.currentDetailContextLength = (state.currentDetailContextLength || DEFAULT_DETAIL_CONTEXT_LENGTH) + DETAIL_CONTEXT_STEP;
     }
 
-    function rebuildDocumentIndex(state: AuditKingStateModel): void {
-        const enabledDocuments = getEnabledDocuments(state);
-        state.documentIndex = runtime.SearchEngine?.buildDocumentIndex
-            ? runtime.SearchEngine.buildDocumentIndex(enabledDocuments)
-            : null;
-    }
-
     function getEnabledDocuments(state: AuditKingStateModel): AuditKingDocument[] {
         return state.documents.filter((documentItem) => documentItem.enabled !== false);
     }
 
-    function addKeyword(
+    function rebuildDocumentIndex(state: AuditKingStateModel): void {
+        state.documentIndex = runtime.SearchEngine?.buildDocumentIndex
+            ? runtime.SearchEngine.buildDocumentIndex(getEnabledDocuments(state))
+            : null;
+    }
+
+    function addCheckItem(
         state: AuditKingStateModel,
-        text: string,
-        source?: AuditKingKeywordSource,
-        options: { afterKeywordId?: string } = {}
-    ): AuditKingKeyword {
-        const normalized = text.trim();
-        if (!normalized) {
-            throw new Error("关键词不能为空。");
-        }
-        const keyword = runtime.KeywordStore.createKeyword(normalized, state.keywords.length, { source });
-        const afterIndex = options.afterKeywordId
-            ? state.keywords.findIndex((item) => item.id === options.afterKeywordId)
+        input: Partial<AuditKingImportedCheckItem> = {},
+        options: { afterCheckItemId?: string } = {}
+    ): AuditKingCheckItem {
+        const item = runtime.CheckItemStore.createCheckItem(input, state.checkItems.length);
+        const afterIndex = options.afterCheckItemId
+            ? state.checkItems.findIndex((candidate) => candidate.id === options.afterCheckItemId)
             : -1;
-        if (afterIndex >= 0) {
-            state.keywords.splice(afterIndex + 1, 0, keyword);
-        } else {
-            state.keywords.push(keyword);
-        }
-        if (state.currentKeywordId === "all") {
-            state.currentKeywordId = keyword.id;
-        }
-        return keyword;
+        if (afterIndex >= 0) state.checkItems.splice(afterIndex + 1, 0, item);
+        else state.checkItems.push(item);
+        if (state.currentCheckItemId === "all") state.currentCheckItemId = item.id;
+        return item;
     }
 
-    function removeKeyword(state: AuditKingStateModel, keywordId: string): void {
-        state.keywords = state.keywords.filter((keyword) => keyword.id !== keywordId);
-        if (state.currentKeywordId === keywordId) {
-            state.currentKeywordId = state.keywords[0]?.id || "all";
+    function replaceCheckItems(state: AuditKingStateModel, imported: AuditKingImportedCheckItem[]): void {
+        state.checkItems = imported.map((item, index) => runtime.CheckItemStore.createCheckItem(item, index));
+        if (runtime.SourceLocator?.resolveCheckItemSources) {
+            state.checkItems = runtime.SourceLocator.resolveCheckItemSources(state.checkItems, state.checklistBlocks);
         }
-        if (state.keywords.length === 0) {
-            state.currentKeywordId = "all";
+        if (runtime.SourceLocator?.resolveCheckItemEvidences) {
+            state.checkItems = runtime.SourceLocator.resolveCheckItemEvidences(state.checkItems, state.documents);
         }
-        delete state.searchResult.countsByKeyword[keywordId];
-        state.searchResult.matches = state.searchResult.matches.filter((match) => match.keywordId !== keywordId);
+        state.currentCheckItemId = state.checkItems[0]?.id || "all";
         state.currentMatchIndex = 0;
         resetMatchDetailContext(state);
     }
 
-    function replaceKeywords(state: AuditKingStateModel, importedKeywords: AuditKingImportedKeyword[]): void {
-        state.keywords = importedKeywords
-            .map((item, index) => runtime.KeywordStore.createKeyword(item.text, index, {
-                label: item.label,
-                color: item.color,
-                enabled: item.enabled,
-                source: item.source,
-                evidences: item.evidences
-            }))
-            .map((keyword) => ({
-                ...keyword,
-                evidences: (keyword.evidences || []).map((evidence) => normalizeKeywordEvidence(keyword, evidence))
-            }))
-            .filter((keyword) => keyword.text);
-        if (runtime.SourceLocator?.resolveKeywordSources) {
-            state.keywords = runtime.SourceLocator.resolveKeywordSources(state.keywords, state.checklistBlocks);
-        }
-        if (runtime.SourceLocator?.resolveKeywordEvidences) {
-            state.keywords = runtime.SourceLocator.resolveKeywordEvidences(state.keywords, state.documents);
-        }
-        state.currentKeywordId = state.keywords[0]?.id || "all";
+    function updateCheckItem(
+        state: AuditKingStateModel,
+        checkItemId: string,
+        patch: Partial<Pick<AuditKingCheckItem, "code" | "name" | "keyword" | "enabled">>
+    ): void {
+        const item = state.checkItems.find((candidate) => candidate.id === checkItemId);
+        if (!item) return;
+        if (patch.code !== undefined) item.code = patch.code.trim();
+        if (patch.name !== undefined) item.name = patch.name.trim();
+        if (patch.keyword !== undefined) item.keyword = patch.keyword.trim();
+        if (patch.enabled !== undefined) item.enabled = patch.enabled;
         state.currentMatchIndex = 0;
         resetMatchDetailContext(state);
     }
 
-    function setKeywordEnabled(state: AuditKingStateModel, keywordId: string, enabled: boolean): void {
-        const keyword = state.keywords.find((item) => item.id === keywordId);
-        if (!keyword) return;
-        keyword.enabled = enabled;
+    function removeCheckItem(state: AuditKingStateModel, checkItemId: string): void {
+        state.checkItems = state.checkItems.filter((item) => item.id !== checkItemId);
+        state.searchResult.matches = state.searchResult.matches.filter((match) => match.checkItemId !== checkItemId);
+        delete state.searchResult.countsByCheckItem[checkItemId];
+        if (state.currentCheckItemId === checkItemId) state.currentCheckItemId = state.checkItems[0]?.id || "all";
         state.currentMatchIndex = 0;
         resetMatchDetailContext(state);
     }
 
-    function updateKeywordSource(state: AuditKingStateModel, keywordId: string, source: AuditKingKeywordSource): void {
-        const keyword = state.keywords.find((item) => item.id === keywordId);
-        if (!keyword) return;
-        keyword.source = source;
+    function moveCheckItemToPosition(state: AuditKingStateModel, checkItemId: string, targetPosition: number): void {
+        const sourceIndex = state.checkItems.findIndex((item) => item.id === checkItemId);
+        if (sourceIndex < 0 || !Number.isFinite(targetPosition)) return;
+        const [item] = state.checkItems.splice(sourceIndex, 1);
+        const insertIndex = Math.max(0, Math.min(state.checkItems.length, Math.trunc(targetPosition) - 1));
+        state.checkItems.splice(insertIndex, 0, item);
     }
 
-    function clearKeywordSource(state: AuditKingStateModel, keywordId: string): void {
-        const keyword = state.keywords.find((item) => item.id === keywordId);
-        if (!keyword) return;
-        delete keyword.source;
+    function updateCheckItemSource(state: AuditKingStateModel, checkItemId: string, source: AuditKingCheckItemSource): void {
+        const item = state.checkItems.find((candidate) => candidate.id === checkItemId);
+        if (item) item.source = source;
     }
 
-    function updateKeywordLabel(state: AuditKingStateModel, keywordId: string, label: string): void {
-        const keyword = state.keywords.find((item) => item.id === keywordId);
-        if (!keyword) return;
-        keyword.label = label.trim();
-    }
-
-    function moveKeywordToPosition(state: AuditKingStateModel, keywordId: string, targetPosition: number): void {
-        if (!keywordId || !Number.isFinite(targetPosition) || !state.keywords.length) return;
-        const sourceIndex = state.keywords.findIndex((keyword) => keyword.id === keywordId);
-        if (sourceIndex < 0) return;
-        const [keyword] = state.keywords.splice(sourceIndex, 1);
-        const insertIndex = Math.max(0, Math.min(state.keywords.length, Math.trunc(targetPosition) - 1));
-        state.keywords.splice(insertIndex, 0, keyword);
+    function clearCheckItemSource(state: AuditKingStateModel, checkItemId: string): void {
+        const item = state.checkItems.find((candidate) => candidate.id === checkItemId);
+        if (item) delete item.source;
     }
 
     function setChecklistBlocks(state: AuditKingStateModel, blocks: AuditKingTextBlock[]): void {
         state.checklistBlocks = [...blocks];
-        if (runtime.SourceLocator?.resolveKeywordSources) {
-            state.keywords = runtime.SourceLocator.resolveKeywordSources(state.keywords, state.checklistBlocks);
+        if (runtime.SourceLocator?.resolveCheckItemSources) {
+            state.checkItems = runtime.SourceLocator.resolveCheckItemSources(state.checkItems, state.checklistBlocks);
         }
     }
 
     function setDocuments(state: AuditKingStateModel, documents: AuditKingDocument[]): void {
-        state.documents = documents.map((documentItem) => ({
-            ...documentItem,
-            enabled: documentItem.enabled !== false
-        }));
-        if (runtime.SourceLocator?.resolveKeywordEvidences) {
-            state.keywords = runtime.SourceLocator.resolveKeywordEvidences(state.keywords, state.documents);
+        state.documents = documents.map((documentItem) => ({ ...documentItem, enabled: documentItem.enabled !== false }));
+        if (runtime.SourceLocator?.resolveCheckItemEvidences) {
+            state.checkItems = runtime.SourceLocator.resolveCheckItemEvidences(state.checkItems, state.documents);
         }
         rebuildDocumentIndex(state);
-        if (state.documentFilterId !== "all" && !getEnabledDocuments(state).some((documentItem) => documentItem.id === state.documentFilterId)) {
+        if (state.documentFilterId !== "all" && !getEnabledDocuments(state).some((item) => item.id === state.documentFilterId)) {
             state.documentFilterId = "all";
         }
     }
@@ -188,15 +142,13 @@
         if (!documentItem) return;
         documentItem.enabled = enabled;
         rebuildDocumentIndex(state);
-        if (state.documentFilterId === documentId && !enabled) {
-            state.documentFilterId = "all";
-        }
+        if (state.documentFilterId === documentId && !enabled) state.documentFilterId = "all";
         state.currentMatchIndex = 0;
         resetMatchDetailContext(state);
     }
 
-    function setCurrentKeyword(state: AuditKingStateModel, keywordId: string): void {
-        state.currentKeywordId = keywordId || "all";
+    function setCurrentCheckItem(state: AuditKingStateModel, checkItemId: string): void {
+        state.currentCheckItemId = checkItemId || "all";
         state.currentMatchIndex = 0;
         resetMatchDetailContext(state);
     }
@@ -207,28 +159,21 @@
         resetMatchDetailContext(state);
     }
 
-    function setSearchResult(state: AuditKingStateModel, searchResult: AuditKingSearchResult): void {
-        state.searchResult = searchResult;
+    function setSearchResult(state: AuditKingStateModel, result: AuditKingSearchResult): void {
+        state.searchResult = result;
         state.currentMatchIndex = 0;
         resetMatchDetailContext(state);
     }
 
-    function makeKeywordEvidenceId(keyword: AuditKingKeyword): string {
-        const maxNumber = (keyword.evidences || []).reduce((maxValue, evidence) => {
-            const match = String(evidence.id || "").match(/manual-evidence-(\d+)$/);
-            return match ? Math.max(maxValue, Number(match[1])) : maxValue;
-        }, 0);
-        return `manual-evidence-${maxNumber + 1}`;
-    }
-
-    function normalizeKeywordEvidence(keyword: AuditKingKeyword, evidence: AuditKingManualEvidence): AuditKingManualEvidence {
+    function normalizeManualEvidence(item: AuditKingCheckItem, evidence: AuditKingManualEvidence): AuditKingManualEvidence {
         return {
-            id: evidence.id || makeKeywordEvidenceId(keyword),
+            id: evidence.id || runtime.CheckItemStore.nextId("manual-evidence"),
             sourceType: evidence.sourceType || "",
             documentId: evidence.documentId || "",
             documentName: String(evidence.documentName || "").trim(),
             blockId: evidence.blockId || "",
             blockIndex: evidence.blockIndex,
+            pageNumber: evidence.pageNumber,
             title: evidence.title || "",
             start: evidence.start,
             end: evidence.end,
@@ -242,136 +187,73 @@
         };
     }
 
-    function addKeywordEvidence(
-        state: AuditKingStateModel,
-        keywordId: string,
-        evidence: AuditKingManualEvidence
-    ): AuditKingManualEvidence | null {
-        const keyword = state.keywords.find((item) => item.id === keywordId);
-        if (!keyword) return null;
-        const normalized = normalizeKeywordEvidence(keyword, evidence);
-        if (!normalized.documentName || !normalized.text) {
-            throw new Error("手册证据缺少手册名称或证据文本。");
-        }
-        keyword.evidences = [...(keyword.evidences || []), normalized];
+    function addManualEvidence(state: AuditKingStateModel, checkItemId: string, evidence: AuditKingManualEvidence): AuditKingManualEvidence {
+        const item = state.checkItems.find((candidate) => candidate.id === checkItemId);
+        if (!item) throw new Error("检查项不存在。");
+        const normalized = normalizeManualEvidence(item, evidence);
+        if (!normalized.documentName || !normalized.text) throw new Error("手册证据缺少手册名称或证据文本。");
+        item.manualEvidences.push(normalized);
         return normalized;
     }
 
-    function removeKeywordEvidence(state: AuditKingStateModel, keywordId: string, evidenceId: string): void {
-        const keyword = state.keywords.find((item) => item.id === keywordId);
-        if (!keyword) return;
-        keyword.evidences = (keyword.evidences || []).filter((evidence) => evidence.id !== evidenceId);
+    function removeManualEvidence(state: AuditKingStateModel, checkItemId: string, evidenceId: string): void {
+        const item = state.checkItems.find((candidate) => candidate.id === checkItemId);
+        if (item) item.manualEvidences = item.manualEvidences.filter((evidence) => evidence.id !== evidenceId);
     }
 
-    function makeEvidenceGroupId(state: AuditKingStateModel): string {
-        return `evidence-group-${state.evidenceGroups.length + 1}`;
-    }
-
-    function addEvidenceGroup(
-        state: AuditKingStateModel,
-        title: string,
-        options: { createInitialEntry?: boolean } = {}
-    ): AuditKingEvidenceGroup {
-        const group = {
-            id: makeEvidenceGroupId(state),
-            title: title.trim(),
-            items: options.createInitialEntry ? [{ content: "", note: "" }] : []
-        };
-        state.evidenceGroups.push(group);
-        return group;
-    }
-
-    function updateEvidenceGroupTitle(state: AuditKingStateModel, groupIndex: number, title: string): void {
-        const group = state.evidenceGroups[groupIndex];
-        if (!group) return;
-        group.title = title.trim();
-    }
-
-    function moveEvidenceGroupToPosition(state: AuditKingStateModel, groupIndex: number, targetPosition: number): void {
-        if (!Number.isInteger(groupIndex) || groupIndex < 0 || groupIndex >= state.evidenceGroups.length) return;
-        if (!Number.isFinite(targetPosition) || !state.evidenceGroups.length) return;
-        const [group] = state.evidenceGroups.splice(groupIndex, 1);
-        const insertIndex = Math.max(0, Math.min(state.evidenceGroups.length, Math.trunc(targetPosition) - 1));
-        state.evidenceGroups.splice(insertIndex, 0, group);
-    }
-
-    function removeEvidenceGroup(state: AuditKingStateModel, groupIndex: number): void {
-        if (groupIndex < 0 || groupIndex >= state.evidenceGroups.length) return;
-        state.evidenceGroups.splice(groupIndex, 1);
-    }
-
-    function addEvidenceEntry(state: AuditKingStateModel, groupIndex: number, content: string, note = ""): void {
-        const group = state.evidenceGroups[groupIndex];
-        if (!group) return;
-        group.items.push({
+    function addAuditEvidence(state: AuditKingStateModel, checkItemId: string, content: string, note = "", sourceEvidenceId?: string): AuditKingAuditEvidence {
+        const item = state.checkItems.find((candidate) => candidate.id === checkItemId);
+        if (!item) throw new Error("检查项不存在。");
+        const evidence = {
+            id: runtime.CheckItemStore.nextId("audit-evidence"),
             content: content.trim(),
-            note: note.trim()
-        });
+            note: note.trim(),
+            sourceEvidenceId
+        };
+        item.auditEvidences.push(evidence);
+        return evidence;
     }
 
-    function replaceEvidence(state: AuditKingStateModel, groups: AuditKingEvidenceGroup[]): void {
-        state.evidenceGroups = groups.map((group, index) => ({
-            id: group.id || `evidence-group-${index + 1}`,
-            title: group.title,
-            items: group.items.map((item) => ({
-                content: item.content,
-                note: item.note
-            }))
+    function adoptManualEvidence(state: AuditKingStateModel, checkItemId: string, evidenceId: string): AuditKingAuditEvidence {
+        const item = state.checkItems.find((candidate) => candidate.id === checkItemId);
+        if (!item) throw new Error("检查项不存在。");
+        const existing = item.auditEvidences.find((evidence) => evidence.sourceEvidenceId === evidenceId);
+        if (existing) return existing;
+        const manualEvidence = item.manualEvidences.find((evidence) => evidence.id === evidenceId);
+        if (!manualEvidence) throw new Error("手册证据不存在。");
+        const location = manualEvidence.pageNumber
+            ? `${manualEvidence.documentName} / 第 ${manualEvidence.pageNumber} 页`
+            : `${manualEvidence.documentName}${manualEvidence.blockIndex ? ` / 第 ${manualEvidence.blockIndex} 段` : ""}`;
+        return addAuditEvidence(state, checkItemId, manualEvidence.text, `采纳自 ${location}`, evidenceId);
+    }
+
+    function updateAuditEvidence(state: AuditKingStateModel, checkItemId: string, evidenceId: string, patch: Partial<AuditKingEvidenceEntry>): void {
+        const evidence = state.checkItems.find((item) => item.id === checkItemId)?.auditEvidences.find((item) => item.id === evidenceId);
+        if (!evidence) return;
+        if (patch.content !== undefined) evidence.content = patch.content;
+        if (patch.note !== undefined) evidence.note = patch.note;
+    }
+
+    function removeAuditEvidence(state: AuditKingStateModel, checkItemId: string, evidenceId: string): void {
+        const item = state.checkItems.find((candidate) => candidate.id === checkItemId);
+        if (item) item.auditEvidences = item.auditEvidences.filter((evidence) => evidence.id !== evidenceId);
+    }
+
+    function buildEvidenceGroups(state: AuditKingStateModel): AuditKingEvidenceGroup[] {
+        return state.checkItems.map((item) => ({
+            id: item.id,
+            title: [item.code, item.name].filter(Boolean).join("  "),
+            items: item.auditEvidences.map((evidence) => ({ content: evidence.content, note: evidence.note }))
         }));
     }
 
-    function updateEvidenceEntry(
-        state: AuditKingStateModel,
-        groupIndex: number,
-        itemIndex: number,
-        patch: Partial<AuditKingEvidenceEntry>
-    ): void {
-        const item = state.evidenceGroups[groupIndex]?.items[itemIndex];
-        if (!item) return;
-        if (patch.content !== undefined) {
-            item.content = patch.content;
-        }
-        if (patch.note !== undefined) {
-            item.note = patch.note;
-        }
-    }
-
-    function removeEvidenceEntry(state: AuditKingStateModel, groupIndex: number, itemIndex: number): void {
-        const group = state.evidenceGroups[groupIndex];
-        if (!group) return;
-        group.items.splice(itemIndex, 1);
-    }
-
     runtime.State = {
-        createState,
-        addKeyword,
-        removeKeyword,
-        setKeywordEnabled,
-        updateKeywordSource,
-        clearKeywordSource,
-        updateKeywordLabel,
-        moveKeywordToPosition,
-        replaceKeywords,
-        setChecklistBlocks,
-        setDocuments,
-        appendDocuments,
-        removeDocument,
-        setDocumentEnabled,
-        getEnabledDocuments,
-        setCurrentKeyword,
-        setDocumentFilter,
-        setSearchResult,
-        resetMatchDetailContext,
-        expandMatchDetailContext,
-        addKeywordEvidence,
-        removeKeywordEvidence,
-        addEvidenceGroup,
-        updateEvidenceGroupTitle,
-        moveEvidenceGroupToPosition,
-        removeEvidenceGroup,
-        addEvidenceEntry,
-        updateEvidenceEntry,
-        replaceEvidence,
-        removeEvidenceEntry
+        createState, resetMatchDetailContext, expandMatchDetailContext,
+        addCheckItem, replaceCheckItems, updateCheckItem, removeCheckItem, moveCheckItemToPosition,
+        updateCheckItemSource, clearCheckItemSource,
+        setChecklistBlocks, setDocuments, appendDocuments, removeDocument, setDocumentEnabled, getEnabledDocuments,
+        setCurrentCheckItem, setDocumentFilter, setSearchResult,
+        addManualEvidence, removeManualEvidence, adoptManualEvidence,
+        addAuditEvidence, updateAuditEvidence, removeAuditEvidence, buildEvidenceGroups
     };
 })();

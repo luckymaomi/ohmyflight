@@ -2,7 +2,7 @@
     const runtime = window.AuditKing || (window.AuditKing = {});
     const CONTEXT_LENGTH = 20;
 
-    function makeSource(block: AuditKingTextBlock, start: number, end: number): AuditKingKeywordSource {
+    function makeSource(block: AuditKingTextBlock, start: number, end: number): AuditKingCheckItemSource {
         const safeStart = Math.max(0, Math.min(start, block.text.length));
         const safeEnd = Math.max(safeStart, Math.min(end, block.text.length));
         return {
@@ -25,6 +25,7 @@
             documentName: match.documentName,
             blockId: match.blockId,
             blockIndex: match.blockIndex,
+            pageNumber: match.pageNumber,
             title: match.title,
             start: safeStart,
             end: safeEnd,
@@ -81,6 +82,7 @@
         if (sameBlock && startBlock) {
             evidence.blockId = startBlock.block.id;
             evidence.blockIndex = startBlock.block.blockIndex;
+            evidence.pageNumber = startBlock.block.pageNumber;
             evidence.title = startBlock.block.title;
             evidence.start = safeStart - startBlock.start;
             evidence.end = safeEnd - startBlock.start;
@@ -94,13 +96,8 @@
         return Number.isFinite(numberValue) ? numberValue : null;
     }
 
-    function parseLegacyBlockIndex(blockId: unknown): number | null {
-        const match = String(blockId || "").match(/-b(\d+)$/);
-        return match ? Number(match[1]) : null;
-    }
-
-    function getSourceBlockIndex(source: AuditKingKeywordSource): number | null {
-        return normalizeNumber(source.blockIndex) ?? parseLegacyBlockIndex(source.blockId);
+    function getSourceBlockIndex(source: AuditKingCheckItemSource): number | null {
+        return normalizeNumber(source.blockIndex);
     }
 
     function textAt(block: AuditKingTextBlock, start: number | null, end: number | null): string {
@@ -114,9 +111,9 @@
 
     function resolveByCoordinates(
         block: AuditKingTextBlock | undefined,
-        source: AuditKingKeywordSource,
+        source: AuditKingCheckItemSource,
         keywordText: string
-    ): AuditKingKeywordSource | null {
+    ): AuditKingCheckItemSource | null {
         if (!block) return null;
         const start = normalizeNumber(source.start);
         const end = normalizeNumber(source.end);
@@ -126,9 +123,9 @@
         return makeSource(block, start as number, end as number);
     }
 
-    function findAllInBlock(block: AuditKingTextBlock, text: string): AuditKingKeywordSource[] {
+    function findAllInBlock(block: AuditKingTextBlock, text: string): AuditKingCheckItemSource[] {
         if (!text) return [];
-        const matches: AuditKingKeywordSource[] = [];
+        const matches: AuditKingCheckItemSource[] = [];
         let start = block.text.indexOf(text);
         while (start >= 0) {
             matches.push(makeSource(block, start, start + text.length));
@@ -137,7 +134,7 @@
         return matches;
     }
 
-    function contextMatches(blockText: string, candidate: AuditKingKeywordSource, source: AuditKingKeywordSource): boolean {
+    function contextMatches(blockText: string, candidate: AuditKingCheckItemSource, source: AuditKingCheckItemSource): boolean {
         const start = normalizeNumber(candidate.start);
         const end = normalizeNumber(candidate.end);
         if (start === null || end === null) return false;
@@ -148,7 +145,7 @@
         return beforeOk && afterOk;
     }
 
-    function uniqueByContext(blocks: AuditKingTextBlock[], source: AuditKingKeywordSource, keywordText: string): AuditKingKeywordSource | null {
+    function uniqueByContext(blocks: AuditKingTextBlock[], source: AuditKingCheckItemSource, keywordText: string): AuditKingCheckItemSource | null {
         const sourceText = source.text || keywordText;
         if (!sourceText) return null;
         const matches = blocks
@@ -156,17 +153,17 @@
         return matches.length === 1 ? matches[0] : null;
     }
 
-    function uniqueInBlock(block: AuditKingTextBlock | undefined, keywordText: string): AuditKingKeywordSource | null {
+    function uniqueInBlock(block: AuditKingTextBlock | undefined, keywordText: string): AuditKingCheckItemSource | null {
         if (!block) return null;
         const matches = findAllInBlock(block, keywordText);
         return matches.length === 1 ? matches[0] : null;
     }
 
     function resolveSource(
-        source: AuditKingKeywordSource | undefined,
+        source: AuditKingCheckItemSource | undefined,
         blocks: AuditKingTextBlock[],
         keywordText: string
-    ): AuditKingKeywordSource | undefined {
+    ): AuditKingCheckItemSource | undefined {
         if (!source || !blocks.length) return source;
 
         const exactBlock = source.blockId ? blocks.find((block) => block.id === source.blockId) : undefined;
@@ -206,6 +203,7 @@
             documentName: block.documentName,
             blockId: block.id,
             blockIndex: block.blockIndex,
+            pageNumber: block.pageNumber,
             title: block.title,
             start: safeStart,
             end: safeEnd,
@@ -388,17 +386,17 @@
         return evidence;
     }
 
-    function resolveKeywordEvidences(keywords: AuditKingKeyword[], documents: AuditKingDocument[]): AuditKingKeyword[] {
-        return keywords.map((keyword) => ({
-            ...keyword,
-            evidences: (keyword.evidences || []).map((evidence) => resolveManualEvidence(evidence, documents))
+    function resolveCheckItemEvidences(items: AuditKingCheckItem[], documents: AuditKingDocument[]): AuditKingCheckItem[] {
+        return items.map((item) => ({
+            ...item,
+            manualEvidences: item.manualEvidences.map((evidence) => resolveManualEvidence(evidence, documents))
         }));
     }
 
-    function resolveKeywordSources(keywords: AuditKingKeyword[], blocks: AuditKingTextBlock[]): AuditKingKeyword[] {
-        return keywords.map((keyword) => ({
-            ...keyword,
-            source: resolveSource(keyword.source, blocks, keyword.text)
+    function resolveCheckItemSources(items: AuditKingCheckItem[], blocks: AuditKingTextBlock[]): AuditKingCheckItem[] {
+        return items.map((item) => ({
+            ...item,
+            source: resolveSource(item.source, blocks, item.keyword)
         }));
     }
 
@@ -408,8 +406,7 @@
         makeManualEvidenceFromDocumentRange,
         resolveSource,
         resolveManualEvidence,
-        resolveKeywordSources,
-        resolveKeywordEvidences,
-        parseLegacyBlockIndex
+        resolveCheckItemSources,
+        resolveCheckItemEvidences
     };
 })();

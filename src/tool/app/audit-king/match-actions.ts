@@ -35,10 +35,10 @@
             context.runtime.State.setDocumentFilter(context.state, (event.currentTarget as HTMLSelectElement).value);
             context.runtime.View.renderMatches(context.state);
         });
-        context.getElement<HTMLButtonElement>("showAllKeywordsBtn").addEventListener("click", () => {
-            context.runtime.State.setCurrentKeyword(context.state, "all");
-            context.runtime.View.renderKeywords(context.state);
-            context.runtime.View.renderKeywordEvidences(context.state);
+        context.getElement<HTMLButtonElement>("showAllCheckItemsBtn").addEventListener("click", () => {
+            context.runtime.State.setCurrentCheckItem(context.state, "all");
+            context.runtime.View.renderCheckItems(context.state);
+            context.runtime.View.renderManualEvidences(context.state);
             context.runtime.View.renderMatches(context.state);
         });
         context.getElement<HTMLButtonElement>("prevMatchBtn").addEventListener("click", () => {
@@ -50,11 +50,11 @@
     }
 
     function bindMatchAsManualEvidence(context: AuditKingAppContext, matchIndex: number): void {
-        if (!context.state.currentKeywordId || context.state.currentKeywordId === "all") {
-            context.runtime.View.renderStatus("请先在关键词池选择一个关键词。", "error");
+        if (!context.state.currentCheckItemId || context.state.currentCheckItemId === "all") {
+            context.runtime.View.renderStatus("请先选择一个检查项。", "error");
             return;
         }
-        const keyword = context.state.keywords.find((item) => item.id === context.state.currentKeywordId);
+        const keyword = context.state.checkItems.find((item) => item.id === context.state.currentCheckItemId);
         if (!keyword) {
             context.runtime.View.renderStatus("当前关键词不存在。", "error");
             return;
@@ -65,8 +65,8 @@
             context.runtime.View.renderStatus("请先选择一条手册命中。", "error");
             return;
         }
-        if (match.keywordId !== keyword.id) {
-            context.runtime.View.renderStatus("当前命中不属于所选关键词，请先切换到该关键词后再绑定。", "error");
+        if (match.checkItemId !== keyword.id) {
+            context.runtime.View.renderStatus("当前命中不属于所选检查项。", "error");
             return;
         }
         const nextIndex = Math.max(0, Math.min(matches.length - 1, matchIndex));
@@ -75,19 +75,19 @@
         }
         context.state.currentMatchIndex = nextIndex;
         const evidence = context.runtime.SourceLocator.makeManualEvidence(match);
-        context.runtime.State.addKeywordEvidence(context.state, keyword.id, evidence);
-        context.runtime.View.renderKeywords(context.state);
+        context.runtime.State.addManualEvidence(context.state, keyword.id, evidence);
+        context.runtime.View.renderCheckItems(context.state);
         context.runtime.View.renderMatches(context.state);
-        context.runtime.View.renderKeywordEvidences(context.state);
-        context.runtime.View.renderStatus(`已为关键词绑定手册证据：${keyword.text}`, "success");
+        context.runtime.View.renderManualEvidences(context.state);
+        context.runtime.View.renderStatus(`已保存手册证据：${keyword.keyword}`, "success");
     }
 
     function addSelectedDetailManualEvidence(context: AuditKingAppContext): void {
-        if (!context.state.currentKeywordId || context.state.currentKeywordId === "all") {
-            context.runtime.View.renderStatus("请先在关键词池选择一个关键词。", "error");
+        if (!context.state.currentCheckItemId || context.state.currentCheckItemId === "all") {
+            context.runtime.View.renderStatus("请先选择一个检查项。", "error");
             return;
         }
-        const keyword = context.state.keywords.find((item) => item.id === context.state.currentKeywordId);
+        const keyword = context.state.checkItems.find((item) => item.id === context.state.currentCheckItemId);
         if (!keyword) {
             context.runtime.View.renderStatus("当前关键词不存在。", "error");
             return;
@@ -97,8 +97,8 @@
             context.runtime.View.renderStatus("请先选择一条手册命中。", "error");
             return;
         }
-        if (match.keywordId !== keyword.id) {
-            context.runtime.View.renderStatus("当前详情不属于所选关键词，请先切换到该关键词后再加入证据。", "error");
+        if (match.checkItemId !== keyword.id) {
+            context.runtime.View.renderStatus("当前详情不属于所选检查项。", "error");
             return;
         }
         const detailText = document.getElementById("matchDetailOriginalText");
@@ -130,20 +130,20 @@
                 mode: match.mode
             }
         );
-        context.runtime.State.addKeywordEvidence(context.state, keyword.id, evidence);
+        context.runtime.State.addManualEvidence(context.state, keyword.id, evidence);
         window.getSelection()?.removeAllRanges();
-        context.runtime.View.renderKeywords(context.state);
+        context.runtime.View.renderCheckItems(context.state);
         context.runtime.View.renderMatches(context.state);
-        context.runtime.View.renderKeywordEvidences(context.state);
-        context.runtime.View.renderStatus(`已把选中原文加入手册证据：${keyword.text}`, "success");
+        context.runtime.View.renderManualEvidences(context.state);
+        context.runtime.View.renderStatus(`已把选中原文保存为手册证据：${keyword.keyword}`, "success");
     }
 
     function unbindMatchManualEvidence(context: AuditKingAppContext, matchIndex: number): void {
-        if (!context.state.currentKeywordId || context.state.currentKeywordId === "all") {
-            context.runtime.View.renderStatus("请先在关键词池选择一个关键词。", "error");
+        if (!context.state.currentCheckItemId || context.state.currentCheckItemId === "all") {
+            context.runtime.View.renderStatus("请先选择一个检查项。", "error");
             return;
         }
-        const keyword = context.state.keywords.find((item) => item.id === context.state.currentKeywordId);
+        const keyword = context.state.checkItems.find((item) => item.id === context.state.currentCheckItemId);
         if (!keyword) {
             context.runtime.View.renderStatus("当前关键词不存在。", "error");
             return;
@@ -155,7 +155,7 @@
             return;
         }
         const selectedText = match.blockText.slice(match.start, match.end);
-        const evidence = (keyword.evidences || []).find((item) => (
+        const evidence = keyword.manualEvidences.find((item) => (
             item.documentName === match.documentName
             && item.blockId === match.blockId
             && Number(item.start) === match.start
@@ -171,23 +171,23 @@
             context.runtime.State.resetMatchDetailContext(context.state);
         }
         context.state.currentMatchIndex = nextIndex;
-        context.runtime.State.removeKeywordEvidence(context.state, keyword.id, evidence.id);
-        context.runtime.View.renderKeywords(context.state);
+        context.runtime.State.removeManualEvidence(context.state, keyword.id, evidence.id);
+        context.runtime.View.renderCheckItems(context.state);
         context.runtime.View.renderMatches(context.state);
-        context.runtime.View.renderKeywordEvidences(context.state);
+        context.runtime.View.renderManualEvidences(context.state);
         context.runtime.View.renderStatus("已解绑当前摘要的手册证据。", "success");
     }
 
     function removeCurrentKeywordManualEvidence(context: AuditKingAppContext, evidenceId: string): void {
-        if (!context.state.currentKeywordId || context.state.currentKeywordId === "all") {
-            context.runtime.View.renderStatus("请先在关键词池选择一个关键词。", "error");
+        if (!context.state.currentCheckItemId || context.state.currentCheckItemId === "all") {
+            context.runtime.View.renderStatus("请先选择一个检查项。", "error");
             return;
         }
         if (!evidenceId) return;
-        context.runtime.State.removeKeywordEvidence(context.state, context.state.currentKeywordId, evidenceId);
-        context.runtime.View.renderKeywords(context.state);
+        context.runtime.State.removeManualEvidence(context.state, context.state.currentCheckItemId, evidenceId);
+        context.runtime.View.renderCheckItems(context.state);
         context.runtime.View.renderMatches(context.state);
-        context.runtime.View.renderKeywordEvidences(context.state);
+        context.runtime.View.renderManualEvidences(context.state);
         context.runtime.View.renderStatus("已解绑手册证据。", "success");
     }
 
@@ -213,6 +213,11 @@
                 addSelectedDetailManualEvidence(context);
             } else if (action === "remove-manual-evidence") {
                 removeCurrentKeywordManualEvidence(context, actionTarget.dataset.evidenceId || "");
+            } else if (action === "adopt-manual-evidence") {
+                context.runtime.State.adoptManualEvidence(context.state, context.state.currentCheckItemId, actionTarget.dataset.evidenceId || "");
+                context.runtime.View.renderManualEvidences(context.state);
+                context.runtime.View.renderEvidence(context.state);
+                context.runtime.View.renderStatus("已追加为审计依据。", "success");
             } else if (action === "remove-document") {
                 context.runtime.State.removeDocument(context.state, actionTarget.dataset.documentId || "");
                 context.recomputeSearch();

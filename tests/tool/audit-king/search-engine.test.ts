@@ -35,20 +35,20 @@ describe("audit-king search engine", () => {
       }
     ];
     const keywords = [
-      { id: "kw-1", text: "进入条件", color: "#f59e0b", enabled: true },
-      { id: "kw-2", text: "航线运输驾驶员执照", color: "#22c55e", enabled: true },
-      { id: "kw-3", text: "不存在的词", color: "#3b82f6", enabled: true }
+      { id: "kw-1", keyword: "进入条件", color: "#f59e0b", enabled: true },
+      { id: "kw-2", keyword: "航线运输驾驶员执照", color: "#22c55e", enabled: true },
+      { id: "kw-3", keyword: "不存在的词", color: "#3b82f6", enabled: true }
     ];
 
     const result = searchEngine.searchDocuments(documents, keywords);
 
-    expect(result.countsByKeyword).toEqual({
+    expect(result.countsByCheckItem).toEqual({
       "kw-1": 1,
       "kw-2": 1,
       "kw-3": 0
     });
     expect(result.matches.map((match: any) => ({
-      keywordId: match.keywordId,
+      keywordId: match.checkItemId,
       documentName: match.documentName,
       blockIndex: match.blockIndex,
       mode: match.mode,
@@ -61,13 +61,13 @@ describe("audit-king search engine", () => {
 
   it("filters matches by keyword and document without recalculating business meaning", () => {
     const matches = [
-      { id: "m1", keywordId: "kw-1", documentId: "doc-1" },
-      { id: "m2", keywordId: "kw-2", documentId: "doc-1" },
-      { id: "m3", keywordId: "kw-1", documentId: "doc-2" }
+      { id: "m1", checkItemId: "kw-1", documentId: "doc-1" },
+      { id: "m2", checkItemId: "kw-2", documentId: "doc-1" },
+      { id: "m3", checkItemId: "kw-1", documentId: "doc-2" }
     ];
 
-    expect(searchEngine.filterMatches(matches, { keywordId: "kw-1", documentId: "all" }).map((item: any) => item.id)).toEqual(["m1", "m3"]);
-    expect(searchEngine.filterMatches(matches, { keywordId: "all", documentId: "doc-1" }).map((item: any) => item.id)).toEqual(["m1", "m2"]);
+    expect(searchEngine.filterMatches(matches, { checkItemId: "kw-1", documentId: "all" }).map((item: any) => item.id)).toEqual(["m1", "m3"]);
+    expect(searchEngine.filterMatches(matches, { checkItemId: "all", documentId: "doc-1" }).map((item: any) => item.id)).toEqual(["m1", "m2"]);
   });
 
     it("builds a reusable document index for repeated keyword searches", () => {
@@ -82,7 +82,7 @@ describe("audit-king search engine", () => {
       }
     ];
     const keywords = [
-      { id: "kw-1", text: "进入条件", color: "#f59e0b", enabled: true }
+      { id: "kw-1", keyword: "进入条件", color: "#f59e0b", enabled: true }
     ];
 
     const index = searchEngine.buildDocumentIndex(documents);
@@ -109,10 +109,10 @@ describe("audit-king search engine", () => {
 
         const index = searchEngine.buildDocumentIndex(documents);
         const result = searchEngine.searchIndex(index, [
-            { id: "kw-1", text: "训练", color: "#f59e0b", enabled: true }
+            { id: "kw-1", keyword: "训练", color: "#f59e0b", enabled: true }
         ]);
 
-        expect(result.countsByKeyword["kw-1"]).toBe(1);
+        expect(result.countsByCheckItem["kw-1"]).toBe(1);
         expect(result.matches[0].matchedText).toBe("训练");
     });
 });

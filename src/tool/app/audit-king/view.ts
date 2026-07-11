@@ -2,19 +2,14 @@
     const runtime = window.AuditKing || (window.AuditKing = {});
 
     function escapeHtml(value: unknown): string {
-        return String(value ?? "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#39;");
+        return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+            "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+        }[char] || char));
     }
 
     function getElement<T extends HTMLElement>(id: string): T {
         const element = document.getElementById(id);
-        if (!element) {
-            throw new Error(`页面缺少必要元素：${id}`);
-        }
+        if (!element) throw new Error(`Missing element: ${id}`);
         return element as T;
     }
 
@@ -24,450 +19,198 @@
         element.className = `status-bar ${type}`;
     }
 
-    function keywordRangesForText(text: string, blockId: string, state: AuditKingStateModel): AuditKingHighlightRange[] {
-        const ranges: AuditKingHighlightRange[] = [];
-        state.keywords.filter((keyword) => keyword.enabled !== false).forEach((keyword) => {
-            if (!keyword.source || keyword.source.blockId !== blockId) return;
-            const start = Number(keyword.source.start);
-            const end = Number(keyword.source.end);
-            if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end > text.length || end <= start) return;
-            ranges.push({
-                keywordId: keyword.id,
-                color: keyword.color,
-                start,
-                end
-            });
-        });
-        return ranges;
-    }
-
-    function segmentToHtml(segment: { text: string; keywordIds: string[]; evidenceIds?: string[]; colors: string[] }): string {
-        const evidenceIds = segment.evidenceIds || [];
-        if (!segment.keywordIds.length && !evidenceIds.length) {
-            return escapeHtml(segment.text);
-        }
-        if (evidenceIds.length) {
-            const style = [
-                "background:#d1e7dd",
-                "border-radius:3px",
-                "padding:0 2px",
-                "box-decoration-break:clone",
-                "-webkit-box-decoration-break:clone"
-            ].join(";");
-            return `<mark class="ak-highlight ak-manual-evidence-highlight" data-keyword-ids="${escapeHtml(segment.keywordIds.join(" "))}" data-evidence-ids="${escapeHtml(evidenceIds.join(" "))}" style="${style}">${escapeHtml(segment.text)}</mark>`;
-        }
-        const background = segment.colors[segment.colors.length - 1];
-        const shadows = segment.colors
-            .slice(0, -1)
-            .map((color, index) => `inset 0 -${3 + index * 3}px 0 ${color}`)
-            .join(", ");
-        const style = [
-            `background:${background}33`,
-            `border-bottom:2px solid ${background}`,
-            shadows ? `box-shadow:${shadows}` : ""
-        ].filter(Boolean).join(";");
-        return `<mark class="ak-highlight" data-keyword-ids="${escapeHtml(segment.keywordIds.join(" "))}" style="${style}">${escapeHtml(segment.text)}</mark>`;
-    }
-
     function renderHighlightedText(text: string, ranges: AuditKingHighlightRange[]): string {
-        return runtime.Highlight.buildHighlightSegments(text, ranges)
-            .map(segmentToHtml)
-            .join("");
+        const segments = runtime.Highlight.buildHighlightSegments(text, ranges);
+        return segments.map((segment: any) => {
+            if (!segment.colors.length) return escapeHtml(segment.text);
+            const evidenceClass = segment.evidenceIds.length ? " ak-manual-evidence-highlight" : "";
+            const style = segment.evidenceIds.length ? "background:#d1e7dd" : `background:${segment.colors[0]}`;
+            return `<mark class="ak-highlight${evidenceClass}" style="${style}" data-check-item-ids="${escapeHtml(segment.keywordIds.join(","))}" data-evidence-ids="${escapeHtml(segment.evidenceIds.join(","))}">${escapeHtml(segment.text)}</mark>`;
+        }).join("");
     }
 
-    function manualEvidenceRangesForDetail(
-        state: AuditKingStateModel,
-        match: AuditKingMatch,
-        detailText: string,
-        windowStart: number,
-        blockGlobalStart: number
-    ): AuditKingHighlightRange[] {
-        const keyword = state.keywords?.find((item) => item.id === state.currentKeywordId);
-        if (!keyword || state.currentKeywordId === "all") return [];
-
-        return (keyword.evidences || []).flatMap((evidence) => {
-            if (evidence.sourceType !== "selection") return [];
-            if (evidence.documentId && evidence.documentId !== match.documentId) return [];
-            if (!evidence.documentId && evidence.documentName !== match.documentName) return [];
-
-            let globalStart = Number(evidence.globalStart);
-            let globalEnd = Number(evidence.globalEnd);
-            if (!Number.isFinite(globalStart) || !Number.isFinite(globalEnd)) {
-                if (evidence.blockId !== match.blockId) return [];
-                const start = Number(evidence.start);
-                const end = Number(evidence.end);
-                if (!Number.isFinite(start) || !Number.isFinite(end)) return [];
-                globalStart = blockGlobalStart + start;
-                globalEnd = blockGlobalStart + end;
-            }
-
-            if (globalEnd <= windowStart || globalStart >= windowStart + detailText.length) return [];
-            const start = Math.max(0, globalStart - windowStart);
-            const end = Math.min(detailText.length, globalEnd - windowStart);
-            if (end <= start) return [];
-            const fullyVisible = start === globalStart - windowStart && end === globalEnd - windowStart;
-            if (fullyVisible && evidence.text && detailText.slice(start, end) !== evidence.text) return [];
-
-            return [{
-                keywordId: state.currentKeywordId,
-                evidenceId: evidence.id || `${state.currentKeywordId}-${globalStart}-${globalEnd}`,
-                kind: "manual-evidence" as const,
-                color: "#198754",
-                start,
-                end
-            }];
-        });
+    function sourceIsLocated(item: AuditKingCheckItem, blocks: AuditKingTextBlock[]): boolean {
+        if (!item.source?.blockId) return false;
+        const block = blocks.find((candidate) => candidate.id === item.source?.blockId);
+        const start = Number(item.source.start);
+        const end = Number(item.source.end);
+        return !!block && Number.isFinite(start) && Number.isFinite(end) && end > start
+            && block.text.slice(start, end) === (item.source.text || item.keyword);
     }
 
     function renderChecklist(state: AuditKingStateModel): void {
         const container = getElement<HTMLElement>("checklistText");
         if (!state.checklistBlocks.length) {
-            container.innerHTML = `<div class="empty-panel">上传检查单后，这里只显示参考文本。不会自动拆条款，也不会自动提取关键词。</div>`;
+            container.innerHTML = `<div class="empty-panel">尚未上传检查单。</div>`;
             return;
         }
-
+        const current = state.checkItems.find((item) => item.id === state.currentCheckItemId);
         container.innerHTML = state.checklistBlocks.map((block) => {
-            const ranges = keywordRangesForText(block.text, block.id, state);
-            const currentKeyword = state.keywords.find((keyword) => keyword.id === state.currentKeywordId);
-            const active = currentKeyword?.source?.blockId === block.id ? " active-source" : "";
-            return `<p id="checklist-block-${escapeHtml(block.id)}" class="${active}" data-block-id="${escapeHtml(block.id)}" data-block-index="${block.blockIndex}">${renderHighlightedText(block.text, ranges)}</p>`;
+            const ranges: AuditKingHighlightRange[] = [];
+            if (current?.source?.blockId === block.id && sourceIsLocated(current, state.checklistBlocks)) {
+                ranges.push({
+                    checkItemId: current.id,
+                    color: current.color,
+                    start: Number(current.source.start),
+                    end: Number(current.source.end)
+                });
+            }
+            return `<p class="${ranges.length ? "active-source" : ""}" data-block-id="${escapeHtml(block.id)}" data-block-index="${block.blockIndex}">${renderHighlightedText(block.text, ranges)}</p>`;
         }).join("");
     }
 
     function focusChecklistHighlight(state: AuditKingStateModel): void {
+        if (state.currentCheckItemId === "all") return;
         const container = getElement<HTMLElement>("checklistText");
-        if (!state.currentKeywordId || state.currentKeywordId === "all") return;
-        const activeBlock = container.querySelector<HTMLElement>(".active-source");
-        const highlight = findKeywordHighlight(activeBlock || container, state.currentKeywordId)
-            || findKeywordHighlight(container, state.currentKeywordId);
-        scrollChildIntoPanel(container, highlight || activeBlock);
-    }
-
-    function findKeywordHighlight(root: ParentNode, keywordId: string): HTMLElement | null {
-        const highlights = Array.from(root.querySelectorAll<HTMLElement>(".ak-highlight"));
-        return highlights.find((element) => (element.dataset.keywordIds || "").split(/\s+/).includes(keywordId)) || null;
+        const block = container.querySelector<HTMLElement>(".active-source");
+        if (block) container.scrollTop = Math.max(0, block.offsetTop - 70);
     }
 
     function renderDocuments(state: AuditKingStateModel): void {
         const list = getElement<HTMLElement>("manualList");
         const filter = getElement<HTMLSelectElement>("manualFilter");
-        if (!state.documents.length) {
-            list.innerHTML = `<div class="empty-panel">尚未上传手册。</div>`;
-            filter.innerHTML = `<option value="all">全部手册</option>`;
-            return;
-        }
-
-        const enabledDocuments = state.documents.filter((documentItem) => documentItem.enabled !== false);
-        list.innerHTML = state.documents.map((documentItem) => `
-            <div class="manual-chip ${documentItem.enabled === false ? "muted" : ""}">
-                <span class="manual-name">${escapeHtml(documentItem.name)}</span>
-                <span class="manual-actions">
-                    <small>${documentItem.blocks.length} 段${documentItem.enabled === false ? " / 已停用" : ""}</small>
-                    <button class="manual-toggle" data-action="toggle-document" data-document-id="${escapeHtml(documentItem.id)}">${documentItem.enabled === false ? "启用" : "停用"}</button>
-                    <button class="manual-delete" data-action="remove-document" data-document-id="${escapeHtml(documentItem.id)}">删除</button>
-                </span>
-            </div>
-        `).join("");
-        filter.innerHTML = [
-            `<option value="all">全部手册</option>`,
-            ...enabledDocuments.map((documentItem) => `<option value="${escapeHtml(documentItem.id)}">${escapeHtml(documentItem.name)}</option>`)
-        ].join("");
-        filter.value = enabledDocuments.some((documentItem) => documentItem.id === state.documentFilterId)
-            ? state.documentFilterId
-            : "all";
+        list.innerHTML = state.documents.length ? state.documents.map((documentItem) => `
+            <div class="manual-row ${documentItem.enabled === false ? "muted" : ""}">
+                <span>${escapeHtml(documentItem.name)} <small>${documentItem.blocks.length} 段${documentItem.pageCount ? ` / ${documentItem.pageCount} 页` : ""}</small></span>
+                <button class="btn btn-sm btn-outline-secondary" data-action="toggle-document" data-document-id="${escapeHtml(documentItem.id)}">${documentItem.enabled === false ? "启用" : "停用"}</button>
+                <button class="btn btn-sm btn-outline-danger" data-action="remove-document" data-document-id="${escapeHtml(documentItem.id)}">删除</button>
+            </div>`).join("") : `<div class="empty-panel">尚未上传公司手册。</div>`;
+        const enabled = state.documents.filter((item) => item.enabled !== false);
+        filter.innerHTML = `<option value="all">全部手册</option>${enabled.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join("")}`;
+        filter.value = enabled.some((item) => item.id === state.documentFilterId) ? state.documentFilterId : "all";
     }
 
-    function renderKeywords(state: AuditKingStateModel): void {
-        const container = getElement<HTMLElement>("keywordList");
-        if (!state.keywords.length) {
-            container.innerHTML = `<div class="empty-panel">从检查单选中文字，或手动输入关键词。</div>`;
+    function renderCheckItems(state: AuditKingStateModel): void {
+        const container = getElement<HTMLElement>("checkItemList");
+        if (!state.checkItems.length) {
+            container.innerHTML = `<div class="empty-panel">创建检查项后，在公司手册中检索候选依据。</div>`;
             return;
         }
-
-        container.innerHTML = state.keywords.map((keyword, index) => {
-            const count = state.searchResult.countsByKeyword[keyword.id] ?? 0;
-            const active = state.currentKeywordId === keyword.id ? "active" : "";
-            const disabled = keyword.enabled === false ? "muted" : "";
-            const sourceStatus = getKeywordSourceStatus(keyword, state.checklistBlocks);
-            const evidenceCount = (keyword.evidences || []).length;
-            return `
-                <div class="keyword-item ${active} ${disabled}" data-keyword-id="${escapeHtml(keyword.id)}">
-                    <input class="form-control form-control-sm keyword-order-input" type="number" min="1" value="${index + 1}" data-action="edit-keyword-order" data-keyword-id="${escapeHtml(keyword.id)}" aria-label="关键词序号">
-                    <button class="keyword-select" data-action="select-keyword" data-keyword-id="${escapeHtml(keyword.id)}">
-                        <span class="keyword-color" style="background:${escapeHtml(keyword.color)}"></span>
-                        <span class="keyword-main">
-                            <span class="keyword-text">${escapeHtml(keyword.text)}</span>
-                            <span class="keyword-source-status ${sourceStatus.className}">${sourceStatus.label}</span>
-                            <span class="keyword-evidence-status">${evidenceCount} 条证据</span>
-                        </span>
-                        <span class="keyword-count">${count}</span>
+        container.innerHTML = state.checkItems.map((item, index) => {
+            const sourceStatus = sourceIsLocated(item, state.checklistBlocks) ? "已定位" : item.source ? "需确认" : "无来源";
+            const count = state.searchResult.countsByCheckItem[item.id] || 0;
+            return `<article class="check-item ${item.id === state.currentCheckItemId ? "active" : ""} ${item.enabled ? "" : "muted"}">
+                <div class="check-item-row">
+                    <input class="form-control form-control-sm check-item-order" type="number" min="1" value="${index + 1}" data-action="edit-check-item-order" data-check-item-id="${escapeHtml(item.id)}" title="顺序">
+                    <button class="check-item-select" data-action="select-check-item" data-check-item-id="${escapeHtml(item.id)}">
+                        <span class="check-item-color" style="background:${escapeHtml(item.color)}"></span>
+                        <span><strong>${escapeHtml(item.code || "未编号")}</strong> ${escapeHtml(item.name || "未命名")}</span>
+                        <small>${count} 命中 / ${item.manualEvidences.length} 证据 / ${item.auditEvidences.length} 依据</small>
                     </button>
-                    <input class="form-control form-control-sm keyword-label-input" value="${escapeHtml(keyword.label || "")}" placeholder="条款标记" data-action="edit-keyword-label" data-keyword-id="${escapeHtml(keyword.id)}" aria-label="关键词标记">
-                    <button class="keyword-toggle" data-action="toggle-keyword" data-keyword-id="${escapeHtml(keyword.id)}">${keyword.enabled === false ? "启用" : "停用"}</button>
-                    <button class="keyword-delete" data-action="delete-keyword" data-keyword-id="${escapeHtml(keyword.id)}">×</button>
+                    <button class="btn btn-sm btn-outline-secondary" data-action="toggle-check-item" data-check-item-id="${escapeHtml(item.id)}">${item.enabled ? "停用" : "启用"}</button>
+                    <button class="btn btn-sm btn-outline-danger" data-action="delete-check-item" data-check-item-id="${escapeHtml(item.id)}">删除</button>
                 </div>
-            `;
+                <div class="check-item-fields">
+                    <input class="form-control form-control-sm" value="${escapeHtml(item.code)}" placeholder="检查编号" data-action="edit-check-item-code" data-check-item-id="${escapeHtml(item.id)}">
+                    <input class="form-control form-control-sm" value="${escapeHtml(item.name)}" placeholder="检查项名称" data-action="edit-check-item-name" data-check-item-id="${escapeHtml(item.id)}">
+                    <input class="form-control form-control-sm" value="${escapeHtml(item.keyword)}" placeholder="关键词" data-action="edit-check-item-keyword" data-check-item-id="${escapeHtml(item.id)}">
+                    <span class="source-status">${sourceStatus}</span>
+                </div>
+            </article>`;
         }).join("");
     }
 
-    function getKeywordSourceStatus(keyword: AuditKingKeyword, blocks: AuditKingTextBlock[]): { label: string; className: string } {
-        if (!keyword.source) {
-            return { label: "无来源", className: "" };
-        }
-        const block = keyword.source.blockId
-            ? blocks.find((item) => item.id === keyword.source?.blockId)
-            : undefined;
-        const start = Number(keyword.source.start);
-        const end = Number(keyword.source.end);
-        const hasValidRange = !!block && Number.isFinite(start) && Number.isFinite(end) && start >= 0 && end > start && end <= block.text.length;
-        const textOk = !keyword.source.text || (hasValidRange && block?.text.slice(start, end) === keyword.source.text);
-        if (hasValidRange && textOk) {
-            return { label: "已定位", className: "located" };
-        }
-        return { label: "需人工确认", className: "review" };
+    function filteredMatches(state: AuditKingStateModel): AuditKingMatch[] {
+        return runtime.SearchEngine.filterMatches(state.searchResult.matches, {
+            checkItemId: state.currentCheckItemId,
+            documentId: state.documentFilterId
+        });
+    }
+
+    function findBoundEvidence(item: AuditKingCheckItem | undefined, match: AuditKingMatch): AuditKingManualEvidence | undefined {
+        return item?.manualEvidences.find((evidence) => evidence.documentName === match.documentName
+            && evidence.blockId === match.blockId && evidence.start === match.start && evidence.end === match.end);
     }
 
     function renderMatches(state: AuditKingStateModel): void {
+        const matches = filteredMatches(state);
+        const currentItem = state.checkItems.find((item) => item.id === state.currentCheckItemId);
+        getElement<HTMLElement>("matchCount").textContent = `${matches.length} 条命中`;
         const list = getElement<HTMLElement>("matchList");
-        const filtered = runtime.SearchEngine.filterMatches(state.searchResult.matches, {
-            keywordId: state.currentKeywordId,
-            documentId: state.documentFilterId
-        });
-
-        getElement<HTMLElement>("matchCount").textContent = `${filtered.length} 条命中`;
-        if (!filtered.length) {
-            list.innerHTML = `<div class="empty-panel">当前筛选没有命中。</div>`;
-            renderMatchDetail(state);
-            return;
-        }
-
-        list.innerHTML = filtered.map((match: AuditKingMatch, index: number) => {
-            const context = runtime.Highlight.buildContext(match.blockText, {
-                start: match.start,
-                end: match.end,
-                before: 100,
-                after: 100
-            });
-            const contextRange = {
-                keywordId: match.keywordId,
-                color: match.keywordColor,
-                start: match.start - context.offset,
-                end: match.end - context.offset
-            };
-            const active = index === state.currentMatchIndex ? "active" : "";
-            const title = match.title ? ` / ${match.title}` : "";
-            const canBindEvidence = state.currentKeywordId !== "all" && match.keywordId === state.currentKeywordId;
-            const boundEvidence = canBindEvidence ? findManualEvidenceForMatch(state, match) : null;
-            const boundClass = boundEvidence ? " bound-evidence" : "";
-            const boundStatus = boundEvidence ? `<span class="match-bound-status">已绑定证据</span>` : "";
-            const evidenceAction = boundEvidence
-                ? `<button class="btn btn-sm btn-outline-danger match-evidence-action" data-action="unbind-match-evidence" data-match-index="${index}">移出手册证据</button>`
-                : `<button class="btn btn-sm btn-outline-primary match-evidence-action" data-action="bind-match-evidence" data-match-index="${index}">加入手册证据</button>`;
-            return `
-                <article class="match-item ${active}${boundClass}" id="match-${index}" data-action="focus-match" data-match-index="${index}" role="button" tabindex="0">
-                    <div class="match-meta">
-                        <strong class="match-keyword">${escapeHtml(match.keywordText)}</strong>
-                        <span class="match-location">${escapeHtml(match.documentName)} / 第 ${match.blockIndex} 段${escapeHtml(title)}</span>
-                        <span class="match-mode">${match.mode === "exact" ? "精确" : "宽松"}</span>
-                        ${boundStatus}
-                        ${canBindEvidence ? evidenceAction : ""}
-                    </div>
-                    <div class="match-context">${context.truncatedStart ? "..." : ""}${renderHighlightedText(context.text, [contextRange])}${context.truncatedEnd ? "..." : ""}</div>
-                </article>
-            `;
-        }).join("");
+        list.innerHTML = matches.length ? matches.map((match, index) => {
+            const bound = findBoundEvidence(currentItem, match);
+            const location = match.pageNumber ? `第 ${match.pageNumber} 页` : `第 ${match.blockIndex} 段`;
+            return `<article class="match-item ${index === state.currentMatchIndex ? "active" : ""} ${bound ? "bound-evidence" : ""}" data-action="focus-match" data-match-index="${index}" role="button" tabindex="0">
+                <div><strong>${escapeHtml(match.keywordText)}</strong> <span>${escapeHtml(match.documentName)} / ${location}</span></div>
+                <p>${escapeHtml(match.blockText)}</p>
+                ${state.currentCheckItemId !== "all" ? `<button class="btn btn-sm ${bound ? "btn-outline-danger" : "btn-outline-success"}" data-action="${bound ? "unbind-match-evidence" : "bind-match-evidence"}" data-match-index="${index}">${bound ? "移出手册证据" : "保存为手册证据"}</button>` : ""}
+            </article>`;
+        }).join("") : `<div class="empty-panel">当前范围没有命中。</div>`;
+        state.currentMatchIndex = Math.max(0, Math.min(state.currentMatchIndex, matches.length - 1));
         renderMatchDetail(state);
-        scrollChildIntoPanel(list, list.querySelector<HTMLElement>(".match-item.active"));
     }
 
     function renderMatchDetail(state: AuditKingStateModel): void {
+        const match = filteredMatches(state)[state.currentMatchIndex];
         const container = getElement<HTMLElement>("matchDetail");
-        const filtered = runtime.SearchEngine.filterMatches(state.searchResult.matches, {
-            keywordId: state.currentKeywordId,
-            documentId: state.documentFilterId
-        });
-        const match = filtered[state.currentMatchIndex];
+        const button = getElement<HTMLButtonElement>("addSelectedManualEvidenceBtn");
         if (!match) {
-            renderMatchDetailControls(0, false, false);
-            container.innerHTML = `<div class="empty-panel">点击左侧命中摘要后，这里显示附近全文。</div>`;
+            container.innerHTML = `<div class="empty-panel">选择一条命中查看手册上下文。</div>`;
+            getElement<HTMLElement>("matchDetailContextLabel").textContent = "";
+            button.disabled = true;
             return;
         }
-
         const documentItem = state.documents.find((item) => item.id === match.documentId);
-        const detailContextLength = state.currentDetailContextLength || 2000;
         const context = runtime.Highlight.buildBlockWindowContext(documentItem?.blocks || [], {
-            blockId: match.blockId,
-            matchStart: match.start,
-            matchEnd: match.end,
-            targetLength: detailContextLength
+            blockId: match.blockId, matchStart: match.start, matchEnd: match.end, targetLength: state.currentDetailContextLength
         });
-        const detailText = context.text || match.blockText;
-        const rangeStart = context.text ? context.matchStart : match.start;
-        const rangeEnd = context.text ? context.matchEnd : match.end;
-        const windowStart = context.windowStart ?? 0;
-        const blockGlobalStart = windowStart + rangeStart - match.start;
-        const ranges = [
-            ...manualEvidenceRangesForDetail(state, match, detailText, windowStart, blockGlobalStart),
-            {
-                keywordId: match.keywordId,
-                color: match.keywordColor,
-                start: rangeStart,
-                end: rangeEnd
-            }
-        ];
-        const title = match.title ? ` / ${match.title}` : "";
-        container.innerHTML = `
-            <div class="detail-meta">
-                <strong>${escapeHtml(match.keywordText)}</strong>
-                <span>${escapeHtml(match.documentName)} / 第 ${match.blockIndex} 段${escapeHtml(title)}</span>
-                <span class="match-mode">${match.mode === "exact" ? "精确" : "宽松"}</span>
-            </div>
-            <div class="detail-text">
-                ${context.truncatedStart ? "<p>...</p>" : ""}
-                <p id="matchDetailOriginalText" data-window-start="${escapeHtml(windowStart)}">${renderHighlightedText(detailText, ranges)}</p>
-                ${context.truncatedEnd ? "<p>...</p>" : ""}
-            </div>
-        `;
-        renderMatchDetailControls(detailContextLength, context.truncatedStart || context.truncatedEnd, state.currentKeywordId !== "all" && match.keywordId === state.currentKeywordId);
-        scrollChildIntoPanel(container, findKeywordHighlight(container, match.keywordId));
+        const ranges: AuditKingHighlightRange[] = [{
+            checkItemId: match.checkItemId, color: match.keywordColor, start: context.matchStart, end: context.matchEnd
+        }];
+        const item = state.checkItems.find((candidate) => candidate.id === match.checkItemId);
+        item?.manualEvidences.filter((evidence) => evidence.documentId === match.documentId
+            && evidence.globalStart !== undefined && evidence.globalEnd !== undefined
+            && evidence.globalEnd > context.windowStart && evidence.globalStart < context.windowEnd)
+            .forEach((evidence) => ranges.push({
+                checkItemId: item.id, evidenceId: evidence.id, kind: "manual-evidence", color: "#d1e7dd",
+                start: Math.max(0, Number(evidence.globalStart) - context.windowStart),
+                end: Math.min(context.text.length, Number(evidence.globalEnd) - context.windowStart)
+            }));
+        container.innerHTML = `<div id="matchDetailOriginalText" class="detail-text" data-window-start="${context.windowStart}">${renderHighlightedText(context.text, ranges)}</div>`;
+        getElement<HTMLElement>("matchDetailContextLabel").textContent = `已加载约 ${state.currentDetailContextLength} 字`;
+        const expand = getElement<HTMLButtonElement>("expandMatchDetailBtn");
+        expand.disabled = !context.truncatedStart && !context.truncatedEnd;
+        button.disabled = state.currentCheckItemId === "all" || match.checkItemId !== state.currentCheckItemId;
     }
 
-    function renderMatchDetailControls(loadedLength: number, hasMore: boolean, canAddEvidence: boolean): void {
-        const label = getElement<HTMLElement>("matchDetailContextLabel");
-        const button = getElement<HTMLButtonElement>("expandMatchDetailBtn");
-        const addButton = getElement<HTMLButtonElement>("addSelectedManualEvidenceBtn");
-        addButton.textContent = "选中内容加入手册证据";
-        if (!loadedLength) {
-            label.textContent = "未加载";
-            button.textContent = "查看更多上下文";
-            button.disabled = true;
-            addButton.disabled = true;
+    function renderManualEvidences(state: AuditKingStateModel): void {
+        const container = getElement<HTMLElement>("manualEvidenceList");
+        const count = getElement<HTMLElement>("manualEvidenceCount");
+        const item = state.checkItems.find((candidate) => candidate.id === state.currentCheckItemId);
+        if (!item || state.currentCheckItemId === "all") {
+            count.textContent = "未选择检查项";
+            container.innerHTML = `<div class="empty-panel">选择检查项后查看候选手册证据。</div>`;
             return;
         }
-        addButton.disabled = !canAddEvidence;
-        label.textContent = `已加载约 ${loadedLength} 字`;
-        if (!hasMore) {
-            button.textContent = "已加载全部";
-            button.disabled = true;
-        } else {
-            button.textContent = "查看更多上下文";
-            button.disabled = false;
-        }
-    }
-
-    function findManualEvidenceForMatch(state: AuditKingStateModel, match: AuditKingMatch): AuditKingManualEvidence | null {
-        const keyword = state.keywords?.find((item) => item.id === state.currentKeywordId);
-        if (!keyword) return null;
-        return (keyword.evidences || []).find((evidence) => (
-            evidence.documentName === match.documentName
-            && evidence.blockId === match.blockId
-            && Number(evidence.start) === match.start
-            && Number(evidence.end) === match.end
-            && evidence.text === match.blockText.slice(match.start, match.end)
-        )) || null;
-    }
-
-    function scrollChildIntoPanel(container: HTMLElement, child: HTMLElement | null): void {
-        if (!child) return;
-        const targetTop = child.offsetTop - container.clientHeight * 0.35;
-        container.scrollTop = Math.max(0, targetTop);
+        count.textContent = `${item.manualEvidences.length} 条手册证据`;
+        container.innerHTML = item.manualEvidences.length ? item.manualEvidences.map((evidence) => {
+            const adopted = item.auditEvidences.some((audit) => audit.sourceEvidenceId === evidence.id);
+            const location = evidence.pageNumber ? `第 ${evidence.pageNumber} 页` : `第 ${evidence.blockIndex || "?"} 段`;
+            return `<article class="manual-evidence-item">
+                <div class="manual-evidence-head"><strong>${escapeHtml(evidence.documentName)} / ${location}</strong>${adopted ? `<span class="source-status located">已采纳</span>` : ""}</div>
+                <div class="manual-evidence-text">${escapeHtml(evidence.text)}</div>
+                <div class="manual-evidence-actions">
+                    <button class="btn btn-sm btn-success" data-action="adopt-manual-evidence" data-evidence-id="${escapeHtml(evidence.id)}" ${adopted ? "disabled" : ""}>${adopted ? "已采纳" : "采纳为审计依据"}</button>
+                    <button class="btn btn-sm btn-outline-danger" data-action="remove-manual-evidence" data-evidence-id="${escapeHtml(evidence.id)}">删除证据</button>
+                </div>
+            </article>`;
+        }).join("") : `<div class="empty-panel">当前检查项还没有保存手册证据。</div>`;
     }
 
     function renderEvidence(state: AuditKingStateModel): void {
         const container = getElement<HTMLElement>("evidenceList");
-        const entryCount = state.evidenceGroups.reduce((total, group) => total + group.items.length, 0);
-        getElement<HTMLElement>("evidenceCount").textContent = `${state.evidenceGroups.length} 个条款 / ${entryCount} 条依据`;
-        if (!state.evidenceGroups.length) {
-            container.innerHTML = `<div class="empty-panel">人工选中的依据会放在这里。</div>`;
-            return;
-        }
-        container.innerHTML = state.evidenceGroups.map((group, groupIndex) => `
+        const total = state.checkItems.reduce((sum, item) => sum + item.auditEvidences.length, 0);
+        getElement<HTMLElement>("evidenceCount").textContent = `${state.checkItems.length} 个检查项 / ${total} 条依据`;
+        container.innerHTML = state.checkItems.length ? state.checkItems.map((item, index) => `
             <section class="audit-clause">
-                <div class="row g-2 align-items-center audit-clause-head">
-                    <div class="col-auto">
-                        <input class="form-control form-control-sm evidence-order-input" type="number" min="1" value="${groupIndex + 1}" data-action="edit-evidence-group-order" data-group-index="${groupIndex}" aria-label="条款序号">
-                    </div>
-                    <div class="col">
-                        <input class="form-control form-control-sm fw-semibold" value="${escapeHtml(group.title)}" data-action="edit-evidence-group-title" data-group-index="${groupIndex}" aria-label="条款名称">
-                    </div>
-                    <div class="col-auto">
-                        <span class="text-muted small">${group.items.length} 条依据</span>
-                    </div>
-                    <div class="col-auto">
-                        <button class="btn btn-sm btn-outline-primary" data-action="add-evidence-entry" data-group-index="${groupIndex}">新增依据</button>
-                    </div>
-                    <div class="col-auto">
-                        <button class="btn btn-sm btn-outline-danger" data-action="remove-evidence-group" data-group-index="${groupIndex}">删除条款</button>
-                    </div>
-                </div>
-                ${group.items.length ? group.items.map((item, itemIndex) => `
-                    <div class="audit-evidence-row">
-                        <div class="mb-2">
-                            <label class="form-label small text-muted mb-1">依据内容</label>
-                            <textarea class="form-control form-control-sm audit-evidence-content" rows="2" data-action="edit-evidence-content" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="依据内容">${escapeHtml(item.content)}</textarea>
-                        </div>
-                        <div class="row g-2 align-items-center">
-                            <div class="col">
-                                <label class="form-label small text-muted mb-1">备注</label>
-                                <input class="form-control form-control-sm" value="${escapeHtml(item.note)}" placeholder="备注" data-action="edit-evidence-note" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="备注">
-                            </div>
-                            <div class="col-auto align-self-end">
-                                <button class="btn btn-sm btn-outline-danger" data-action="remove-evidence" data-group-index="${groupIndex}" data-item-index="${itemIndex}">删除</button>
-                            </div>
-                        </div>
-                    </div>
-                `).join("") : `<div class="audit-clause-empty">暂无依据，点击“新增依据”添加一行。</div>`}
-            </section>
-        `).join("");
-    }
-
-    function getManualEvidenceStatus(evidence: AuditKingManualEvidence, documents: AuditKingDocument[]): { label: string; className: string } {
-        const documentBlocks = documents.flatMap((documentItem) => documentItem.blocks);
-        const block = evidence.blockId
-            ? documentBlocks.find((item) => item.id === evidence.blockId)
-            : undefined;
-        const start = Number(evidence.start);
-        const end = Number(evidence.end);
-        const hasValidRange = !!block && Number.isFinite(start) && Number.isFinite(end) && start >= 0 && end > start && end <= block.text.length;
-        const textOk = !evidence.text || (hasValidRange && block?.text.slice(start, end) === evidence.text);
-        if (hasValidRange && textOk) {
-            return { label: "已定位", className: "located" };
-        }
-        return { label: "需人工确认", className: "review" };
-    }
-
-    function renderKeywordEvidences(state: AuditKingStateModel): void {
-        const container = getElement<HTMLElement>("keywordEvidenceList");
-        const countElement = getElement<HTMLElement>("keywordEvidenceCount");
-        const keyword = state.keywords.find((item) => item.id === state.currentKeywordId);
-        if (!keyword || state.currentKeywordId === "all") {
-            countElement.textContent = "未选择关键词";
-            container.innerHTML = `<div class="empty-panel">先在关键词池选择一个关键词，再绑定手册证据。</div>`;
-            return;
-        }
-        const evidences = keyword.evidences || [];
-        countElement.textContent = `${evidences.length} 条手册证据`;
-        if (!evidences.length) {
-            container.innerHTML = `<div class="empty-panel">当前关键词还没有绑定手册证据。</div>`;
-            return;
-        }
-        container.innerHTML = evidences.map((evidence, index) => {
-            const title = evidence.title ? ` / ${evidence.title}` : "";
-            const status = getManualEvidenceStatus(evidence, state.documents || []);
-            const sourceLabel = evidence.sourceType === "selection" ? "全文选中" : "摘要加入";
-            return `
-                <article class="manual-evidence-item">
-                    <div class="manual-evidence-head">
-                        <strong>${escapeHtml(evidence.documentName)} / 第 ${escapeHtml(evidence.blockIndex ?? "")} 段${escapeHtml(title)}</strong>
-                        <span class="keyword-source-status">${sourceLabel}</span>
-                        <span class="keyword-source-status ${status.className}">${status.label}</span>
-                    </div>
-                    <div class="manual-evidence-text">${escapeHtml(evidence.text)}</div>
-                    ${evidence.note ? `<div class="manual-evidence-note">${escapeHtml(evidence.note)}</div>` : ""}
-                    <button class="btn btn-sm btn-outline-danger" data-action="remove-manual-evidence" data-evidence-id="${escapeHtml(evidence.id || "")}">解绑</button>
-                </article>
-            `;
-        }).join("");
+                <header><strong>${escapeHtml(item.code || "未编号")} ${escapeHtml(item.name || "未命名")}</strong><span>${escapeHtml(item.keyword || "无关键词")}</span><button class="btn btn-sm btn-outline-primary" data-action="add-audit-evidence" data-check-item-id="${escapeHtml(item.id)}">新增依据</button></header>
+                ${item.auditEvidences.length ? item.auditEvidences.map((evidence, evidenceIndex) => `<div class="audit-evidence-row">
+                    <span>${evidenceIndex + 1}</span>
+                    <textarea class="form-control audit-evidence-content" data-action="edit-audit-content" data-check-item-id="${escapeHtml(item.id)}" data-evidence-id="${escapeHtml(evidence.id)}">${escapeHtml(evidence.content)}</textarea>
+                    <input class="form-control form-control-sm" value="${escapeHtml(evidence.note)}" placeholder="备注" data-action="edit-audit-note" data-check-item-id="${escapeHtml(item.id)}" data-evidence-id="${escapeHtml(evidence.id)}">
+                    <button class="btn btn-sm btn-outline-danger" data-action="remove-audit-evidence" data-check-item-id="${escapeHtml(item.id)}" data-evidence-id="${escapeHtml(evidence.id)}">删除</button>
+                </div>`).join("") : `<div class="empty-panel">暂无审计依据。</div>`}
+            </section>`).join("") : `<div class="empty-panel">尚未创建检查项。</div>`;
     }
 
     function scrollEvidenceToBottom(): void {
@@ -478,29 +221,16 @@
     function renderAll(state: AuditKingStateModel): void {
         renderChecklist(state);
         renderDocuments(state);
-        renderKeywords(state);
+        renderCheckItems(state);
         renderMatches(state);
-        renderKeywordEvidences(state);
+        renderManualEvidences(state);
         renderEvidence(state);
-        if (runtime.PdfLocatorView?.renderPdfLocator) {
-            runtime.PdfLocatorView.renderPdfLocator(state.pdfLocator);
-        }
+        runtime.PdfLocatorView?.renderPdfLocator(state.pdfLocator);
     }
 
     runtime.View = {
-        escapeHtml,
-        getElement,
-        renderStatus,
-        renderHighlightedText,
-        renderAll,
-        renderChecklist,
-        focusChecklistHighlight,
-        renderDocuments,
-        renderKeywords,
-        renderMatches,
-        renderMatchDetail,
-        renderKeywordEvidences,
-        renderEvidence,
-        scrollEvidenceToBottom
+        escapeHtml, getElement, renderStatus, renderHighlightedText, renderAll,
+        renderChecklist, focusChecklistHighlight, renderDocuments, renderCheckItems,
+        renderMatches, renderMatchDetail, renderManualEvidences, renderEvidence, scrollEvidenceToBottom
     };
 })();
