@@ -22,29 +22,29 @@
         .manual-status { min-height: 20px; margin-top: 7px; color: #6c757d; font-size: 12px; overflow-wrap: anywhere; }
         .actions { display: flex; gap: 8px; margin-top: 10px; }
         .summary-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
-        .summary-item { min-height: 62px; padding: 9px 11px; border: 1px solid #dfe3e7; border-left-width: 4px; background: #fff; }
+        .summary-item { min-height: 62px; padding: 9px 11px; border: 1px solid #dfe3e7; background: #fff; }
         .summary-item span { display: block; color: #6c757d; font-size: 12px; }
         .summary-item strong { display: block; margin-top: 3px; font-size: 21px; }
-        .summary-added { border-left-color: #198754; }
-        .summary-removed { border-left-color: #b02a37; }
-        .summary-modified { border-left-color: #b58105; }
-        .summary-review { border-left-color: #6c757d; }
-        .summary-same { border-left-color: #0d6efd; }
+        .summary-added strong { color: #146c43; }
+        .summary-removed strong { color: #a52834; }
+        .summary-modified strong { color: #806000; }
+        .summary-review strong { color: #59636d; }
+        .summary-same strong { color: #0a58ca; }
         .workbench { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 12px; height: clamp(1180px, calc(90vh + 340px), 1380px); align-items: stretch; }
-        .queue { min-width: 0; min-height: 0; height: 100%; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #dfe3e7; border-radius: 6px; background: #fff; }
-        .queue-toolbar { padding: 10px; border-bottom: 1px solid #dfe3e7; background: #fff; }
+        .queue { min-width: 0; min-height: 0; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+        .queue-toolbar { padding: 0 0 10px; }
         .filter-bar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin-bottom: 8px; }
         .filter-button { padding: 5px 7px; border: 1px solid #ced4da; background: #fff; color: #495057; font-size: 12px; }
         .filter-button.active { border-color: #0d6efd; color: #0d6efd; background: #eef5ff; font-weight: 650; }
         .queue-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; color: #6c757d; font-size: 12px; }
-        .event-navigation { position: relative; min-height: 0; flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; background: #fff; }
-        .event-visible { position: absolute; inset: 0 0 auto; padding: 6px; }
-        .event-row { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto auto; gap: 2px 7px; width: 100%; height: 112px; padding: 8px; border: 1px solid #e0e4e8; border-left-width: 4px; background: #fff; text-align: left; overflow: hidden; }
+        .event-navigation { position: relative; min-height: 0; flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding-right: 5px; }
+        .event-visible { position: absolute; inset: 0 0 auto; }
+        .event-row { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto auto; gap: 2px 7px; width: 100%; height: 112px; padding: 8px; border: 1px solid #e0e4e8; background: #fff; text-align: left; overflow: hidden; }
         .event-row.active { border-color: #0d6efd; background: #f4f8ff; box-shadow: inset 0 0 0 1px #0d6efd; }
-        .event-reference-added { border-left-color: #198754; }
-        .event-reference-removed { border-left-color: #b02a37; }
-        .event-modified { border-left-color: #b58105; }
-        .event-review { border-left-color: #6c757d; }
+        .event-reference-added .event-kind { color: #146c43; background: #eaf6ef; }
+        .event-reference-removed .event-kind { color: #a52834; background: #fbeaec; }
+        .event-modified .event-kind { color: #806000; background: #fff7d6; }
+        .event-review .event-kind { color: #59636d; background: #edf0f2; }
         .event-kind { align-self: start; padding: 1px 5px; background: #edf0f2; color: #495057; font-size: 11px; }
         .event-row strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
         .event-location { grid-column: 1 / -1; color: #6c757d; font-size: 11px; }
@@ -63,10 +63,10 @@
         .change-text { height: 210px; overflow-y: auto; overflow-x: hidden; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.7; }
         .context-neighbor { color: #5f6871; }
         .context-focus { color: #212529; background: #fff8db; }
-        .context-block { display: block; margin-bottom: 7px; padding: 6px 8px; border-left: 3px solid transparent; }
+        .context-block { display: block; margin-bottom: 7px; padding: 6px 8px; border: 1px solid transparent; }
         .context-block:last-child { margin-bottom: 0; }
         .context-block-label { display: block; margin-bottom: 2px; color: #6c757d; font-size: 11px; font-weight: 650; }
-        .context-anchor { border-left-color: #0d6efd; background: #eef5ff; color: #20364f; }
+        .context-anchor { border-color: #cfe2ff; background: #eef5ff; color: #20364f; }
         .context-insertion { border: 1px dashed #b58105; background: #fff8db; color: #664d03; font-weight: 650; text-align: center; }
         .diff-removed { color: #842029; background: #f8d7da; text-decoration: line-through; }
         .diff-added { color: #0f5132; background: #d1e7dd; }
@@ -83,9 +83,11 @@
         .word-heading { margin-top: 18px; font-size: 15px; font-weight: 700; text-align: left; }
         .word-table-row { padding: 5px 7px; border: 1px solid #dfe3e7; margin-bottom: -1px; background: #fff; }
         .word-unit-focus { outline: 3px solid #dc3545; outline-offset: 4px; background: #fff3cd; box-shadow: 0 0 0 7px rgba(220, 53, 69, .12); }
-        .pdf-page-shell { width: fit-content; max-width: 100%; margin: 0 auto 12px; padding: 8px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.16); }
+        .pdf-page-shell { width: 100%; max-width: 100%; margin: 0 auto 14px; padding: 8px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.16); }
+        .pdf-page-content { display: flex; align-items: center; justify-content: center; width: 100%; background: #f8f9fa; }
         .pdf-page-shell canvas { display: block; max-width: 100%; height: auto; }
         .pdf-page-label { margin-bottom: 6px; color: #6c757d; font-size: 12px; }
+        .pdf-page-loading { align-self: center; padding: 24px 12px; color: #6c757d; font-size: 12px; text-align: center; }
         .preview-empty { padding: 28px 12px; color: #6c757d; text-align: center; }
         @media (max-width: 1200px) {
             .workbench { grid-template-columns: 300px minmax(0, 1fr); }
@@ -174,7 +176,9 @@
 <script src="../../../libs/xlsx-js-style.min.js"></script>
 <script src="manual-reader.js"></script>
 <script src="navigation.js"></script>
-<script src="document-views.js"></script>
+<script src="document-context.js"></script>
+<script src="word-document-view.js"></script>
+<script src="pdf-document-view.js"></script>
 <script src="excel-report.js"></script>
 <script src="workspace.js"></script>
 <script src="main.js"></script>

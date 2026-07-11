@@ -6,7 +6,11 @@ describe("校对之王原文定位", () => {
     let views: any;
 
     beforeAll(() => {
-        const context = loadBrowserScripts(["tool/app/proof-king/document-views.js"]);
+        const context = loadBrowserScripts([
+            "tool/app/proof-king/document-context.js",
+            "tool/app/proof-king/word-document-view.js",
+            "tool/app/proof-king/pdf-document-view.js"
+        ]);
         views = (context as any).ManualProof.DocumentViews;
     });
 
@@ -33,5 +37,25 @@ describe("校对之王原文定位", () => {
     it("计算 Word 阅读容器内部的居中滚动位置", () => {
         expect(views.calculateCenteredScrollTop(300, 100, 400, 610, 40)).toBe(630);
         expect(views.calculateCenteredScrollTop(0, 100, 400, 120, 20)).toBe(0);
+    });
+
+    it("PDF 只渲染目标页附近并限制远页 canvas 保留范围", () => {
+        expect(views.calculatePdfPageWindow(10, 30)).toEqual({
+            renderStart: 9,
+            renderEnd: 11,
+            retainStart: 7,
+            retainEnd: 13
+        });
+        expect(views.calculatePdfPageWindow(1, 30)).toEqual({
+            renderStart: 1,
+            renderEnd: 2,
+            retainStart: 1,
+            retainEnd: 4
+        });
+    });
+
+    it("PDF 目标页滚动值按容器内部位置计算", () => {
+        expect(views.calculateTopAlignedScrollTop(1200, 600, 1450)).toBe(2040);
+        expect(views.calculateTopAlignedScrollTop(0, 600, 605)).toBe(0);
     });
 });

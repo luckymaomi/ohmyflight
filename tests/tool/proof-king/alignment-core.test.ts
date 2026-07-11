@@ -8,6 +8,7 @@ describe("校对之王顺序对齐", () => {
     beforeAll(() => {
         const context = loadBrowserScripts([
             "tool/app/proof-king/text-engine.js",
+            "tool/app/proof-king/alignment-events.js",
             "tool/app/proof-king/alignment-core.js"
         ]);
         core = (context as any).ManualProofAlignment;
@@ -72,6 +73,68 @@ describe("校对之王顺序对齐", () => {
         expect(added.contextAnchors).toMatchObject([
             { position: "after", myUnitId: "my-unit-1", referenceUnitId: "reference-unit-2" }
         ]);
+    });
+
+    it("一个完整句对应两个相邻片段时不产生虚假新增", () => {
+        const comparison = core.compare(
+            manual("my", [
+                "共同开头条款要求完成准备工作。",
+                "飞行人员完成训练并检查合格后方可参加运行。",
+                "共同结尾条款要求保存全部记录。"
+            ]),
+            manual("reference", [
+                "共同开头条款要求完成准备工作。",
+                "飞行人员完成训练并",
+                "检查合格后方可参加运行。",
+                "共同结尾条款要求保存全部记录。"
+            ])
+        );
+
+        expect(comparison.events).toHaveLength(0);
+    });
+
+    it("连续短行与扁平长文本对应时不产生虚假新增和删除", () => {
+        const rows = [
+            "共同开头条款要求完成准备工作。",
+            "第一项检查训练机构资质",
+            "第二项检查课程设置",
+            "第三项检查教员资质",
+            "第四项检查训练设备",
+            "第五项检查运行记录",
+            "第六项检查整改结果",
+            "共同结尾条款要求保存全部记录。"
+        ];
+        const comparison = core.compare(
+            manual("my", rows),
+            manual("reference", [
+                rows[0],
+                rows.slice(1, -1).join(""),
+                rows[rows.length - 1]
+            ])
+        );
+
+        expect(comparison.events).toHaveLength(0);
+    });
+
+    it("新增使用附近高可信对应而不是远处完全一致句作为前锚点", () => {
+        const comparison = core.compare(
+            manual("my", [
+                "全局共同开头条款要求完成准备。",
+                "飞行部负责组织年度训练和检查。",
+                "共同后文要求保存训练记录备查。"
+            ]),
+            manual("reference", [
+                "全局共同开头条款要求完成准备。",
+                "飞行部负责组织全部年度训练和检查。",
+                "参考手册新增独立复核要求。",
+                "共同后文要求保存训练记录备查。"
+            ])
+        );
+        const added = comparison.events.find((event: any) => event.kind === "reference-added");
+        const before = added.contextAnchors.find((anchor: any) => anchor.position === "before");
+
+        expect(before.myText).toBe("飞行部负责组织年度训练和检查。");
+        expect(before.referenceText).toBe("飞行部负责组织全部年度训练和检查。");
     });
 
     it("同一参考片段不会被多个我的片段重复占用", () => {

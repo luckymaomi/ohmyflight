@@ -6,7 +6,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "npm run build && npm run test:unit && npm run test:python",
     "test:unit": "vitest run",
-    "test:python": "python -m unittest discover -s tests/python -p test_*.py",
+    "test:python": "python -X utf8 -m unittest discover -s tests/python -p test_*.py",
     "test:watch": "tsx scripts/build.mts && vitest",
     "test:smoke": "tsx scripts/build.mts && vitest run tests/smoke",
     "test:tool": "tsx scripts/build.mts && vitest run tests/tool",

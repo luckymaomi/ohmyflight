@@ -1,4 +1,4 @@
-importScripts("text-engine.js", "alignment-core.js");
+importScripts("text-engine.js", "alignment-events.js", "alignment-core.js");
 
 self.addEventListener("message", (event: MessageEvent<ComparisonWorkerRequest>) => {
     const request = event.data;

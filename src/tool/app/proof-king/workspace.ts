@@ -34,8 +34,8 @@
     function bind(): void {
         myWordView = new runtime.DocumentViews.WordReaderView(element("mySource"));
         referenceWordView = new runtime.DocumentViews.WordReaderView(element("referenceSource"));
-        myPdfView = new runtime.DocumentViews.PdfPageView(element("mySource"));
-        referencePdfView = new runtime.DocumentViews.PdfPageView(element("referenceSource"));
+        myPdfView = new runtime.DocumentViews.PdfDocumentView(element("mySource"));
+        referencePdfView = new runtime.DocumentViews.PdfDocumentView(element("referenceSource"));
 
         input("myInput").addEventListener("change", () => void safely(() => loadManual("my")));
         input("referenceInput").addEventListener("change", () => void safely(() => loadManual("reference")));
@@ -238,7 +238,10 @@
     }
 
     async function showSource(manual: LocalManual, units: ManualUnit[], wordView: any, pdfView: any, emptyMessage: string): Promise<void> {
-        if (manual.format === "docx") wordView.show(manual, units.map((unit) => unit.id));
+        if (manual.format === "docx") {
+            pdfView.reset();
+            wordView.show(manual, units.map((unit) => unit.id));
+        }
         else await pdfView.show(manual, units, emptyMessage);
     }
 

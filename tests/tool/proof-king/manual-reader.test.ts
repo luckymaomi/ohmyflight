@@ -36,6 +36,18 @@ describe("校对之王文档读取", () => {
         expect(reader.normalizePdfRange(8, 3, 20)).toEqual({ start: 3, end: 8 });
         expect(reader.normalizePdfRange(0, 99, 20)).toEqual({ start: 1, end: 20 });
     });
+
+    it("PDF 未结束段落在页边界切开并保留各自页码", () => {
+        const units = reader.extractPdfUnitsFromPages([
+            [line(8, "第一页尚未结束的内容", 0.3)],
+            [line(9, "第二页继续的内容", 0.3)]
+        ], "reference");
+
+        expect(units).toMatchObject([
+            { text: "第一页尚未结束的内容", pageNumber: 8 },
+            { text: "第二页继续的内容", pageNumber: 9 }
+        ]);
+    });
 });
 
 function line(pageNumber: number, text: string, topRatio: number) {

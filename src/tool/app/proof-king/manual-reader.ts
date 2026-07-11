@@ -78,6 +78,8 @@
             format: "pdf",
             units,
             pageCount: pdfDocument.numPages,
+            pdfStartPage: range.start,
+            pdfEndPage: range.end,
             pdfDocument
         };
     }
@@ -175,8 +177,8 @@
                 paragraph = appendPdfLine(paragraph, value);
                 if (/[。；！？!?]$/.test(value) || normalizeLine(paragraph).length >= 420) flush();
             });
+            flush();
         });
-        flush();
         return units;
     }
 

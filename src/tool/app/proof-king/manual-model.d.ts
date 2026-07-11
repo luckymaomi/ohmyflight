@@ -4,6 +4,15 @@ type ManualUnitKind = "paragraph" | "table-row" | "pdf-paragraph";
 type RevisionKind = "reference-added" | "reference-removed" | "modified" | "review";
 type DiffKind = "equal" | "added" | "removed";
 
+interface AlignmentMatch {
+    myStart: number;
+    myEnd: number;
+    referenceStart: number;
+    referenceEnd: number;
+    exact: boolean;
+    similarity: number;
+}
+
 declare function importScripts(...urls: string[]): void;
 
 interface ManualUnit {
@@ -23,6 +32,8 @@ interface LocalManual {
     format: ManualFormat;
     units: ManualUnit[];
     pageCount?: number;
+    pdfStartPage?: number;
+    pdfEndPage?: number;
     pdfDocument?: any;
 }
 
@@ -63,6 +74,8 @@ interface RevisionContextAnchor {
     referenceUnitIndex: number;
     myPageNumber?: number;
     referencePageNumber?: number;
+    exact: boolean;
+    similarity: number;
 }
 
 interface RevisionEvent {
