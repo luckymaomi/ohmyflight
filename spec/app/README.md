@@ -8,6 +8,8 @@
   在审班表中标注重点人员和类别
 - `hotel-bill-check.md`
   按姓名和日期容差核对账单与登记表
+- `session-bill-check.md`
+  核对场次表与账单表的姓名人次
 - `training-workbench/README.md`
   面向新总表结构的培训更新与预排主工具
 - `training-workbench/training-rule-spec.md`
@@ -15,6 +17,8 @@
 
 ## 浏览器本地工具
 
+- `audit-king.md`
+  从检查项检索公司手册证据并整理审计依据
 - `crew-extract-id.md`
   从文本中提取 6 位员工号
 - `crew-match-name-id.md`
@@ -40,3 +44,5 @@
   自动批量点 OA 已阅
 - `qualification-query-helper.md`
   按员工号批量查询 IEB 技术等级和运行资格并实时输出 Excel
+- `personnel-structure-stats.md`
+  导入人员信息并按报告口径生成人员结构统计

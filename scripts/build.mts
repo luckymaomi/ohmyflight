@@ -12,6 +12,7 @@ const projectRoot = path.resolve(__dirname, "..");
 const sourceRoot = path.join(projectRoot, "src");
 const staticRoot = path.join(projectRoot, "public");
 const distRoot = path.join(projectRoot, "dist");
+const skillsRoot = path.join(projectRoot, ".agents", "skills");
 const execFileAsync = promisify(execFile);
 
 async function walkTypeScriptFiles(rootDir: string): Promise<string[]> {
@@ -133,6 +134,41 @@ async function generateVersionFile() {
   );
 }
 
+function readFrontmatterValue(frontmatter: string, key: string): string {
+  const prefix = `${key}:`;
+  const line = frontmatter
+    .split(/\r?\n/)
+    .find((candidate) => candidate.trimStart().startsWith(prefix));
+  return line ? line.trim().slice(prefix.length).trim() : "";
+}
+
+async function generateSkillsDataFile() {
+  const entries = await fs.readdir(skillsRoot, { withFileTypes: true });
+  const skills: Array<{ name: string; description: string; source: string }> = [];
+
+  for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name, "en"))) {
+    if (!entry.isDirectory()) continue;
+    const skillPath = path.join(skillsRoot, entry.name, "SKILL.md");
+
+    try {
+      const source = await fs.readFile(skillPath, "utf8");
+      const frontmatterMatch = source.match(/^---\s*\r?\n([\s\S]*?)\r?\n---/);
+      const frontmatter = frontmatterMatch?.[1] || "";
+      skills.push({
+        name: readFrontmatterValue(frontmatter, "name") || entry.name,
+        description: readFrontmatterValue(frontmatter, "description"),
+        source
+      });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+  }
+
+  const outputPath = path.join(distRoot, "tool", "skills-data.js");
+  await fs.mkdir(path.dirname(outputPath), { recursive: true });
+  await fs.writeFile(outputPath, `window.skills = ${JSON.stringify(skills)};\n`, "utf8");
+}
+
 async function emitSourceFile(sourceFilePath: string): Promise<string> {
   const outputFilePath = toOutputPath(sourceFilePath);
   const sourceText = await fs.readFile(sourceFilePath, "utf8");
@@ -178,6 +214,7 @@ async function main() {
     emittedFiles.push(await copySourceAsset(sourceFilePath));
   }
 
+  await generateSkillsDataFile();
   await generateVersionFile();
 
   process.stdout.write(`Built ${emittedFiles.length} scripts into dist/\n`);

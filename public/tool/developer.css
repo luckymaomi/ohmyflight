@@ -1,0 +1,274 @@
+:root {
+    color-scheme: light;
+    --page: #f8fafc;
+    --surface: #ffffff;
+    --surface-soft: #f8fafc;
+    --ink: #202320;
+    --muted: #6b726c;
+    --line: #e5e7eb;
+    --line-strong: #9ca59d;
+}
+
+* {
+    box-sizing: border-box;
+    scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+    display: none;
+}
+
+body {
+    min-height: 100vh;
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+}
+
+.developer-shell {
+    width: min(1160px, 100%);
+    margin: 0 auto;
+    padding: 18px 22px 42px;
+}
+
+.developer-bar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 18px;
+    align-items: end;
+    margin-bottom: 18px;
+}
+
+.back-link,
+.github-link {
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 42px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.back-link:hover {
+    color: var(--muted);
+}
+
+.github-link {
+    display: inline-flex;
+    width: 42px;
+    height: 42px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+}
+
+.github-link:hover {
+    border-color: var(--line-strong);
+    color: var(--ink);
+}
+
+.github-link svg {
+    width: 18px;
+    height: 18px;
+}
+
+.developer-tabs {
+    justify-content: center;
+    border-bottom-color: var(--line);
+}
+
+.developer-tabs .nav-link {
+    border-radius: 6px 6px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.developer-tabs .nav-link.active {
+    border-color: var(--line) var(--line) var(--page);
+    background: var(--page);
+    color: var(--ink);
+}
+
+.skills-list,
+.commit-list {
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+}
+
+.skill-item,
+.commit-item {
+    border-bottom: 1px solid var(--line);
+}
+
+.skill-item:last-child,
+.commit-item:last-child {
+    border-bottom: 0;
+}
+
+.skill-toggle {
+    display: grid;
+    width: 100%;
+    min-height: 70px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 18px;
+    align-items: center;
+    padding: 12px 4px;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    text-align: left;
+}
+
+.skill-toggle:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.skill-summary-copy {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
+    gap: 18px;
+    align-items: baseline;
+}
+
+.skill-summary-copy strong {
+    overflow-wrap: anywhere;
+    font-size: 14px;
+    font-weight: 780;
+}
+
+.skill-summary-copy > span {
+    min-width: 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.skill-chevron {
+    color: var(--muted);
+    font-size: 20px;
+    line-height: 1;
+    transition: rotate 140ms ease;
+}
+
+.skill-toggle[aria-expanded="true"] .skill-chevron {
+    rotate: 180deg;
+}
+
+.skill-body {
+    position: relative;
+    padding: 0 0 14px;
+}
+
+.copy-skill {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1;
+}
+
+.skill-source {
+    max-height: 560px;
+    margin: 0;
+    padding: 16px 116px 16px 16px;
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--ink);
+    font: 12px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.commit-meta {
+    min-height: 38px;
+    padding: 0 4px 12px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.commit-item {
+    display: grid;
+    grid-template-columns: 150px 86px minmax(0, 1fr);
+    gap: 14px;
+    padding: 11px 4px;
+    background: transparent;
+}
+
+.commit-date,
+.commit-hash {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.commit-hash {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.commit-message {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: 13px;
+}
+
+.empty-row {
+    padding: 20px 4px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+@media (max-width: 760px) {
+    .developer-shell {
+        padding: 12px 12px 32px;
+    }
+
+    .developer-bar {
+        grid-template-columns: auto auto;
+        align-items: center;
+    }
+
+    .developer-tabs {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        justify-content: stretch;
+    }
+
+    .developer-tabs .nav-item,
+    .developer-tabs .nav-link {
+        flex: 1;
+    }
+
+    .github-link {
+        justify-self: end;
+    }
+
+    .skill-summary-copy,
+    .commit-item {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+
+    .skill-source {
+        padding-right: 16px;
+        padding-top: 54px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
