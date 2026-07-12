@@ -44,7 +44,7 @@
 
 ## Spec、测试与完成标准
 
-- `spec/` 是用户侧功能事实和业务规则记录位置。
+- `spec/dev/` 是开发规格和业务规则记录位置，`spec/user/` 是用户操作手册记录位置。
 - 代码、测试、文档必须同步；任何一方还在描述旧事实，任务就没完成。
 - 修改业务规则、解析规则、日期规则、导出结构或修复回归时，必须优先补充或更新测试。
 - 测试保护核心规则，不为了 UI 细节、目录形状或临时实现写脆弱测试。
@@ -85,7 +85,7 @@
 - 首页入口在 `public/index.html`，实际工具首页在 `public/tool/index.html` 和 `src/tool/`。
 - 工具页在 `public/tool/app/<tool>/`，源码在 `src/tool/app/<tool>/`。
 - Jobskill 独立子站在 `public/jobskill/`，页面逻辑在 `src/jobskill/`。
-- 规格文档在 `spec/app/`，测试在 `tests/tool/`。
+- 开发规格在 `spec/dev/<tool>/`，用户手册在 `spec/user/<tool>/manual.md`，测试在 `tests/tool/`。
 
 ## 常用命令
 

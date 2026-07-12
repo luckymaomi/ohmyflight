@@ -2,7 +2,7 @@ import fs from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { loadSkillsData, loadToolsData } from "../helpers/browser-context";
+import { loadManualsData, loadSkillsData, loadToolsData } from "../helpers/browser-context";
 import { resolveFromDist, resolveFromRoot } from "../helpers/paths";
 
 describe("tool index data", () => {
@@ -35,11 +35,18 @@ describe("tool index data", () => {
 
   it("publishes the current repository skills", () => {
     const skills = loadSkillsData() || [];
+    const manuals = loadManualsData() || [];
+    const manualSkillDirectories = new Set([
+      "read-flight-operations-manual",
+      "read-flight-training-program",
+      "read-flight-technical-management-manual"
+    ]);
     const skillDirectories = fs.readdirSync(resolveFromRoot(".agents", "skills"), { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .filter((entry) => fs.existsSync(resolveFromRoot(".agents", "skills", entry.name, "SKILL.md")));
+    const developerSkillDirectories = skillDirectories.filter((entry) => !manualSkillDirectories.has(entry.name));
 
-    expect(skills).toHaveLength(skillDirectories.length);
+    expect(skills).toHaveLength(developerSkillDirectories.length);
     expect(new Set(skills.map((skill) => skill.name)).size).toBe(skills.length);
     skills.forEach((skill) => {
       expect(skill.name.trim().length).toBeGreaterThan(0);
@@ -47,11 +54,10 @@ describe("tool index data", () => {
       expect(skill.source).toContain(`# `);
       expect(skill.path).toMatch(/^\.agents\/skills\/[a-z0-9-]+\/SKILL\.md$/);
     });
-    expect(skills.slice(0, 3).map((skill) => skill.name)).toEqual([
-      "read-flight-operations-manual",
-      "read-flight-training-program",
-      "read-flight-technical-management-manual"
-    ]);
+    expect(skills.map((skill) => skill.name)).not.toEqual(expect.arrayContaining([...manualSkillDirectories]));
+    expect(manuals.slice(0, 3).map((manual) => manual.path)).toEqual(
+      [...manualSkillDirectories].map((directory) => `.agents/skills/${directory}/SKILL.md`)
+    );
   });
 
 });

@@ -1308,7 +1308,7 @@ PDF / Word / 图片 / 员工号 -> 日常办公文件处理
 
 1. 读 `AGENTS.md`。
 2. 按任务读 `.agents/skills/.../SKILL.md`。
-3. 读相关 `spec/app/...`。
+3. 读相关 `spec/dev/<tool>/` 和 `spec/user/<tool>/manual.md`。
 4. 看同类成熟工具源码。
 5. 看相关测试。
 6. 需要理解历史原因时，读本文件对应阶段。

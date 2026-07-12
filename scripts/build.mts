@@ -13,7 +13,23 @@ const sourceRoot = path.join(projectRoot, "src");
 const staticRoot = path.join(projectRoot, "public");
 const distRoot = path.join(projectRoot, "dist");
 const skillsRoot = path.join(projectRoot, ".agents", "skills");
+const userManualsRoot = path.join(projectRoot, "spec", "user");
 const execFileAsync = promisify(execFile);
+
+const manualSkillEntries = [
+  {
+    directory: "read-flight-operations-manual",
+    name: "运行手册"
+  },
+  {
+    directory: "read-flight-training-program",
+    name: "训练大纲"
+  },
+  {
+    directory: "read-flight-technical-management-manual",
+    name: "技术管理手册"
+  }
+] as const;
 
 async function walkTypeScriptFiles(rootDir: string): Promise<string[]> {
   const results: string[] = [];
@@ -150,9 +166,11 @@ async function generateSkillsDataFile() {
     ["read-flight-training-program", 1],
     ["read-flight-technical-management-manual", 2]
   ]);
+  const manualSkillNames = new Set(manualSkillEntries.map((item) => item.directory));
 
   for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name, "en"))) {
     if (!entry.isDirectory()) continue;
+    if (manualSkillNames.has(entry.name as typeof manualSkillEntries[number]["directory"])) continue;
     const skillPath = path.join(skillsRoot, entry.name, "SKILL.md");
 
     try {
@@ -179,6 +197,80 @@ async function generateSkillsDataFile() {
   const outputPath = path.join(distRoot, "tool", "skills-data.js");
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   await fs.writeFile(outputPath, `window.skills = ${JSON.stringify(skills)};\n`, "utf8");
+}
+
+function readObjectStringProperty(node: ts.ObjectLiteralExpression, propertyName: string): string {
+  for (const property of node.properties) {
+    if (!ts.isPropertyAssignment(property)) continue;
+    const name = ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)
+      ? property.name.text
+      : "";
+    if (name !== propertyName || !ts.isStringLiteralLike(property.initializer)) continue;
+    return property.initializer.text;
+  }
+  return "";
+}
+
+async function readToolCatalog(): Promise<Array<{ name: string; description: string; entry: string }>> {
+  const sourcePath = path.join(sourceRoot, "tool", "tools-data.ts");
+  const sourceText = await fs.readFile(sourcePath, "utf8");
+  const sourceFile = ts.createSourceFile(sourcePath, sourceText, ts.ScriptTarget.Latest, true);
+  let catalog: Array<{ name: string; description: string; entry: string }> = [];
+
+  sourceFile.forEachChild((node) => {
+    if (!ts.isVariableStatement(node)) return;
+    for (const declaration of node.declarationList.declarations) {
+      if (!ts.isIdentifier(declaration.name) || declaration.name.text !== "tools") continue;
+      if (!declaration.initializer || !ts.isArrayLiteralExpression(declaration.initializer)) continue;
+      catalog = declaration.initializer.elements.flatMap((element) => {
+        if (!ts.isObjectLiteralExpression(element)) return [];
+        const name = readObjectStringProperty(element, "name");
+        const description = readObjectStringProperty(element, "desc");
+        const entry = readObjectStringProperty(element, "entry");
+        return name && entry ? [{ name, description, entry }] : [];
+      });
+    }
+  });
+
+  if (!catalog.length) {
+    throw new Error("无法从 src/tool/tools-data.ts 读取工具清单。");
+  }
+  return catalog;
+}
+
+function stripFrontmatter(source: string): string {
+  return source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
+}
+
+async function generateManualsDataFile() {
+  const manuals: Array<{ name: string; description: string; source: string; path: string }> = [];
+
+  for (const item of manualSkillEntries) {
+    const relativePath = `.agents/skills/${item.directory}/SKILL.md`;
+    const source = await fs.readFile(path.join(projectRoot, relativePath), "utf8");
+    const frontmatterMatch = source.match(/^---\s*\r?\n([\s\S]*?)\r?\n---/);
+    manuals.push({
+      name: item.name,
+      description: readFrontmatterValue(frontmatterMatch?.[1] || "", "description"),
+      source: stripFrontmatter(source).trim(),
+      path: relativePath
+    });
+  }
+
+  for (const tool of await readToolCatalog()) {
+    const relativePath = `spec/user/${tool.entry}/manual.md`;
+    const source = await fs.readFile(path.join(projectRoot, relativePath), "utf8");
+    manuals.push({
+      name: tool.name,
+      description: tool.description,
+      source: source.trim(),
+      path: relativePath
+    });
+  }
+
+  const outputPath = path.join(distRoot, "tool", "manuals-data.js");
+  await fs.mkdir(path.dirname(outputPath), { recursive: true });
+  await fs.writeFile(outputPath, `window.manuals = ${JSON.stringify(manuals)};\n`, "utf8");
 }
 
 async function emitSourceFile(sourceFilePath: string): Promise<string> {
@@ -227,6 +319,7 @@ async function main() {
   }
 
   await generateSkillsDataFile();
+  await generateManualsDataFile();
   await generateVersionFile();
 
   process.stdout.write(`Built ${emittedFiles.length} scripts into dist/\n`);

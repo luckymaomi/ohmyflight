@@ -45,7 +45,9 @@ function collectBomFiles() {
 
   return trackedFiles.filter((relativePath) => {
     if (!textFileExtensions.has(path.extname(relativePath).toLowerCase())) return false;
-    const content = fs.readFileSync(resolveFromRoot(relativePath));
+    const absolutePath = resolveFromRoot(relativePath);
+    if (!fs.existsSync(absolutePath)) return false;
+    const content = fs.readFileSync(absolutePath);
     return content.length >= 3 && content[0] === 0xef && content[1] === 0xbb && content[2] === 0xbf;
   });
 }
@@ -63,6 +65,19 @@ describe("repository structure", () => {
     });
 
     expect(missingEntries, `tool entries without index.html:\n${missingEntries.join("\n")}`).toEqual([]);
+  });
+
+  it("has developer and user documentation for every tool entry", () => {
+    const entries = collectToolEntries();
+    const missingDocuments = entries.flatMap((entry) => {
+      const expectedPaths = [
+        path.join("spec", "dev", entry),
+        path.join("spec", "user", entry, "manual.md")
+      ];
+      return expectedPaths.filter((relativePath) => !fs.existsSync(resolveFromRoot(relativePath)));
+    });
+
+    expect(missingDocuments, `missing tool documents:\n${missingDocuments.join("\n")}`).toEqual([]);
   });
 
   it("stores repository text as UTF-8 without BOM", () => {

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户手册 · 打工皇帝</title>
+    <link rel="stylesheet" href="../libs/bootstrap.min.css">
+    <link rel="stylesheet" href="./developer.css">
+</head>
+<body>
+    <div class="developer-shell">
+        <header class="developer-bar manual-bar">
+            <a class="back-link" href="./index.html">返回</a>
+            <h1 class="manual-page-title">用户手册</h1>
+            <button class="btn btn-light border download-manuals" id="downloadManuals" type="button">下载全部用户手册</button>
+        </header>
+
+        <main>
+            <div class="skills-list" id="manualList"></div>
+        </main>
+    </div>
+
+    <script src="../libs/marked.min.js"></script>
+    <script src="../libs/bootstrap.bundle.min.js"></script>
+    <script src="./manuals-data.js"></script>
+    <script src="./manuals.js"></script>
+</body>
+</html>

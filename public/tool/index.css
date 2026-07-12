@@ -432,6 +432,34 @@ body {
 }
 
 @media (max-width: 520px) {
+    .external-actions {
+        display: grid;
+        grid-column: 1 / -1;
+        grid-row: 2;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        width: 100%;
+        gap: 4px;
+    }
+
+    .external-actions .header-link,
+    .external-actions .icon-button {
+        width: auto;
+        min-width: 0;
+        padding: 0 6px;
+    }
+
+    .external-actions .header-symbol {
+        display: none;
+    }
+
+    .search-box {
+        grid-row: 3;
+    }
+
+    .category-switch {
+        grid-row: 4;
+    }
+
     .mascot-status span {
         display: none;
     }

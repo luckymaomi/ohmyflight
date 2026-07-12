@@ -16,3 +16,12 @@ interface SkillItem {
   path: string;
 }
 
+interface ManualItem {
+  name: string;
+  description: string;
+  source: string;
+  path: string;
+}
+
+declare const manuals: ManualItem[];
+

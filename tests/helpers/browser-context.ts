@@ -9,6 +9,7 @@ type BrowserSandbox = Record<string, unknown> & {
   globalThis?: BrowserSandbox;
   __tools?: ToolItem[];
   __skills?: SkillItem[];
+  __manuals?: ManualItem[];
 };
 
 let distFreshChecked = false;
@@ -54,7 +55,8 @@ function needsDistBuild(): boolean {
   const sourceMtime = Math.max(
     latestMtimeMs(resolveFromRoot("src")),
     latestMtimeMs(resolveFromRoot("public")),
-    latestMtimeMs(resolveFromRoot(".agents", "skills"))
+    latestMtimeMs(resolveFromRoot(".agents", "skills")),
+    latestMtimeMs(resolveFromRoot("spec"))
   );
 
   return !distMtime || distMtime < sourceMtime;
@@ -165,4 +167,10 @@ export function loadSkillsData() {
   const context = createBrowserContext();
   runBrowserScript("tool/skills-data.js", context, "globalThis.__skills = skills;");
   return context.__skills;
+}
+
+export function loadManualsData() {
+  const context = createBrowserContext();
+  runBrowserScript("tool/manuals-data.js", context, "globalThis.__manuals = manuals;");
+  return context.__manuals;
 }

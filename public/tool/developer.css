@@ -40,6 +40,27 @@ body {
     margin-bottom: 18px;
 }
 
+.manual-bar {
+    align-items: center;
+}
+
+.manual-page-title {
+    margin: 0;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 750;
+    letter-spacing: 0;
+}
+
+.download-manuals {
+    min-height: 42px;
+    border-radius: 6px;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
 .back-link,
 .github-link {
     color: var(--ink);
@@ -338,6 +359,19 @@ body {
 
     .github-link {
         justify-self: end;
+    }
+
+    .manual-bar {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .manual-page-title {
+        text-align: right;
+    }
+
+    .download-manuals {
+        grid-column: 1 / -1;
+        width: 100%;
     }
 
     .skill-summary-copy,
