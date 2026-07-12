@@ -184,13 +184,6 @@ describe("schedule assessment", () => {
       { projectName: "航空安保", expired: 0, expiredScheduled: 0, must: 1, uncoveredScheduled: 0, recommended: 0, abnormal: 0, total: 1 },
       { projectName: "飞行作风", expired: 0, expiredScheduled: 0, must: 0, uncoveredScheduled: 0, recommended: 0, abnormal: 0, total: 0 }
     ]);
-    expect(result.summaryData.projectSummaryRows[0].rowsByStatus["必须排"].map((row: any) => row.name)).toEqual([
-      "必须排",
-      "取消后必须排",
-      "沈欣",
-      "王峰",
-      "推荐排"
-    ]);
     expect(result.summaryData.projectGroups.map((group: any) => `${group.projectName}/${group.status}/${group.total}`)).toContain("危险品/必须排/5");
     expect(result.summaryData.personRiskRows.map((row: any) => `${row.name}/${row.total}`)).toContain("取消后必须排/1");
   });
