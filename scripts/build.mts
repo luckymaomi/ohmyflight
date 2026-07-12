@@ -144,7 +144,12 @@ function readFrontmatterValue(frontmatter: string, key: string): string {
 
 async function generateSkillsDataFile() {
   const entries = await fs.readdir(skillsRoot, { withFileTypes: true });
-  const skills: Array<{ name: string; description: string; source: string }> = [];
+  const skills: Array<{ name: string; description: string; source: string; path: string }> = [];
+  const pinnedSkillNames = new Map([
+    ["read-flight-operations-manual", 0],
+    ["read-flight-training-program", 1],
+    ["read-flight-technical-management-manual", 2]
+  ]);
 
   for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name, "en"))) {
     if (!entry.isDirectory()) continue;
@@ -157,12 +162,19 @@ async function generateSkillsDataFile() {
       skills.push({
         name: readFrontmatterValue(frontmatter, "name") || entry.name,
         description: readFrontmatterValue(frontmatter, "description"),
-        source
+        source,
+        path: `.agents/skills/${entry.name}/SKILL.md`
       });
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     }
   }
+
+  skills.sort((left, right) => {
+    const leftPriority = pinnedSkillNames.get(left.name) ?? Number.MAX_SAFE_INTEGER;
+    const rightPriority = pinnedSkillNames.get(right.name) ?? Number.MAX_SAFE_INTEGER;
+    return leftPriority - rightPriority || left.name.localeCompare(right.name, "en");
+  });
 
   const outputPath = path.join(distRoot, "tool", "skills-data.js");
   await fs.mkdir(path.dirname(outputPath), { recursive: true });

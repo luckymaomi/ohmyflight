@@ -45,6 +45,25 @@ describe("tool index data", () => {
       expect(skill.name.trim().length).toBeGreaterThan(0);
       expect(skill.description.trim().length).toBeGreaterThan(0);
       expect(skill.source).toContain(`# `);
+      expect(skill.path).toMatch(/^\.agents\/skills\/[a-z0-9-]+\/SKILL\.md$/);
+    });
+    expect(skills.slice(0, 3).map((skill) => skill.name)).toEqual([
+      "read-flight-operations-manual",
+      "read-flight-training-program",
+      "read-flight-technical-management-manual"
+    ]);
+  });
+
+  it("keeps the pinned manual guides readable for new staff", () => {
+    const manualSkills = (loadSkillsData() || []).slice(0, 3);
+
+    manualSkills.forEach((skill) => {
+      const tableRows = skill.source.split(/\r?\n/).filter((line) => line.startsWith("|"));
+      const widestTable = Math.max(0, ...tableRows.map((line) => line.split("|").length - 2));
+      expect(widestTable, `${skill.name} contains a table wider than two columns`).toBeLessThanOrEqual(2);
+      expect(skill.source).toContain("新人先建立这个认识");
+      expect(skill.source).toContain("关键规则卡");
+      expect(skill.source).toContain("新版本完整复核");
     });
   });
 

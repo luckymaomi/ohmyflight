@@ -1,0 +1,4 @@
+interface:
+  display_name: "飞行技术管理手册阅读"
+  short_description: "逐章阅读、定位、解释并复核飞行技术管理手册中的资格规则"
+  default_prompt: "完整阅读现行飞行技术管理手册，按章节定位人员等级、训练检查、资格聘任和档案规则。"

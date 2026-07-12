@@ -1,11 +1,12 @@
 # ohmyflight
 
 <p align="center">
-  <img alt="flight tools" src="https://img.shields.io/badge/flight-tools-9ca3af?style=for-the-badge&labelColor=111827">
-  <img alt="training first" src="https://img.shields.io/badge/training-first-d4af37?style=for-the-badge&labelColor=171717">
-  <img alt="browser apps" src="https://img.shields.io/badge/browser-apps-737373?style=for-the-badge&labelColor=262626">
-  <img alt="python helpers" src="https://img.shields.io/badge/python-helpers-a3a3a3?style=for-the-badge&labelColor=0a0a0a">
-  <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-b08d57?style=for-the-badge&labelColor=1c1917">
+  <a href="https://github.com/luckymaomi/ohmyflight/actions/workflows/deploy-pages.yml"><img alt="Deploy Pages" src="https://img.shields.io/github/actions/workflow/status/luckymaomi/ohmyflight/deploy-pages.yml?branch=master&style=flat-square&logo=githubactions&logoColor=white&label=Pages"></a>
+  <a href="https://www.typescriptlang.org/"><img alt="TypeScript 5.9" src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white"></a>
+  <a href="https://www.python.org/"><img alt="Python 3.12" src="https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white"></a>
+  <a href="https://vitest.dev/"><img alt="Vitest 4" src="https://img.shields.io/badge/Vitest-4-6E9F18?style=flat-square&logo=vitest&logoColor=white"></a>
+  <img alt="Static local-first" src="https://img.shields.io/badge/Architecture-static%20local--first-0F766E?style=flat-square&logo=googlechrome&logoColor=white">
+  <a href="./LICENSE"><img alt="MIT License" src="https://img.shields.io/github/license/luckymaomi/ohmyflight?style=flat-square&logo=opensourceinitiative&logoColor=white"></a>
 </p>
 
 项目地址：https://luckymaomi.github.io/ohmyflight/
@@ -16,9 +17,11 @@
 | --- | --- | --- |
 | 培训皇帝 | ✅ | 一键排/核/预估培训，皇帝御用。 |
 | 审计之王 | ✅ | 调教手册用。 |
+| 校对之王 | ✅ | 比对同一本手册新旧版，复核新增、删除和修改。 |
 | 姓名匹配员工号 | ✅ | 一键识别姓名，匹配对应员工号。 |
 | 锁班皇帝 | ✅ | Python脚本，一键批量录入锁班信息。 |
 | 飞行经历/左座经历起落数按天统计 | ✅ | Python脚本，一键批量飞行经历/左座经历起落数。 |
+| 技术等级运行资格查询助手 | ✅ | 按 Excel 员工号逐人查询 IEB 技术等级和运行资格。 |
 | 珠海皇帝 | ✅ | 一键核对场次表与账单表姓名人次。 |
 | 酒店皇帝 | ✅ | 一键对比酒店账单与入住登记表。 |
 | 重点人员标注 | ✅ | 一键标注审班表。 |
@@ -31,6 +34,14 @@
 | 提取员工号 | ✅ | 从混杂文本中提取6位数字员工号，自动去重排序，支持一键复制。 |
 | 人员结构统计 | ✅ | 导入人员信息表，按报告口径一键生成人员结构。 |
 
+## 工作技能
+
+Jobskill 已作为独立静态子应用合并到本仓库：
+
+https://luckymaomi.github.io/ohmyflight/jobskill/
+
+它展示每天查看事项、资质录入与发布、资质代码、特殊机场代码、飞行人员资质笔记和重新获得资格训练。业务 Skill 正文位于 `public/jobskill/skills/`，页面源码位于 `src/jobskill/`。
+
 ## 本地开发
 
 ```bash
@@ -42,7 +53,7 @@ npm.cmd test
 npm.cmd run verify
 ```
 
-本地预览可运行 `python start_index.py`，或双击 `start_index.cmd`；脚本会构建 `dist/`，用 Edge 无痕模式打开 `http://localhost:4567/index.html`，并启动本地站点。
+本地预览运行 `python start_index.py`；脚本会构建 `dist/`，用 Edge 无痕模式打开 `http://localhost:4567/index.html`，并启动本地站点。
 
 `tests/helpers/browser-context.ts` 会在局部测试读取 `dist/` 前自动检查构建产物；如果 `src/` 或 `public/` 更新过，会先触发一次构建，避免测试读到旧脚本。
 

@@ -16,6 +16,8 @@
   每个正式工具各有独立规范；复杂工具可以在自己的目录下放多份业务文档
 - `spec/tool-index.md`
   工具入口页与开发者页的界面规范
+- `public/jobskill/SPEC.md`
+  飞行部日常业务 Skill 子站规范，由独立子模块就近维护
 - `spec/app/README.md`
   所有工具规范的总索引
 

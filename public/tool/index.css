@@ -176,7 +176,7 @@ body {
     gap: 7px;
 }
 
-.developer-link,
+.header-link,
 .icon-button {
     display: inline-flex;
     align-items: center;
@@ -190,14 +190,14 @@ body {
     transition: border-color 140ms ease, background-color 140ms ease;
 }
 
-.developer-link {
+.header-link {
     gap: 7px;
     padding: 0 12px;
     font-size: 13px;
     font-weight: 700;
 }
 
-.developer-link > span:first-child {
+.header-symbol {
     color: var(--muted);
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
@@ -206,8 +206,8 @@ body {
     width: 42px;
 }
 
-.developer-link:hover,
-.developer-link:focus-visible,
+.header-link:hover,
+.header-link:focus-visible,
 .icon-button:hover,
 .icon-button:focus-visible {
     border-color: var(--line-strong);
@@ -215,7 +215,7 @@ body {
     color: var(--ink);
 }
 
-.developer-link:focus-visible,
+.header-link:focus-visible,
 .icon-button:focus-visible,
 .tool-card:focus-visible {
     outline: 3px solid rgba(32, 35, 32, 0.1);

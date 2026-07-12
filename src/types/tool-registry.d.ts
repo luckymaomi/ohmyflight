@@ -13,5 +13,6 @@ interface SkillItem {
   name: string;
   description: string;
   source: string;
+  path: string;
 }
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "飞行人员训练大纲阅读"
+  short_description: "逐章阅读、定位、解释并复核飞行人员训练大纲中的训练规则"
+  default_prompt: "完整阅读现行飞行人员训练大纲，定位适用课程、进入条件、训练课时、检查和资格保持要求。"

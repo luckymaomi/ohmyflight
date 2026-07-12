@@ -43,8 +43,10 @@ function renderSkills(container: HTMLElement): void {
             </button>
             <div class="collapse skill-collapse" id="skillSource${index}" data-skill-index="${index}">
                 <div class="skill-body">
-                    <button class="btn btn-sm btn-light border copy-skill" type="button" data-copy-skill="${index}">复制 Skill</button>
-                    <pre class="skill-source"><code></code></pre>
+                    <div class="skill-actions">
+                        <button class="btn btn-sm btn-light border copy-skill" type="button" data-copy-skill="${index}">复制 Skill</button>
+                    </div>
+                    <article class="skill-markdown"></article>
                 </div>
             </div>
         </div>
@@ -54,9 +56,10 @@ function renderSkills(container: HTMLElement): void {
         const collapse = event.target;
         if (!(collapse instanceof HTMLElement) || !collapse.classList.contains("skill-collapse") || collapse.dataset.loaded === "true") return;
         const item = allSkillRows[Number(collapse.dataset.skillIndex)];
-        const code = collapse.querySelector("code");
-        if (!item || !(code instanceof HTMLElement)) return;
-        code.textContent = item.source;
+        const article = collapse.querySelector(".skill-markdown");
+        if (!item || !(article instanceof HTMLElement)) return;
+        article.innerHTML = marked.parse(stripFrontmatter(item.source));
+        resolveSkillLinks(article, item.path);
         collapse.dataset.loaded = "true";
     });
 
@@ -69,6 +72,28 @@ function renderSkills(container: HTMLElement): void {
         if (!item) return;
         const copied = await copyText(item.source);
         showToast(copied ? `已复制 ${item.name}` : "复制失败，请手动选择原文");
+    });
+}
+
+function stripFrontmatter(source: string): string {
+    return source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
+}
+
+function resolveSkillLinks(container: HTMLElement, sourcePath: string): void {
+    const githubSource = `https://github.com/luckymaomi/ohmyflight/blob/master/${sourcePath}`;
+    const rawSource = `https://raw.githubusercontent.com/luckymaomi/ohmyflight/master/${sourcePath}`;
+
+    container.querySelectorAll<HTMLAnchorElement>("a[href]").forEach((link) => {
+        const href = link.getAttribute("href") || "";
+        if (href.startsWith("#")) return;
+        if (!/^(?:https?:|mailto:)/i.test(href)) link.href = new URL(href, githubSource).href;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+    });
+    container.querySelectorAll<HTMLImageElement>("img[src]").forEach((image) => {
+        const src = image.getAttribute("src") || "";
+        if (/^(?:https?:|data:)/i.test(src)) return;
+        image.src = new URL(src, rawSource).href;
     });
 }
 

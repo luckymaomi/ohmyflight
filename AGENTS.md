@@ -5,6 +5,7 @@
 ## 基础约束
 
 - 始终使用简体中文和项目 owner 交流。
+- 仓库文本文件统一使用 UTF-8 无 BOM；发现 BOM 或其他可清洗的编码问题时直接规范源文件，不在读取端保留兼容分支。
 - 阅读本仓库文本文件时按 UTF-8 读取；PowerShell 中文显示乱码时，不要误判文件损坏。
 - PowerShell here-string 或管道把含中文字符串的脚本传给 `node`、`python` 等命令时，中文字面量可能被终端编码污染成问号；涉及中文路径、sheet 名、表头、分类名的验证脚本，不要依赖命令文本里的中文字符串，优先用文件扫描、索引、表头读取结果或 UTF-8 脚本文件来定位。
 - 在 PowerShell 中运行 Node/npm 命令时使用 `npm.cmd`、`npx.cmd`，不要直接用 `npm`、`npx`。
@@ -32,9 +33,13 @@
 - 涉及 Excel 读取、导出、表头映射、日期解析或 openpyxl/SheetJS 时，看 `.agents/skills/excel-dev/SKILL.md`。
 - 涉及 IEB/飞行门户、Playwright 页面探测、员工号查询、技术等级/运行资格抓取或 Excel 批量写回时，看 `.agents/skills/flight-portal-probe/SKILL.md`。
 - 涉及两本 Word/PDF 手册的新增、删除和修改比对时，看 `.agents/skills/compare-manuals/SKILL.md`。
+- 涉及《运行手册》的运行政策、机组、飞行、签派、值勤、应急或特殊运行阅读与版本复核时，看 `.agents/skills/read-flight-operations-manual/SKILL.md`。
+- 涉及《飞行人员训练大纲》的训练课程、课时、检查、资格保持恢复或版本复核时，看 `.agents/skills/read-flight-training-program/SKILL.md`。
+- 涉及《飞行技术管理手册》的技术等级、资格、聘任、检查、档案或版本复核时，看 `.agents/skills/read-flight-technical-management-manual/SKILL.md`。
 - 涉及 docx 读取、分析、修改或生成时，看 `.agents/skills/docx-report/SKILL.md`。
 - 涉及面试人员名单整理成锁班导入模板时，看 `.agents/skills/interview-lock-list/SKILL.md`。
 - 涉及人员结构统计和 Word 报告结果核对时，看 `.agents/skills/personnel-report-check/SKILL.md`。
+- 涉及 Jobskill 业务技能子站、日常 Skill 正文、图片附件、导航或索引时，看 `.agents/skills/jobskill-dev/SKILL.md`。
 - 如果 skill 和 owner 当前明确需求冲突，以 owner 当前需求为准，并说明冲突点。
 
 ## Spec、测试与完成标准
@@ -79,6 +84,7 @@
 - 工具入口数据在 `src/tool/tools-data.ts`。
 - 首页入口在 `public/index.html`，实际工具首页在 `public/tool/index.html` 和 `src/tool/`。
 - 工具页在 `public/tool/app/<tool>/`，源码在 `src/tool/app/<tool>/`。
+- Jobskill 独立子站在 `public/jobskill/`，页面逻辑在 `src/jobskill/`。
 - 规格文档在 `spec/app/`，测试在 `tests/tool/`。
 
 ## 常用命令

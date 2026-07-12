@@ -1,4 +1,4 @@
-﻿// HTML页面生成器
+// HTML页面生成器
 // 根据配置组合生成完整、可离线运行的 HTML 文件
 
 declare const GeneratedAppScript: {
