@@ -1,12 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 
 import { describe, expect, it } from "vitest";
 
 import { resolveFromRoot } from "../helpers/paths";
 
 const checkedRoots = ["src", "public", "spec", "tests"];
-const textRoots = ["."];
 const ignoredDirectoryNames = new Set(["coverage", "dist", "node_modules", ".git", ".vitest"]);
 const textFileExtensions = new Set([
   ".css", ".html", ".js", ".json", ".md", ".mts", ".py", ".svg", ".ts", ".txt", ".yaml", ".yml"
@@ -37,27 +37,17 @@ function collectToolEntries() {
   return Array.from(source.matchAll(/entry:\s*['"]([^'"]+)['"]/g), (match) => match[1]).sort();
 }
 
-function collectBomFiles(rootDir: string) {
-  const results: string[] = [];
+function collectBomFiles() {
+  const trackedFiles = execFileSync("git", ["ls-files", "-z"], {
+    cwd: resolveFromRoot(),
+    encoding: "utf8"
+  }).split("\0").filter(Boolean);
 
-  function visit(currentPath: string) {
-    fs.readdirSync(currentPath, { withFileTypes: true }).forEach((entry) => {
-      const entryPath = path.join(currentPath, entry.name);
-      if (entry.isDirectory()) {
-        if (!ignoredDirectoryNames.has(entry.name)) visit(entryPath);
-        return;
-      }
-      if (!textFileExtensions.has(path.extname(entry.name).toLowerCase())) return;
-
-      const content = fs.readFileSync(entryPath);
-      if (content.length >= 3 && content[0] === 0xef && content[1] === 0xbb && content[2] === 0xbf) {
-        results.push(path.relative(resolveFromRoot(), entryPath));
-      }
-    });
-  }
-
-  visit(rootDir);
-  return results;
+  return trackedFiles.filter((relativePath) => {
+    if (!textFileExtensions.has(path.extname(relativePath).toLowerCase())) return false;
+    const content = fs.readFileSync(resolveFromRoot(relativePath));
+    return content.length >= 3 && content[0] === 0xef && content[1] === 0xbb && content[2] === 0xbf;
+  });
 }
 
 describe("repository structure", () => {
@@ -76,7 +66,7 @@ describe("repository structure", () => {
   });
 
   it("stores repository text as UTF-8 without BOM", () => {
-    const bomFiles = textRoots.flatMap((rootName) => collectBomFiles(resolveFromRoot(rootName))).sort();
+    const bomFiles = collectBomFiles().sort();
 
     expect(bomFiles, `UTF-8 BOM files:\n${bomFiles.join("\n")}`).toEqual([]);
   });

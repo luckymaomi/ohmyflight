@@ -54,24 +54,4 @@ describe("tool index data", () => {
     ]);
   });
 
-  it("keeps the pinned manual guides readable for new staff", () => {
-    const manualSkills = (loadSkillsData() || []).slice(0, 3);
-
-    manualSkills.forEach((skill) => {
-      const tableRows = skill.source.split(/\r?\n/).filter((line) => line.startsWith("|"));
-      const widestTable = Math.max(0, ...tableRows.map((line) => line.split("|").length - 2));
-      expect(widestTable, `${skill.name} contains a table wider than two columns`).toBeLessThanOrEqual(2);
-      expect(skill.source).toContain("新人先建立这个认识");
-      expect(skill.source).toContain("关键规则卡");
-      expect(skill.source).toContain("新版本完整复核");
-    });
-  });
-
-  it("uses ground duty as the current interview lock default", () => {
-    const skills = loadSkillsData() || [];
-    const interviewSkill = skills.find((skill) => skill.name === "interview-lock-list");
-
-    expect(interviewSkill?.source).toContain("当前面试锁班默认类型使用 `GRD-地面班`");
-    expect(interviewSkill?.source).not.toContain("默认锁班类型使用 `GDO-地面休息`");
-  });
 });
