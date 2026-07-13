@@ -10,6 +10,8 @@ const toolGrid = document.getElementById("toolGrid");
 const emptyState = document.getElementById("emptyState");
 const categorySwitch = document.getElementById("categorySwitch");
 const imperialOverlay = document.getElementById("imperialOverlay");
+const announcementBanner = document.getElementById("announcementBanner");
+const announcementMessage = document.getElementById("announcementMessage");
 const configuredDefaultCategory = categorySwitch instanceof HTMLElement
     ? categorySwitch.dataset.defaultCategory
     : undefined;
@@ -18,6 +20,8 @@ let activeCategory: ToolCategory | "all" = isToolCategory(configuredDefaultCateg
     : "all";
 let overlayResetTimer: number | undefined;
 let expansionDelayTimer: number | undefined;
+
+renderAnnouncement();
 
 if (
     searchInput instanceof HTMLInputElement
@@ -33,6 +37,18 @@ if (
 
 function bindSearch(input: HTMLInputElement): void {
     input.addEventListener("input", applyFilters);
+}
+
+function renderAnnouncement(): void {
+    if (
+        !(announcementBanner instanceof HTMLElement)
+        || !(announcementMessage instanceof HTMLElement)
+        || typeof announcement !== "object"
+        || !announcement.enabled
+    ) return;
+
+    announcementMessage.textContent = announcement.message;
+    announcementBanner.hidden = false;
 }
 
 function renderToolCards(rows: ToolItem[]): void {

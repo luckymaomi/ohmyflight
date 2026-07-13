@@ -49,6 +49,23 @@ body {
     padding: 18px 24px 42px;
 }
 
+.announcement-banner {
+    display: grid;
+    min-height: 40px;
+    padding: 9px 24px;
+    place-items: center;
+    background: #bfe7fb;
+    color: #12364a;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.55;
+    text-align: center;
+}
+
+.announcement-banner[hidden] {
+    display: none;
+}
+
 .command-bar {
     position: sticky;
     top: 0;
@@ -432,6 +449,11 @@ body {
 }
 
 @media (max-width: 520px) {
+    .announcement-banner {
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+
     .external-actions {
         display: grid;
         grid-column: 1 / -1;

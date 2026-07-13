@@ -28,6 +28,7 @@ interface WordTemplateAppConfig {
 
 interface Window {
   tools: ToolItem[];
+  announcement: SiteAnnouncement;
   skills: SkillItem[];
   XLSX: XlsxGlobal;
   TrainingTools: TrainingToolsNamespace;
@@ -41,6 +42,7 @@ interface Window {
 }
 
 declare var tools: ToolItem[];
+declare var announcement: SiteAnnouncement;
 declare var skills: SkillItem[];
 
 declare const CONFIG: SiteConfig;

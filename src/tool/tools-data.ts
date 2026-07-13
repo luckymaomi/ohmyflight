@@ -19,4 +19,10 @@ const tools: ToolItem[] = [
     { name: "人员结构统计", desc: "按报告口径统计人员结构并生成报告", entry: "personnel-structure-stats", status: "done", category: "light" }
 ];
 
+const announcement: SiteAnnouncement = {
+    message: "🎉🎉🎉赞助商广告位：各位皇帝好！求开发经费，求包养~",
+    enabled: true
+};
+
 window.tools = tools;
+window.announcement = announcement;

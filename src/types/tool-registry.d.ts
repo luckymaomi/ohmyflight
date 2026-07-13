@@ -9,6 +9,11 @@ interface ToolItem {
   category: ToolCategory;
 }
 
+interface SiteAnnouncement {
+  message: string;
+  enabled: boolean;
+}
+
 interface SkillItem {
   name: string;
   description: string;
