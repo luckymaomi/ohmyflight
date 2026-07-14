@@ -5,10 +5,11 @@
         myManual: LocalManual | null;
         referenceManual: LocalManual | null;
         comparison: ManualComparison | null;
-        visibleEvents: RevisionEvent[];
+        visibleEvents: RevisionNavigationEvent[];
         selectedId: string;
         filter: RevisionKind | "all";
         query: string;
+        chapter: string;
         worker: Worker | null;
         requestId: number;
         previewRequestId: number;
@@ -20,6 +21,7 @@
         selectedId: "",
         filter: "all",
         query: "",
+        chapter: "all",
         worker: null,
         requestId: 0,
         previewRequestId: 0
@@ -43,8 +45,15 @@
         button("exportButton").addEventListener("click", () => {
             if (state.comparison) runtime.ExcelReport.exportWorkbook(state.comparison);
         });
+        button("exportWordButton").addEventListener("click", () => void safely(async () => {
+            if (state.comparison) await runtime.WordReport.exportDocument(state.comparison);
+        }));
         input("eventSearch").addEventListener("input", () => {
             state.query = input("eventSearch").value;
+            applyFilter();
+        });
+        element("chapterFilter").addEventListener("change", () => {
+            state.chapter = (element("chapterFilter") as HTMLSelectElement).value;
             applyFilter();
         });
         element("filterBar").addEventListener("click", (event) => {
@@ -73,7 +82,11 @@
         if (role === "my") state.myManual = manual;
         else state.referenceManual = manual;
         clearComparison();
-        setMessage(`${role === "my" ? "我的手册" : "参考手册"}读取完成，共 ${manual.units.length} 个原文单元。`, "success");
+        if (state.myManual && state.referenceManual) {
+            setMessage(`当前方向：我的手册「${state.myManual.name}」→ 参考手册「${state.referenceManual.name}」。`, "info");
+        } else {
+            setMessage(`${role === "my" ? "我的手册" : "参考手册"}读取完成，共 ${manual.units.length} 个原文单元。`, "success");
+        }
         renderState();
         await showInitialManual(manual);
     }
@@ -111,9 +124,10 @@
             state.comparison = response.comparison;
             state.filter = "all";
             state.query = "";
+            state.chapter = "all";
             input("eventSearch").value = "";
             applyFilter();
-            setMessage(`比对完成：整理为 ${response.comparison.events.length} 个修订事件。`, "success");
+            setMessage(`比对完成：${response.comparison.summary.myManualName} → ${response.comparison.summary.referenceManualName}，整理为 ${response.comparison.events.length} 个修订事件。`, "success");
         });
         worker.addEventListener("error", () => {
             if (requestId !== state.requestId) return;
@@ -131,7 +145,7 @@
 
     function applyFilter(): void {
         state.visibleEvents = state.comparison
-            ? runtime.Navigation.filterEvents(state.comparison.events, state.filter, state.query)
+            ? runtime.Navigation.filterEvents(state.comparison.events, state.filter, state.query, state.chapter)
             : [];
         if (!state.visibleEvents.some((event) => event.id === state.selectedId)) {
             state.selectedId = state.visibleEvents[0]?.id || "";
@@ -147,6 +161,7 @@
         renderFilters();
         renderNavigation();
         button("exportButton").disabled = !state.comparison;
+        button("exportWordButton").disabled = !state.comparison;
         if (!state.selectedId) renderEmptySelection();
     }
 
@@ -181,6 +196,12 @@
         element("filterBar").querySelectorAll<HTMLElement>("[data-filter]").forEach((item) => {
             item.classList.toggle("active", item.dataset.filter === state.filter);
         });
+        const chapterFilter = element("chapterFilter") as HTMLSelectElement;
+        const chapters = state.comparison ? runtime.Navigation.chapters(state.comparison.events) as string[] : [];
+        chapterFilter.innerHTML = ["all", ...chapters].map((chapter) => `
+            <option value="${escapeHtml(chapter)}">${escapeHtml(chapter === "all" ? "全部章节" : chapter)}</option>
+        `).join("");
+        chapterFilter.value = chapters.includes(state.chapter) ? state.chapter : "all";
         element("resultCount").textContent = state.comparison ? `${state.visibleEvents.length} 项` : "";
     }
 
@@ -200,10 +221,33 @@
             <button type="button" class="event-row event-${event.kind}${event.id === state.selectedId ? " active" : ""}" data-event-id="${escapeHtml(event.id)}">
                 <span class="event-kind">${escapeHtml(runtime.Navigation.label(event.kind))}</span>
                 <strong>${escapeHtml(event.title)}</strong>
-                <span class="event-location">${escapeHtml(event.referenceLocation !== "无对应原文" ? event.referenceLocation : event.myLocation)}</span>
-                <span class="event-excerpt">${escapeHtml(event.referenceText || event.myText)}</span>
+                <span class="event-location">${escapeHtml(event.viewChapter || "未识别章节")} · ${escapeHtml(matchedSideLabel(event))} · ${escapeHtml(matchedLocation(event))}</span>
+                <span class="event-excerpt">${highlightQuery(event.matchedExcerpt || event.referenceText || event.myText, state.query)}</span>
             </button>
         `).join("");
+    }
+
+    function matchedSideLabel(event: RevisionNavigationEvent): string {
+        if (!state.query) {
+            if (event.myText && event.referenceText) return "双侧原文";
+            return event.referenceText ? "参考手册" : "我的手册";
+        }
+        return { title: "标题命中", my: "我的手册命中", reference: "参考手册命中", both: "双侧命中" }[event.matchedSide || "title"];
+    }
+
+    function matchedLocation(event: RevisionNavigationEvent): string {
+        if (event.matchedSide === "my") return event.myLocation;
+        if (event.matchedSide === "reference") return event.referenceLocation;
+        if (event.matchedSide === "both") return `${event.myLocation} / ${event.referenceLocation}`;
+        return event.referenceLocation !== "无对应原文" ? event.referenceLocation : event.myLocation;
+    }
+
+    function highlightQuery(value: string, query: string): string {
+        const source = String(value || "");
+        if (!query) return escapeHtml(source);
+        const index = source.normalize("NFKC").toLowerCase().indexOf(query.normalize("NFKC").toLowerCase());
+        if (index < 0) return escapeHtml(source);
+        return `${escapeHtml(source.slice(0, index))}<mark>${escapeHtml(source.slice(index, index + query.length))}</mark>${escapeHtml(source.slice(index + query.length))}`;
     }
 
     function scheduleNavigation(): void {
@@ -281,14 +325,18 @@
         const after = event.contextAnchors.find((anchor) => anchor.position === "after");
         const anchorText = (anchor: RevisionContextAnchor) => role === "my" ? anchor.myText : anchor.referenceText;
         const blocks: string[] = [];
-        if (before) blocks.push(contextBlock("共同前文", anchorText(before), "context-anchor"));
+        blocks.push(before
+            ? contextBlock("共同前文", anchorText(before), "context-anchor")
+            : contextBlock("共同前文", "文档开头或前方没有可靠共同锚点", "context-missing"));
         if (eventText) {
             blocks.push(`<span class="context-block context-focus">${renderDiff(difference)}</span>`);
         } else {
             const label = event.kind === "reference-added" ? "参考手册在此处新增内容" : "参考手册在此处删除内容";
             blocks.push(contextBlock("对应位置", label, "context-insertion"));
         }
-        if (after) blocks.push(contextBlock("共同后文", anchorText(after), "context-anchor"));
+        blocks.push(after
+            ? contextBlock("共同后文", anchorText(after), "context-anchor")
+            : contextBlock("共同后文", "文档结尾或后方没有可靠共同锚点", "context-missing"));
         return blocks.join("");
     }
 
@@ -346,6 +394,7 @@
         state.comparison = null;
         state.visibleEvents = [];
         state.selectedId = "";
+        state.chapter = "all";
         state.previewRequestId += 1;
     }
 

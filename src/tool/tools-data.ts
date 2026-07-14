@@ -20,7 +20,7 @@ const tools: ToolItem[] = [
 ];
 
 const announcement: SiteAnnouncement = {
-    message: "🎉🎉🎉赞助商广告位：各位皇帝好！求开发经费，求包养~",
+    message: "🎉🎉🎉校对之王已支持导出word！",
     enabled: true
 };
 

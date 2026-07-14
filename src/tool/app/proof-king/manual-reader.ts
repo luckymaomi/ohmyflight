@@ -86,12 +86,13 @@
 
     function groupPdfItemsIntoLines(items: any[], pageNumber: number, pageHeight: number): PdfLineRecord[] {
         const groups = new Map<number, Array<{ text: string; x: number; width: number; y: number }>>();
+        const ignoredNoiseLines = configuredIgnoredNoiseLines();
         items.forEach((item) => {
             const text = String(item?.str || "").trim();
             const transform = item?.transform || [];
             const x = Number(transform[4]);
             const y = Number(transform[5]);
-            if (!text || !Number.isFinite(x) || !Number.isFinite(y)) return;
+            if (!text || ignoredNoiseLines.has(normalizeLine(text)) || !Number.isFinite(x) || !Number.isFinite(y)) return;
             const key = Math.round(y / 2) * 2;
             const values = groups.get(key) || [];
             values.push({ text, x, width: Number(item?.width) || 0, y });
@@ -127,6 +128,7 @@
 
     function extractPdfUnitsFromPages(pages: PdfLineRecord[][], manualId: string): ManualUnit[] {
         const repeated = repeatedMarginLines(pages);
+        const ignoredNoiseLines = configuredIgnoredNoiseLines();
         const units: ManualUnit[] = [];
         let currentTitle = "";
         let paragraph = "";
@@ -151,6 +153,7 @@
             const lines = pageLines.filter((line) => {
                 const normalized = normalizeLine(line.text);
                 if (!normalized) return false;
+                if (ignoredNoiseLines.has(normalized)) return false;
                 if (line.topRatio < 0.08 || line.topRatio > 0.9) return false;
                 if (marginKeys(line.text).some((key) => repeated.has(key))) return false;
                 if ((line.topRatio < 0.14 || line.topRatio > 0.88) && /^\d{1,4}$/.test(line.text.trim())) return false;
@@ -215,6 +218,14 @@
 
     function normalizeLine(value: string): string {
         return value.normalize("NFKC").toLowerCase().replace(/[^0-9a-z\u4e00-\u9fff]+/g, "");
+    }
+
+    function configuredIgnoredNoiseLines(): Set<string> {
+        return new Set(
+            (window.ManualProofHooks?.ignoredNoisePhrases || [])
+                .map((phrase) => normalizeLine(String(phrase)))
+                .filter(Boolean)
+        );
     }
 
     function parseClauseLine(value: string): { number: string; text: string } | null {

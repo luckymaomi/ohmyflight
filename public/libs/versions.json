@@ -1,6 +1,6 @@
 {
   "说明": "记录 public/libs 当前实际托管的第三方资源，版本未知时不推测",
-  "更新日期": "2026-07-11",
+  "更新日期": "2026-07-14",
   "libraries": {
     "bootstrap": {
       "version": "5.3.3",
@@ -21,6 +21,11 @@
       "version": "0.4.0",
       "files": ["docx-preview.min.js", "docx-preview.LICENSE.txt"],
       "source": "https://github.com/VolodymyrBaydalka/docxjs"
+    },
+    "docx": {
+      "version": "9.7.1",
+      "files": ["docx.iife.js", "docx.LICENSE.txt"],
+      "source": "https://github.com/dolanmiu/docx"
     },
     "docxtemplater": {
       "version": "3.50.0",

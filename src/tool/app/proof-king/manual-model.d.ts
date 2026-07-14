@@ -99,6 +99,29 @@ interface RevisionEvent {
     reason: string;
 }
 
+interface RevisionNavigationEvent extends RevisionEvent {
+    viewChapter?: string;
+    searchScore?: number;
+    matchedSide?: "title" | "my" | "reference" | "both";
+    matchedExcerpt?: string;
+}
+
+interface ReportTextRun {
+    text: string;
+    color: "000000" | "FF0000" | "00B0F0";
+}
+
+interface RevisionReportRow {
+    chapter: string;
+    number: string;
+    title: string;
+    explanation: string;
+    myLocation: string;
+    referenceLocation: string;
+    myRuns: ReportTextRun[];
+    referenceRuns: ReportTextRun[];
+}
+
 interface ComparisonSummary {
     myManualName: string;
     referenceManualName: string;
@@ -122,6 +145,10 @@ interface ManualComparison {
 interface ComparisonOptions {
     weakPhrases?: string[];
     minimumCandidateSimilarity?: number;
+}
+
+interface ManualProofHookConfig {
+    ignoredNoisePhrases?: string[];
 }
 
 interface ComparisonProgress {
@@ -173,7 +200,9 @@ interface VirtualWindow {
 
 interface Window {
     ManualProof: any;
+    ManualProofHooks?: ManualProofHookConfig;
     mammoth: any;
     pdfjsLib: any;
     XLSX: any;
+    docx: any;
 }

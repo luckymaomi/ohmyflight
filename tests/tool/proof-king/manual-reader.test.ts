@@ -4,10 +4,15 @@ import { loadBrowserScripts } from "../../helpers/browser-context";
 
 describe("校对之王文档读取", () => {
     let reader: any;
+    let noisePhrase: string;
 
     beforeAll(() => {
-        const context = loadBrowserScripts(["tool/app/proof-king/manual-reader.js"]);
+        const context = loadBrowserScripts([
+            "tool/app/proof-king/special-rules.js",
+            "tool/app/proof-king/manual-reader.js"
+        ]);
         reader = (context as any).ManualProof.ManualReader;
+        noisePhrase = (context as any).ManualProofHooks.ignoredNoisePhrases[0];
     });
 
     it("Word 全文按稳定原文单元读取并保留当前标题", () => {
@@ -48,8 +53,35 @@ describe("校对之王文档读取", () => {
             { text: "第二页继续的内容", pageNumber: 9 }
         ]);
     });
+
+    it("只过滤独立噪音整行并保留包含相同文字的正常正文", () => {
+        const normalSentence = `员工${noisePhrase.replace(/\s+/g, "")}参与检查。`;
+        const units = reader.extractPdfUnitsFromPages([[
+            line(18, noisePhrase, 0.3),
+            line(18, normalSentence, 0.34)
+        ]], "reference");
+
+        expect(units).toMatchObject([
+            { text: normalSentence, pageNumber: 18 }
+        ]);
+    });
+
+    it("在 PDF 文本项与正文合并成视觉行前移除独立噪音", () => {
+        const normalSentence = `员工${noisePhrase.replace(/\s+/g, "")}参与检查。`;
+        const lines = reader.groupPdfItemsIntoLines([
+            pdfItem("正文内容", 10, 500, 60),
+            pdfItem(noisePhrase, 80, 500, 90),
+            pdfItem(normalSentence, 10, 470, 180)
+        ], 18, 800);
+
+        expect(lines.map((item: any) => item.text)).toEqual(["正文内容", normalSentence]);
+    });
 });
 
 function line(pageNumber: number, text: string, topRatio: number) {
     return { pageNumber, text, x: 10, y: 10, topRatio };
+}
+
+function pdfItem(text: string, x: number, y: number, width: number) {
+    return { str: text, transform: [1, 0, 0, 1, x, y], width };
 }
