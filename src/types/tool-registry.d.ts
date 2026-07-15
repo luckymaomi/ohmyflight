@@ -12,6 +12,7 @@ interface ToolItem {
 interface SiteAnnouncement {
   message: string;
   enabled: boolean;
+  href?: string;
 }
 
 interface SkillItem {

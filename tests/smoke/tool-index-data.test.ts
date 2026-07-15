@@ -34,6 +34,17 @@ describe("tool index data", () => {
 
     expect(announcement?.message.trim().length).toBeGreaterThan(0);
     expect(typeof announcement?.enabled).toBe("boolean");
+    expect(announcement?.href).toBe("../sponsor/index.html");
+  });
+
+  it("ships the sponsor page and demo assets", () => {
+    const toolIndex = fs.readFileSync(resolveFromDist("tool", "index.html"), "utf8");
+    expect(toolIndex).toContain('href="../sponsor/index.html" target="_blank"');
+    expect(fs.existsSync(resolveFromDist("sponsor", "index.html"))).toBe(true);
+    expect(fs.existsSync(resolveFromDist("sponsor", "site.css"))).toBe(true);
+    ["oa-read-helper.gif", "lock-entry-helper.gif", "training-workbench.gif", "local-agent.gif"].forEach((filename) => {
+      expect(fs.statSync(resolveFromDist("sponsor", "assets", filename)).size).toBeGreaterThan(1000);
+    });
   });
 
   it("ships the done status image used by the tool index", () => {

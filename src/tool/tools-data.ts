@@ -20,8 +20,9 @@ const tools: ToolItem[] = [
 ];
 
 const announcement: SiteAnnouncement = {
-    message: "🎉🎉🎉校对之王已支持导出word！",
-    enabled: true
+    message: "OA 99+ 无暇逐条点开？自动点 OA 助手处理所有可直接确认的已阅待办。",
+    enabled: true,
+    href: "../sponsor/index.html"
 };
 
 window.tools = tools;

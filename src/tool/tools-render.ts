@@ -12,6 +12,7 @@ const categorySwitch = document.getElementById("categorySwitch");
 const imperialOverlay = document.getElementById("imperialOverlay");
 const announcementBanner = document.getElementById("announcementBanner");
 const announcementMessage = document.getElementById("announcementMessage");
+const announcementLink = document.getElementById("announcementLink");
 const configuredDefaultCategory = categorySwitch instanceof HTMLElement
     ? categorySwitch.dataset.defaultCategory
     : undefined;
@@ -48,6 +49,11 @@ function renderAnnouncement(): void {
     ) return;
 
     announcementMessage.textContent = announcement.message;
+    if (announcementLink instanceof HTMLAnchorElement && announcement.href) {
+        announcementLink.href = announcement.href;
+        announcementLink.target = "_blank";
+        announcementLink.rel = "noopener noreferrer";
+    }
     announcementBanner.hidden = false;
 }
 
