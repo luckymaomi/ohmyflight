@@ -22,6 +22,8 @@ const tools: ToolItem[] = [
 const announcement: SiteAnnouncement = {
     message: "🎉🎉🎉校对之王已支持导出word！",
     enabled: true,
+    // 设为 true 时显示“赞助商请点击”并启用新标签页链接；false 时只显示公告原文，整条公告不可点击。
+    sponsorLinkEnabled: true,
     href: "../sponsor/index.html"
 };
 

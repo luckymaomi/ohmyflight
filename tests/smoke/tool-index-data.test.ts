@@ -34,6 +34,7 @@ describe("tool index data", () => {
 
     expect(announcement?.message.trim().length).toBeGreaterThan(0);
     expect(typeof announcement?.enabled).toBe("boolean");
+    expect(announcement?.sponsorLinkEnabled).toBe(false);
   });
 
   it("ships the done status image used by the tool index", () => {

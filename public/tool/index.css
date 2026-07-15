@@ -77,8 +77,8 @@ body {
     text-decoration: none;
 }
 
-.announcement-link:hover,
-.announcement-link:focus-visible {
+.announcement-link.is-clickable:hover,
+.announcement-link.is-clickable:focus-visible {
     color: #075d66;
 }
 
