@@ -1,6 +1,6 @@
 # 赞助商看页面
 
-宣传页入口默认关闭，工具首页蓝色公告条只显示公告原文。需要演示时，将 `src/tool/tools-data.ts` 中的 `sponsorLinkEnabled` 改为 `true`，蓝色公告末尾会显示 `赞助商请点击`，点击后在新标签页打开宣传页。页面按猫咪、批量锁班、自动点 OA、培训工作台的顺序展示样例演示。
+工具首页是否提供宣传页入口由 `src/tool/tools-data.ts` 中的 `sponsorLinkEnabled` 控制：`true` 启用入口，`false` 只保留公告原文。宣传页按猫咪、批量锁班、自动点 OA、培训工作台的顺序展示样例演示。
 
 页面打开后先显示“为什么是 ohmyflight？”和 ohmyflight 项目徽标，随后依次进入猫咪、批量锁班、自动点 OA 和培训工作台案例。页面末尾的“支持 ohmyflight 继续更新”区域提供微信和支付宝收款码。
 

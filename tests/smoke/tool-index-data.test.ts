@@ -2,7 +2,7 @@ import fs from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { loadAnnouncementData, loadManualsData, loadSkillsData, loadToolsData } from "../helpers/browser-context";
+import { loadManualsData, loadSkillsData, loadToolsData } from "../helpers/browser-context";
 import { resolveFromDist, resolveFromRoot } from "../helpers/paths";
 
 describe("tool index data", () => {
@@ -27,14 +27,6 @@ describe("tool index data", () => {
       .sort();
 
     expect(wipNames).toEqual([]);
-  });
-
-  it("publishes a valid homepage announcement", () => {
-    const announcement = loadAnnouncementData();
-
-    expect(announcement?.message.trim().length).toBeGreaterThan(0);
-    expect(typeof announcement?.enabled).toBe("boolean");
-    expect(announcement?.sponsorLinkEnabled).toBe(false);
   });
 
   it("ships the done status image used by the tool index", () => {

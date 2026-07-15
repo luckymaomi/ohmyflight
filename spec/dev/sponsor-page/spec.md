@@ -7,8 +7,7 @@
 ## 页面入口
 
 - 页面路径：`public/sponsor/index.html`
-- 工具首页蓝色公告条始终保留“校对之王已支持导出word！”原文。`src/tool/tools-data.ts` 中的 `sponsorLinkEnabled` 默认为 `false`，此时不显示“赞助商请点击”，整条公告没有链接；改为 `true` 后显示入口，并在新标签页打开宣传页。
-- 案例正文不提供具体工具、工作技能或 GitHub 跳转；仅猫咪官网按 owner 要求保留外链。
+- 工具首页入口由 `src/tool/tools-data.ts` 中的 `sponsorLinkEnabled` 控制。
 
 ## 展示案例
 
