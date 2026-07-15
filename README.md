@@ -39,31 +39,6 @@
 | 提取员工号 | ✅ | 从混杂文本中提取6位数字员工号，自动去重排序，支持一键复制。 |
 | 人员结构统计 | ✅ | 导入人员信息表，按报告口径一键生成人员结构。 |
 
-## 工作技能
-
-Jobskill 已作为独立静态子应用合并到本仓库：
-
-https://luckymaomi.github.io/ohmyflight/jobskill/
-
-它展示每天查看事项、资质录入与发布、资质代码、特殊机场代码、飞行人员资质笔记和重新获得资格训练。业务 Skill 正文位于 `public/jobskill/skills/`，页面源码位于 `src/jobskill/`。
-
-## 本地开发
-
-```bash
-npm.cmd install
-python -m pip install -r requirements.txt
-npm.cmd run build
-npm.cmd run typecheck
-npm.cmd test
-npm.cmd run verify
-```
-
-本地预览运行 `python start_index.py`；脚本会构建 `dist/`，用 Edge 无痕模式打开 `http://localhost:4567/index.html`，并启动本地站点。
-
-`tests/helpers/browser-context.ts` 会在局部测试读取 `dist/` 前自动检查构建产物；如果 `src/` 或 `public/` 更新过，会先触发一次构建，避免测试读到旧脚本。
-
-GitHub Pages 会在 `master` 分支 push 后安装 Node/Python 依赖并运行 `npm run verify`；类型检查、前端测试和 Python 测试全部通过后才部署 `dist/`。
-
 ## 开源协议与贡献
 
 本项目遵循 [MIT License](./LICENSE) 开源协议。
