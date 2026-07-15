@@ -1,15 +1,20 @@
+<div align="center">
+
 # ohmyflight
 
-<p align="center">
-  <a href="https://github.com/luckymaomi/ohmyflight/actions/workflows/deploy-pages.yml"><img alt="Deploy Pages" src="https://img.shields.io/github/actions/workflow/status/luckymaomi/ohmyflight/deploy-pages.yml?branch=master&style=flat-square&logo=githubactions&logoColor=white&label=Pages"></a>
-  <a href="https://www.typescriptlang.org/"><img alt="TypeScript 5.9" src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white"></a>
-  <a href="https://www.python.org/"><img alt="Python 3.12" src="https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white"></a>
-  <a href="https://vitest.dev/"><img alt="Vitest 4" src="https://img.shields.io/badge/Vitest-4-6E9F18?style=flat-square&logo=vitest&logoColor=white"></a>
-  <img alt="Static local-first" src="https://img.shields.io/badge/Architecture-static%20local--first-0F766E?style=flat-square&logo=googlechrome&logoColor=white">
-  <a href="./LICENSE"><img alt="MIT License" src="https://img.shields.io/github/license/luckymaomi/ohmyflight?style=flat-square&logo=opensourceinitiative&logoColor=white"></a>
-</p>
+### 把反复点击、批量录入和表格核对，交给真正能跑的工具。
 
-项目地址：https://luckymaomi.github.io/ohmyflight/
+[项目主页](https://luckymaomi.github.io/ohmyflight/) · [工作技能](https://luckymaomi.github.io/ohmyflight/jobskill/) · [GitHub](https://github.com/luckymaomi/ohmyflight)
+
+<p>
+  <a href="https://github.com/luckymaomi/ohmyflight/actions/workflows/deploy-pages.yml"><img alt="Deploy Pages" src="https://img.shields.io/github/actions/workflow/status/luckymaomi/ohmyflight/deploy-pages.yml?branch=master&logo=githubactions&logoColor=white&label=Pages"></a>
+  <a href="https://www.typescriptlang.org/"><img alt="TypeScript 5.9" src="https://img.shields.io/badge/TypeScript-5.9-3178C6"></a>
+  <a href="https://www.python.org/"><img alt="Python 3.12" src="https://img.shields.io/badge/Python-3.12-3776AB"></a>
+  <a href="https://vitest.dev/"><img alt="Vitest 4" src="https://img.shields.io/badge/Vitest-4-6E9F18"></a>
+  <img alt="Static local-first" src="https://img.shields.io/badge/Architecture-static%20local--first-0f766e">
+  <a href="./LICENSE"><img alt="MIT License" src="https://img.shields.io/github/license/luckymaomi/ohmyflight?color=0f766e"></a>
+</p>
+</div>
 
 ## 当前工具
 

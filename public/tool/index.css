@@ -77,26 +77,15 @@ body {
     text-decoration: none;
 }
 
-.announcement-label {
-    padding: 2px 8px;
-    border-radius: 4px;
-    background: #12364a;
-    color: #ffffff;
-    font-size: 12px;
-    white-space: nowrap;
-}
-
 .announcement-link:hover,
 .announcement-link:focus-visible {
     color: #075d66;
 }
 
 .announcement-cta {
-    padding-left: 12px;
-    border-left: 1px solid rgba(18, 54, 74, 0.35);
-    font-size: 12px;
-    text-decoration: underline;
-    text-underline-offset: 3px;
+    color: #075d66;
+    font-size: 13px;
+    font-weight: 800;
     white-space: nowrap;
 }
 
@@ -438,7 +427,7 @@ body {
     }
 
     .tool-grid {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 }
 
