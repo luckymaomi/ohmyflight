@@ -31,6 +31,173 @@ body {
     font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
 }
 
+body.is-gated {
+    overflow: hidden;
+}
+
+.pattern-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: grid;
+    min-width: 320px;
+    place-items: center;
+    background: rgba(238, 241, 244, 0.82);
+    color: var(--ink);
+    -webkit-backdrop-filter: blur(22px) saturate(0.68);
+    backdrop-filter: blur(22px) saturate(0.68);
+    transition: opacity 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pattern-gate[hidden] {
+    display: none;
+}
+
+.pattern-gate.is-unlocking {
+    opacity: 0;
+}
+
+.pattern-gate-inner {
+    width: min(100% - 32px, 340px);
+    transition: opacity 260ms ease, transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pattern-gate.is-unlocking .pattern-gate-inner {
+    opacity: 0;
+    transform: scale(0.94);
+}
+
+.pattern-board {
+    position: relative;
+    display: grid;
+    width: min(68vw, 258px);
+    aspect-ratio: 1;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    align-items: center;
+    justify-items: center;
+    margin: 0 auto;
+    cursor: crosshair;
+    touch-action: none;
+    user-select: none;
+}
+
+.pattern-lines {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.pattern-lines polyline,
+.pattern-lines line {
+    fill: none;
+    stroke: #1f2933;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 5;
+}
+
+.pattern-dot {
+    position: relative;
+    z-index: 2;
+    width: 64px;
+    height: 64px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.pattern-dot::before,
+.pattern-dot::after {
+    position: absolute;
+    border-radius: 50%;
+    content: "";
+    transition: background-color 160ms ease, border-color 160ms ease, opacity 160ms ease, transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pattern-dot::before {
+    inset: 19px;
+    border: 2px solid transparent;
+    background: transparent;
+}
+
+.pattern-dot::after {
+    inset: 27px;
+    background: #7c8792;
+    opacity: 0.88;
+}
+
+.pattern-dot:hover::before,
+.pattern-dot:focus-visible::before {
+    border-color: rgba(31, 41, 51, 0.36);
+    transform: scale(1.06);
+}
+
+.pattern-dot:focus-visible {
+    outline: 0;
+}
+
+.pattern-dot:focus-visible::before {
+    box-shadow: 0 0 0 5px rgba(31, 41, 51, 0.12);
+}
+
+.pattern-dot.is-selected::before {
+    border-color: #1f2933;
+    background: rgba(31, 41, 51, 0.1);
+    transform: scale(1.16);
+}
+
+.pattern-dot.is-selected::after {
+    background: #1f2933;
+    opacity: 1;
+    transform: scale(1.35);
+}
+
+.pattern-gate.is-error .pattern-lines polyline,
+.pattern-gate.is-error .pattern-lines line {
+    stroke: #b42318;
+}
+
+.pattern-gate.is-error .pattern-gate-inner {
+    animation: pattern-shake 380ms ease;
+}
+
+.pattern-gate.is-error .pattern-dot.is-selected::before {
+    border-color: #b42318;
+    background: rgba(180, 35, 24, 0.1);
+}
+
+.pattern-gate.is-error .pattern-dot.is-selected::after {
+    background: #b42318;
+}
+
+.pattern-gate.is-success .pattern-lines polyline,
+.pattern-gate.is-success .pattern-lines line {
+    stroke: #15803d;
+}
+
+.pattern-gate.is-success .pattern-dot.is-selected::before {
+    border-color: #15803d;
+    background: rgba(21, 128, 61, 0.1);
+}
+
+.pattern-gate.is-success .pattern-dot.is-selected::after {
+    background: #15803d;
+}
+
+@keyframes pattern-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-9px); }
+    50% { transform: translateX(7px); }
+    75% { transform: translateX(-4px); }
+}
+
 .visually-hidden {
     position: absolute !important;
     width: 1px !important;
@@ -472,6 +639,10 @@ body {
 }
 
 @media (max-width: 520px) {
+    .pattern-board {
+        width: min(72vw, 250px);
+    }
+
     .announcement-banner {
         padding-right: 12px;
         padding-left: 12px;

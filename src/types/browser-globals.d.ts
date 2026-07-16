@@ -26,10 +26,18 @@ interface WordTemplateAppConfig {
   loopFields: Record<string, WordTemplateFieldConfig[]>;
 }
 
+interface HomePatternGateLogic {
+  enabled: boolean;
+  pattern: number[];
+  appendNode(sequence: number[], node: number): number[];
+  matches(sequence: number[]): boolean;
+}
+
 interface Window {
   tools: ToolItem[];
   announcement: SiteAnnouncement;
   skills: SkillItem[];
+  HomePatternGateLogic: HomePatternGateLogic;
   XLSX: XlsxGlobal;
   TrainingTools: TrainingToolsNamespace;
   TrainingTool: TrainingToolNamespace;

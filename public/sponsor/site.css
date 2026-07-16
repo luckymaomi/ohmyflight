@@ -96,6 +96,10 @@ body {
     background: #f6e7df;
 }
 
+.story-flight-stats {
+    background: #e8f2eb;
+}
+
 .story-oa {
     background: #e8f1f7;
 }
@@ -225,6 +229,10 @@ body {
 
 .media-lock img {
     aspect-ratio: 1280 / 666;
+}
+
+.media-flight-stats img {
+    aspect-ratio: 1280 / 570;
 }
 
 .media-oa img {
