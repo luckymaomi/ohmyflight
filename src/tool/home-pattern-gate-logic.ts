@@ -1,4 +1,4 @@
-const HOME_PATTERN_GATE_ENABLED = true;
+const HOME_PATTERN_GATE_ENABLED = false;
 
 // 九宫格编号从左到右、从上到下为 1-9；当前图案是最下面三个点连成横线。
 const HOME_ACCESS_PATTERN = [7, 8, 9];
