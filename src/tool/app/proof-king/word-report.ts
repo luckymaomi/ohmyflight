@@ -5,22 +5,22 @@
     function buildDocument(comparison: ManualComparison): any {
         const library = window.docx;
         if (!library?.Document || !library?.Packer) throw new Error("页面缺少 Word 导出组件。 ");
-        const rows = runtime.ReportModel.buildRows(comparison.events) as RevisionReportRow[];
+        const groups = runtime.ReportModel.buildGroups(comparison.events) as RevisionReportGroup[];
         const tableRows = [
             new library.TableRow({
                 tableHeader: true,
-                children: ["章节", "编号", "对比说明", "我的手册", "参考手册"].map(headerCell)
+                children: ["章节", "小节", "对比说明", "我的手册", "参考手册"].map(headerCell)
             }),
-            ...rows.map((row) => new library.TableRow({
+            ...groups.flatMap((group) => group.rows.map((row, rowIndex) => new library.TableRow({
                 cantSplit: true,
                 children: [
-                    textCell(row.chapter),
-                    textCell(row.number),
-                    textCell(""),
+                    ...(rowIndex === 0 ? [groupedTextCell(group.chapter, group.rows.length)] : []),
+                    ...(rowIndex === 0 ? [groupedTextCell(group.title, group.rows.length)] : []),
+                    textCell(row.explanation),
                     diffCell(row.myLocation, row.myRuns),
                     diffCell(row.referenceLocation, row.referenceRuns)
                 ]
-            }))
+            })))
         ];
         return new library.Document({
             creator: "校对之王",
@@ -48,7 +48,7 @@
                     }),
                     new library.Table({
                         width: { size: 100, type: library.WidthType.PERCENTAGE },
-                        columnWidths: [1500, 1100, 2600, 4300, 4300],
+                        columnWidths: [1200, 2300, 2500, 4100, 4100],
                         rows: tableRows
                     })
                 ]
@@ -75,6 +75,20 @@
             verticalAlign: library.VerticalAlign.TOP,
             margins: cellMargins(),
             children: String(value || "").split("\n").map((line) => new library.Paragraph({ children: [new library.TextRun(line)] }))
+        });
+    }
+
+    function groupedTextCell(value: string, rowSpan: number): any {
+        const library = window.docx;
+        return new library.TableCell({
+            rowSpan,
+            verticalAlign: library.VerticalAlign.CENTER,
+            margins: cellMargins(),
+            shading: { fill: "F3F6FA" },
+            children: [new library.Paragraph({
+                spacing: { after: 0 },
+                children: [new library.TextRun({ text: value, bold: true })]
+            })]
         });
     }
 

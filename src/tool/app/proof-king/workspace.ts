@@ -5,11 +5,13 @@
         myManual: LocalManual | null;
         referenceManual: LocalManual | null;
         comparison: ManualComparison | null;
+        outline: RevisionChapterGroup[];
         visibleEvents: RevisionNavigationEvent[];
         selectedId: string;
         filter: RevisionKind | "all";
         query: string;
-        chapter: string;
+        chapterKey: string;
+        sectionKey: string;
         worker: Worker | null;
         requestId: number;
         previewRequestId: number;
@@ -17,11 +19,13 @@
         myManual: null,
         referenceManual: null,
         comparison: null,
+        outline: [],
         visibleEvents: [],
         selectedId: "",
         filter: "all",
         query: "",
-        chapter: "all",
+        chapterKey: "",
+        sectionKey: "",
         worker: null,
         requestId: 0,
         previewRequestId: 0
@@ -52,15 +56,21 @@
             state.query = input("eventSearch").value;
             applyFilter();
         });
-        element("chapterFilter").addEventListener("change", () => {
-            state.chapter = (element("chapterFilter") as HTMLSelectElement).value;
-            applyFilter();
-        });
         element("filterBar").addEventListener("click", (event) => {
             const target = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-filter]");
             if (!target?.dataset.filter) return;
             state.filter = target.dataset.filter as RevisionKind | "all";
             applyFilter();
+        });
+        element("chapterNavigation").addEventListener("click", (event) => {
+            const target = (event.target as HTMLElement).closest<HTMLElement>("[data-chapter-key]");
+            if (!target?.dataset.chapterKey) return;
+            selectChapter(target.dataset.chapterKey);
+        });
+        element("sectionNavigation").addEventListener("click", (event) => {
+            const target = (event.target as HTMLElement).closest<HTMLElement>("[data-section-key]");
+            if (!target?.dataset.sectionKey) return;
+            selectSection(target.dataset.sectionKey);
         });
         element("eventNavigation").addEventListener("scroll", scheduleNavigation);
         element("eventNavigation").addEventListener("click", (event) => {
@@ -124,7 +134,8 @@
             state.comparison = response.comparison;
             state.filter = "all";
             state.query = "";
-            state.chapter = "all";
+            state.chapterKey = "";
+            state.sectionKey = "";
             input("eventSearch").value = "";
             applyFilter();
             setMessage(`比对完成：${response.comparison.summary.myManualName} → ${response.comparison.summary.referenceManualName}，整理为 ${response.comparison.events.length} 个修订事件。`, "success");
@@ -144,9 +155,14 @@
     }
 
     function applyFilter(): void {
-        state.visibleEvents = state.comparison
-            ? runtime.Navigation.filterEvents(state.comparison.events, state.filter, state.query, state.chapter)
+        state.outline = state.comparison
+            ? runtime.Navigation.buildOutline(state.comparison.events, state.filter, state.query)
             : [];
+        const chapter = state.outline.find((item) => item.key === state.chapterKey) || state.outline[0];
+        state.chapterKey = chapter?.key || "";
+        const section = chapter?.sections.find((item) => item.key === state.sectionKey) || chapter?.sections[0];
+        state.sectionKey = section?.key || "";
+        state.visibleEvents = section?.events || [];
         if (!state.visibleEvents.some((event) => event.id === state.selectedId)) {
             state.selectedId = state.visibleEvents[0]?.id || "";
         }
@@ -159,6 +175,7 @@
         renderManualStatus();
         renderSummary();
         renderFilters();
+        renderOutline();
         renderNavigation();
         button("exportButton").disabled = !state.comparison;
         button("exportWordButton").disabled = !state.comparison;
@@ -193,61 +210,67 @@
     }
 
     function renderFilters(): void {
-        element("filterBar").querySelectorAll<HTMLElement>("[data-filter]").forEach((item) => {
-            item.classList.toggle("active", item.dataset.filter === state.filter);
-        });
-        const chapterFilter = element("chapterFilter") as HTMLSelectElement;
-        const chapters = state.comparison ? runtime.Navigation.chapters(state.comparison.events) as string[] : [];
-        chapterFilter.innerHTML = ["all", ...chapters].map((chapter) => `
-            <option value="${escapeHtml(chapter)}">${escapeHtml(chapter === "all" ? "全部章节" : chapter)}</option>
-        `).join("");
-        chapterFilter.value = chapters.includes(state.chapter) ? state.chapter : "all";
-        element("resultCount").textContent = state.comparison ? `${state.visibleEvents.length} 项` : "";
+        const counts = runtime.Navigation.categoryCounts(
+            state.comparison?.events || [],
+            state.query
+        ) as RevisionCategoryCount[];
+        runtime.RevisionNavigationView.renderCategories(element("filterBar"), counts, state.filter, !!state.query);
+    }
+
+    function renderOutline(): void {
+        runtime.RevisionNavigationView.renderOutline(
+            element("chapterNavigation"),
+            element("sectionNavigation"),
+            element("chapterCount"),
+            element("sectionCount"),
+            element("resultCount"),
+            state.outline,
+            state.chapterKey,
+            state.sectionKey,
+            state.visibleEvents.length,
+            !!state.comparison
+        );
+    }
+
+    function selectChapter(chapterKey: string): void {
+        const chapter = state.outline.find((item) => item.key === chapterKey);
+        if (!chapter) return;
+        state.chapterKey = chapter.key;
+        state.sectionKey = chapter.sections[0]?.key || "";
+        syncOutlineSelection();
+    }
+
+    function selectSection(sectionKey: string): void {
+        const section = currentChapter()?.sections.find((item) => item.key === sectionKey);
+        if (!section) return;
+        state.sectionKey = section.key;
+        syncOutlineSelection();
+    }
+
+    function syncOutlineSelection(): void {
+        const section = currentChapter()?.sections.find((item) => item.key === state.sectionKey);
+        state.visibleEvents = section?.events || [];
+        state.selectedId = state.visibleEvents[0]?.id || "";
+        element("eventNavigation").scrollTop = 0;
+        renderState();
+        if (state.selectedId) void safely(renderSelection);
+    }
+
+    function currentChapter(): RevisionChapterGroup | undefined {
+        return state.outline.find((item) => item.key === state.chapterKey);
     }
 
     function renderNavigation(): void {
         const navigation = element("eventNavigation");
-        const spacer = element("eventSpacer");
-        const visible = element("eventVisible");
-        if (!state.visibleEvents.length) {
-            spacer.style.height = "0";
-            visible.innerHTML = state.comparison ? '<div class="navigation-empty">当前筛选没有修订事件。</div>' : '<div class="navigation-empty">完成比对后显示修订事件。</div>';
-            return;
-        }
-        const range = runtime.Navigation.calculateWindow(navigation.scrollTop, navigation.clientHeight, state.visibleEvents.length) as VirtualWindow;
-        spacer.style.height = `${range.totalHeight}px`;
-        visible.style.transform = `translateY(${range.offsetTop}px)`;
-        visible.innerHTML = state.visibleEvents.slice(range.start, range.end).map((event) => `
-            <button type="button" class="event-row event-${event.kind}${event.id === state.selectedId ? " active" : ""}" data-event-id="${escapeHtml(event.id)}">
-                <span class="event-kind">${escapeHtml(runtime.Navigation.label(event.kind))}</span>
-                <strong>${escapeHtml(event.title)}</strong>
-                <span class="event-location">${escapeHtml(event.viewChapter || "未识别章节")} · ${escapeHtml(matchedSideLabel(event))} · ${escapeHtml(matchedLocation(event))}</span>
-                <span class="event-excerpt">${highlightQuery(event.matchedExcerpt || event.referenceText || event.myText, state.query)}</span>
-            </button>
-        `).join("");
-    }
-
-    function matchedSideLabel(event: RevisionNavigationEvent): string {
-        if (!state.query) {
-            if (event.myText && event.referenceText) return "双侧原文";
-            return event.referenceText ? "参考手册" : "我的手册";
-        }
-        return { title: "标题命中", my: "我的手册命中", reference: "参考手册命中", both: "双侧命中" }[event.matchedSide || "title"];
-    }
-
-    function matchedLocation(event: RevisionNavigationEvent): string {
-        if (event.matchedSide === "my") return event.myLocation;
-        if (event.matchedSide === "reference") return event.referenceLocation;
-        if (event.matchedSide === "both") return `${event.myLocation} / ${event.referenceLocation}`;
-        return event.referenceLocation !== "无对应原文" ? event.referenceLocation : event.myLocation;
-    }
-
-    function highlightQuery(value: string, query: string): string {
-        const source = String(value || "");
-        if (!query) return escapeHtml(source);
-        const index = source.normalize("NFKC").toLowerCase().indexOf(query.normalize("NFKC").toLowerCase());
-        if (index < 0) return escapeHtml(source);
-        return `${escapeHtml(source.slice(0, index))}<mark>${escapeHtml(source.slice(index, index + query.length))}</mark>${escapeHtml(source.slice(index + query.length))}`;
+        runtime.RevisionNavigationView.renderEvents(
+            navigation,
+            element("eventSpacer"),
+            element("eventVisible"),
+            state.visibleEvents,
+            state.selectedId,
+            state.query,
+            !!state.comparison
+        );
     }
 
     function scheduleNavigation(): void {
@@ -392,9 +415,11 @@
     function clearComparison(): void {
         stopWorker();
         state.comparison = null;
+        state.outline = [];
         state.visibleEvents = [];
         state.selectedId = "";
-        state.chapter = "all";
+        state.chapterKey = "";
+        state.sectionKey = "";
         state.previewRequestId += 1;
     }
 

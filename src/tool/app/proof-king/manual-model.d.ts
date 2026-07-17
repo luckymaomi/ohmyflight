@@ -106,12 +106,34 @@ interface RevisionNavigationEvent extends RevisionEvent {
     matchedExcerpt?: string;
 }
 
+interface RevisionCategoryCount {
+    kind: RevisionKind | "all";
+    label: string;
+    total: number;
+    matched: number;
+}
+
+interface RevisionSectionGroup {
+    key: string;
+    label: string;
+    count: number;
+    events: RevisionNavigationEvent[];
+}
+
+interface RevisionChapterGroup {
+    key: string;
+    label: string;
+    count: number;
+    sections: RevisionSectionGroup[];
+}
+
 interface ReportTextRun {
     text: string;
     color: "000000" | "FF0000" | "00B0F0";
 }
 
 interface RevisionReportRow {
+    kind: RevisionKind;
     chapter: string;
     number: string;
     title: string;
@@ -120,6 +142,15 @@ interface RevisionReportRow {
     referenceLocation: string;
     myRuns: ReportTextRun[];
     referenceRuns: ReportTextRun[];
+}
+
+interface RevisionReportGroup {
+    key: string;
+    kind: RevisionKind;
+    chapter: string;
+    number: string;
+    title: string;
+    rows: RevisionReportRow[];
 }
 
 interface ComparisonSummary {

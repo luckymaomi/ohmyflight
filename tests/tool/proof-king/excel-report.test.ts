@@ -18,6 +18,7 @@ describe("校对之王 Excel 报告", () => {
         };
         const context = loadBrowserScripts([
             "tool/app/proof-king/navigation.js",
+            "tool/app/proof-king/report-model.js",
             "tool/app/proof-king/excel-report.js"
         ], { XLSX });
         report = (context as any).ManualProof.ExcelReport;
@@ -38,5 +39,11 @@ describe("校对之王 Excel 报告", () => {
         });
         expect(workbook.SheetNames).toEqual(["总览", "修订事件", "参考新增", "参考删除", "内容修改", "待确认"]);
         expect(workbook.Sheets["参考新增"].rows[1]).toContain("完整新增原文。");
+        expect(workbook.Sheets["参考新增"].rows[0]).toEqual(expect.arrayContaining([
+            "章节", "小节编号", "小节标题", "组内序号"
+        ]));
+        expect(workbook.Sheets["参考新增"].rows[1]).toEqual(expect.arrayContaining([
+            "未识别章节", "新增程序", 1
+        ]));
     });
 });

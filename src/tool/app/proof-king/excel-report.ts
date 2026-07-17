@@ -34,26 +34,36 @@
 
     function eventsSheet(events: RevisionEvent[]): any {
         const rows: Array<Array<string | number>> = [[
-            "序号", "类别", "标题", "我的手册位置", "我的手册完整原文", "参考手册位置", "参考手册完整原文",
+            "序号", "类别", "章节", "小节编号", "小节标题", "组内序号",
+            "我的手册位置", "我的手册完整原文", "参考手册位置", "参考手册完整原文",
             "对应度", "我的手册独有数字/英文", "参考手册独有数字/英文", "判断依据"
         ]];
-        events.forEach((event, index) => rows.push([
-            index + 1,
-            runtime.Navigation.label(event.kind),
-            event.title,
-            event.myLocation,
-            event.myText,
-            event.referenceLocation,
-            event.referenceText,
-            formatPercent(event.similarity),
-            event.myTokensOnly.join("、"),
-            event.referenceTokensOnly.join("、"),
-            event.reason
-        ]));
+        let eventIndex = 0;
+        const groups = runtime.ReportModel.buildGroups(events) as RevisionReportGroup[];
+        groups.forEach((group) => group.rows.forEach((_row, groupIndex) => {
+            const event = events[eventIndex];
+            eventIndex += 1;
+            rows.push([
+                eventIndex,
+                runtime.Navigation.label(event.kind),
+                group.chapter,
+                group.number,
+                group.title,
+                groupIndex + 1,
+                event.myLocation,
+                event.myText,
+                event.referenceLocation,
+                event.referenceText,
+                formatPercent(event.similarity),
+                event.myTokensOnly.join("、"),
+                event.referenceTokensOnly.join("、"),
+                event.reason
+            ]);
+        }));
         const sheet = window.XLSX.utils.aoa_to_sheet(rows);
         sheet["!cols"] = [
-            { wch: 8 }, { wch: 14 }, { wch: 30 }, { wch: 24 }, { wch: 80 }, { wch: 24 }, { wch: 80 },
-            { wch: 12 }, { wch: 28 }, { wch: 28 }, { wch: 44 }
+            { wch: 8 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 34 }, { wch: 10 },
+            { wch: 24 }, { wch: 80 }, { wch: 24 }, { wch: 80 }, { wch: 12 }, { wch: 28 }, { wch: 28 }, { wch: 44 }
         ];
         return sheet;
     }

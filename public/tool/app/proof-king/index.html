@@ -33,10 +33,26 @@
         .workbench { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 12px; height: clamp(1180px, calc(90vh + 340px), 1380px); align-items: stretch; }
         .queue { min-width: 0; min-height: 0; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
         .queue-toolbar { padding: 0 0 10px; }
-        .queue-search { display: grid; grid-template-columns: minmax(0, 1fr) 118px; gap: 6px; }
+        .queue-search { margin-bottom: 9px; }
         .filter-bar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin-bottom: 8px; }
-        .filter-button { padding: 5px 7px; border: 1px solid #ced4da; background: #fff; color: #495057; font-size: 12px; }
+        .filter-button { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; padding: 6px 8px; border: 1px solid #ced4da; background: #fff; color: #495057; font-size: 12px; }
+        .filter-button:first-child { grid-column: 1 / -1; }
+        .filter-button span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .filter-button strong { flex: 0 0 auto; min-width: 24px; text-align: right; font-size: 12px; }
         .filter-button.active { border-color: #0d6efd; color: #0d6efd; background: #eef5ff; font-weight: 650; }
+        .outline-level { margin-bottom: 9px; }
+        .outline-level-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; color: #59636d; font-size: 11px; font-weight: 650; }
+        .outline-navigation { max-height: 142px; overflow-y: auto; border: 1px solid #dfe3e7; background: #fff; }
+        .section-navigation { max-height: 178px; }
+        .outline-button { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 100%; min-height: 34px; padding: 5px 8px 5px 24px; border: 0; border-bottom: 1px solid #edf0f2; background: #fff; color: #343a40; text-align: left; font-size: 12px; }
+        .outline-button:last-child { border-bottom: 0; }
+        .outline-button::before { position: absolute; left: 9px; width: 7px; height: 7px; border-right: 1.5px solid #6c757d; border-bottom: 1.5px solid #6c757d; content: ""; transform: rotate(-45deg); }
+        .outline-button.active { background: #eef5ff; color: #0a58ca; font-weight: 650; }
+        .outline-button.active::before { top: 11px; transform: rotate(45deg); }
+        .outline-button span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .outline-button strong { color: #6c757d; font-size: 11px; }
+        .section-button { min-height: 38px; }
+        .outline-empty { padding: 12px 9px; color: #8a939b; font-size: 11px; text-align: center; }
         .queue-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; color: #6c757d; font-size: 12px; }
         .event-navigation { position: relative; min-height: 0; flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding-right: 5px; }
         .event-visible { position: absolute; inset: 0 0 auto; }
@@ -142,18 +158,19 @@
     <section class="workbench">
         <section class="queue" aria-label="修订事件列表">
             <div class="queue-toolbar">
-                <div id="filterBar" class="filter-bar">
-                    <button class="filter-button active" data-filter="all" type="button">全部</button>
-                    <button class="filter-button" data-filter="reference-added" type="button">参考新增</button>
-                    <button class="filter-button" data-filter="reference-removed" type="button">参考删除</button>
-                    <button class="filter-button" data-filter="modified" type="button">内容修改</button>
-                    <button class="filter-button" data-filter="review" type="button">待确认</button>
-                </div>
+                <div id="filterBar" class="filter-bar"></div>
                 <div class="queue-search">
-                    <input id="eventSearch" class="form-control form-control-sm" type="search" placeholder="搜索编号或原文">
-                    <select id="chapterFilter" class="form-select form-select-sm"><option value="all">全部章节</option></select>
+                    <input id="eventSearch" class="form-control form-control-sm" type="search" placeholder="搜索编号、小节或原文">
                 </div>
-                <div class="queue-meta"><span>修订待办</span><span id="resultCount"></span></div>
+                <div class="outline-level">
+                    <div class="outline-level-head"><span>章节</span><span id="chapterCount"></span></div>
+                    <div id="chapterNavigation" class="outline-navigation"></div>
+                </div>
+                <div class="outline-level">
+                    <div class="outline-level-head"><span>当前章节的小节</span><span id="sectionCount"></span></div>
+                    <div id="sectionNavigation" class="outline-navigation section-navigation"></div>
+                </div>
+                <div class="queue-meta"><span>当前小节的修订事件</span><span id="resultCount"></span></div>
             </div>
             <div id="eventNavigation" class="event-navigation"><div id="eventSpacer"></div><div id="eventVisible" class="event-visible"></div></div>
         </section>
@@ -184,6 +201,7 @@
 <script src="special-rules.js"></script>
 <script src="manual-reader.js"></script>
 <script src="navigation.js"></script>
+<script src="revision-navigation-view.js"></script>
 <script src="document-context.js"></script>
 <script src="word-document-view.js"></script>
 <script src="pdf-document-view.js"></script>
