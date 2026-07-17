@@ -89,6 +89,7 @@
                 setDecision(decisionToggle.dataset.decisionToggle, decisionToggle.checked ? "included" : "pending");
                 return;
             }
+            if ((event.target as HTMLElement).closest(".event-include")) return;
             const target = (event.target as HTMLElement).closest<HTMLElement>("[data-event-id]");
             if (!target?.dataset.eventId) return;
             state.selectedId = target.dataset.eventId;

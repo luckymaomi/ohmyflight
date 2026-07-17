@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="ohmyflight 真实工具与自动化案例">
+    <meta name="description" content="ohmyflight 真实工具、自动化案例与开源贡献入口">
     <title>为什么是 ohmyflight？</title>
     <link rel="stylesheet" href="./site.css">
 </head>
@@ -103,15 +103,41 @@
 
         <section class="support" aria-labelledby="supportTitle">
             <div class="support-inner">
-                <h2 id="supportTitle">支持 ohmyflight 继续更新</h2>
-                <div class="payment-codes">
-                    <img src="./assets/wechat-pay.png" alt="ohmyflight 微信收款码" loading="lazy">
-                    <img src="./assets/alipay.jpg" alt="ohmyflight 支付宝收款码" loading="lazy">
+                <div class="community-intro">
+                    <h2 id="supportTitle">一起建设 ohmyflight</h2>
+                    <p class="support-lead">项目由真实工作问题推动。报告问题、补充使用场景、完善文档或提交代码，都会让下一次更新更可靠。</p>
                 </div>
+                <nav class="contribution-links" aria-label="参与 ohmyflight">
+                    <a class="contribution-item" href="https://github.com/luckymaomi/ohmyflight/blob/master/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">
+                        <span class="contribution-path">CONTRIBUTING.md</span>
+                        <span class="contribution-copy"><strong>贡献指南</strong><span>项目结构、开发流程、验证要求和提交约定</span></span>
+                        <span class="contribution-action">阅读</span>
+                    </a>
+                    <a class="contribution-item" href="https://github.com/luckymaomi/ohmyflight/issues" target="_blank" rel="noopener noreferrer">
+                        <span class="contribution-path">Issues</span>
+                        <span class="contribution-copy"><strong>反馈真实问题</strong><span>使用场景、输入样例、期望结果和复现步骤</span></span>
+                        <span class="contribution-action">前往</span>
+                    </a>
+                    <a class="contribution-item" href="https://github.com/luckymaomi/ohmyflight/pulls" target="_blank" rel="noopener noreferrer">
+                        <span class="contribution-path">Pull requests</span>
+                        <span class="contribution-copy"><strong>参与改进</strong><span>修复问题、改进工具、补充文档并附带验证结果</span></span>
+                        <span class="contribution-action">查看</span>
+                    </a>
+                </nav>
+                <section class="contributors" aria-labelledby="contributorsTitle">
+                    <div class="contributors-head">
+                        <h3 id="contributorsTitle"></h3>
+                        <span class="contributors-count" id="contributorsCount"></span>
+                    </div>
+                    <div class="contributors-list" id="contributorsList">
+                        <p class="contributors-empty"></p>
+                    </div>
+                </section>
             </div>
         </section>
 
     </main>
+    <script src="./contributors.js"></script>
     <script src="./site.js"></script>
 </body>
 </html>

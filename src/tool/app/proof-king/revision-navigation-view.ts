@@ -86,10 +86,13 @@
             <div role="button" tabindex="0" class="event-row event-${event.kind} decision-${decision}${event.id === selectedId ? " active" : ""}" data-event-id="${escapeHtml(event.id)}">
                 <span class="event-kind">${escapeHtml(runtime.Navigation.label(event.kind))}</span>
                 <strong>${escapeHtml(event.title)}</strong>
-                <label class="event-include" title="勾选后纳入报告">
-                    <input type="checkbox" data-decision-toggle="${escapeHtml(event.id)}"${decision === "included" ? " checked" : ""}>
-                    <span>${escapeHtml(runtime.Decisions?.label(decision) || "待处理")}</span>
-                </label>
+                <span class="event-decision">
+                    <label class="event-include" title="勾选纳入报告；再次点击取消纳入">
+                        <input type="checkbox" data-decision-toggle="${escapeHtml(event.id)}"${decision === "included" ? " checked" : ""}>
+                        <span>纳入</span>
+                    </label>
+                    <span class="event-decision-status">${escapeHtml(decisionStatus(decision))}</span>
+                </span>
                 <span class="event-location">${escapeHtml(matchedSideLabel(event, query))} · ${escapeHtml(matchedLocation(event))}</span>
                 <span class="event-excerpt">${highlightQuery(event.matchedExcerpt || event.referenceText || event.myText, query)}</span>
             </div>`;
@@ -102,6 +105,10 @@
             return event.referenceText ? "参考手册" : "我的手册";
         }
         return { title: "标题命中", my: "我的手册命中", reference: "参考手册命中", both: "双侧命中" }[event.matchedSide || "title"];
+    }
+
+    function decisionStatus(decision: RevisionDecision): string {
+        return { pending: "待处理", included: "已纳入", excluded: "不纳入" }[decision];
     }
 
     function matchedLocation(event: RevisionNavigationEvent): string {
