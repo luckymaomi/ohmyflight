@@ -1,6 +1,6 @@
 # ohmyflight 案例与贡献页面
 
-工具首页是否提供宣传页入口由 `src/tool/tools-data.ts` 中的 `sponsorLinkEnabled` 控制：`true` 启用入口，`false` 只保留公告原文。宣传页按猫咪、批量锁班、起落数查询、自动点 OA、培训工作台的顺序展示样例演示。
+工具首页是否提供宣传页入口由 `src/site-visibility.ts` 中的 `homepage.sponsorEntry` 控制：`true` 启用入口，`false` 只保留公告原文。宣传页按猫咪、批量锁班、起落数查询、自动点 OA、培训工作台的顺序展示样例演示。
 
 页面打开后先显示“为什么是 ohmyflight？”和 ohmyflight 项目徽标，随后依次进入猫咪、批量锁班、起落数查询、自动点 OA 和培训工作台案例。页面末尾直接展示贡献指南、GitHub Issues、Pull Requests 和贡献人员，不重复仓库元信息，也不提供付款入口。
 
@@ -10,6 +10,6 @@
 
 参与项目时先阅读贡献指南；反馈问题应说明使用场景、输入样例、期望结果和复现步骤，提交代码或文档改进时应附带验证结果。
 
-“贡献人员”区域用于记录提供真实场景、大量测试、代码、文档或其他重要帮助的参与者。只填写姓名和贡献说明即可；链接是可选项且不限 GitHub，留空时姓名和头像不可点击。头像可以使用本地图片或网络图片，没有头像时显示统一匿名头像。名单尚未发布时显示“暂时留空，等待收集。”；后续名单统一在 `public/sponsor/contributors.js` 中维护。
+“贡献人员”区域用于记录提供真实场景、大量测试、代码、文档或其他重要帮助的参与者。只填写姓名和贡献说明即可；链接是可选项且不限 GitHub，留空时姓名和头像不可点击。头像可以使用本地图片或网络图片，没有头像时显示统一匿名头像。名单统一在 `public/sponsor/contributors.js` 中维护，是否显示名单由 `src/site-visibility.ts` 中的 `sponsorPage.contributors` 控制。
 
 贡献人员区域的标题、等待文字、空状态说明和人数格式也在 `contributors.js` 的 `labels` 中维护；`countTemplate` 里的 `{count}` 会替换为当前发布人数。

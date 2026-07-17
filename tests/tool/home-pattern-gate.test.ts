@@ -1,14 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { createBrowserContext, runBrowserScript } from "../helpers/browser-context";
+import { loadBrowserScripts } from "../helpers/browser-context";
 
 function loadPatternLogic(): HomePatternGateLogic {
-  const context = createBrowserContext();
-  return runBrowserScript(
-    "tool/home-pattern-gate-logic.js",
-    context,
-    "window.HomePatternGateLogic"
-  ) as HomePatternGateLogic;
+  const context = loadBrowserScripts(["site-visibility.js", "tool/home-pattern-gate-logic.js"]);
+  return (context.window as { HomePatternGateLogic: HomePatternGateLogic }).HomePatternGateLogic;
 }
 
 describe("home pattern gate", () => {

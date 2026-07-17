@@ -11,8 +11,6 @@ interface ToolItem {
 
 interface SiteAnnouncement {
   message: string;
-  enabled: boolean;
-  sponsorLinkEnabled: boolean;
   href?: string;
 }
 

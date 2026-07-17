@@ -1,5 +1,4 @@
 window.OhMyFlightContributors = {
-    published: false,
     labels: {
         title: "贡献人员",
         pendingCount: "暂时留空",

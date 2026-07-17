@@ -7,7 +7,7 @@
 ## 页面入口
 
 - 页面路径：`public/sponsor/index.html`
-- 工具首页入口由 `src/tool/tools-data.ts` 中的 `sponsorLinkEnabled` 控制。
+- 工具首页入口由 `src/site-visibility.ts` 中的 `homepage.sponsorEntry` 控制。
 
 ## 展示案例
 
@@ -29,5 +29,5 @@
 - 协作路径使用类似仓库文件列表的纵向结构，不使用营销卡片；贡献区使用中性灰白界面和链接蓝，不展示付款码或收款文案。
 - 贡献区不使用 `OPEN SOURCE`、`COMMUNITY` 等装饰性小标签。
 - 贡献人员区域显示当前发布人数，并用头像、姓名和具体贡献组成独立人员记录。
-- 贡献人员名单集中维护在 `public/sponsor/contributors.js`。每项包含姓名、贡献说明、可选链接和可选头像链接；链接不限 GitHub，留空时姓名与头像不可点击，适合只记录姓名和贡献的同事。头像支持站内本地图片和 `http/https` 网络图片；未提供头像或头像加载失败时使用本地匿名 SVG。`published: false` 或名单为空时，页面显示“暂时留空，等待收集。”，不渲染未确认人员。
+- 贡献人员名单集中维护在 `public/sponsor/contributors.js`。每项包含姓名、贡献说明、可选链接和可选头像链接；链接不限 GitHub，留空时姓名与头像不可点击，适合只记录姓名和贡献的同事。头像支持站内本地图片和 `http/https` 网络图片；未提供头像或头像加载失败时使用本地匿名 SVG。`src/site-visibility.ts` 中的 `sponsorPage.contributors` 为 `false` 或名单为空时，页面显示配置的空状态，不渲染未确认人员。
 - 贡献人员标题、等待状态、空状态和发布人数模板统一维护在同一文件的 `labels` 中；人数模板使用 `{count}` 占位符。HTML 不保存这些文案。

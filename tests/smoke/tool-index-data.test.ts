@@ -2,7 +2,7 @@ import fs from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { loadManualsData, loadSkillsData, loadToolsData } from "../helpers/browser-context";
+import { loadManualsData, loadSiteVisibility, loadSkillsData, loadToolsData } from "../helpers/browser-context";
 import { resolveFromDist, resolveFromRoot } from "../helpers/paths";
 
 describe("tool index data", () => {
@@ -27,6 +27,20 @@ describe("tool index data", () => {
       .sort();
 
     expect(wipNames).toEqual([]);
+  });
+
+  it("centralizes every public visibility switch", () => {
+    const tools = loadToolsData() || [];
+    const visibility = loadSiteVisibility();
+
+    expect(Object.keys(visibility.tools).sort()).toEqual(tools.map((tool) => tool.entry).sort());
+    expect(Object.values(visibility.tools).every((value) => typeof value === "boolean")).toBe(true);
+    expect(visibility.homepage).toMatchObject({
+      patternGate: expect.any(Boolean),
+      announcement: expect.any(Boolean),
+      sponsorEntry: expect.any(Boolean)
+    });
+    expect(visibility.sponsorPage).toMatchObject({ contributors: expect.any(Boolean) });
   });
 
   it("ships the done status image used by the tool index", () => {

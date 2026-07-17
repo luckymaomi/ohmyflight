@@ -8,6 +8,7 @@ type BrowserSandbox = Record<string, unknown> & {
   window?: BrowserSandbox;
   globalThis?: BrowserSandbox;
   __tools?: ToolItem[];
+  __siteVisibility?: SiteVisibilityConfig;
   __skills?: SkillItem[];
   __manuals?: ManualItem[];
 };
@@ -161,6 +162,13 @@ export function loadToolsData() {
   const context = createBrowserContext();
   runBrowserScript("tool/tools-data.js", context, "globalThis.__tools = tools;");
   return context.__tools;
+}
+
+export function loadSiteVisibility(): SiteVisibilityConfig {
+  const context = createBrowserContext();
+  runBrowserScript("site-visibility.js", context, "globalThis.__siteVisibility = siteVisibility;");
+  if (!context.__siteVisibility) throw new Error("站点可见性配置未注册。");
+  return context.__siteVisibility;
 }
 
 export function loadSkillsData() {

@@ -1,4 +1,6 @@
-const allToolRows: ToolItem[] = Array.isArray(tools) ? tools : [];
+const allToolRows: ToolItem[] = Array.isArray(tools)
+    ? tools.filter((item) => siteVisibility.tools[item.entry] === true)
+    : [];
 const categoryLabels: Record<ToolCategory, string> = {
     heavy: "重型",
     light: "轻型",
@@ -46,11 +48,11 @@ function renderAnnouncement(): void {
         !(announcementBanner instanceof HTMLElement)
         || !(announcementMessage instanceof HTMLElement)
         || typeof announcement !== "object"
-        || !announcement.enabled
+        || siteVisibility.homepage.announcement !== true
     ) return;
 
     announcementMessage.textContent = announcement.message;
-    const sponsorLinkEnabled = announcement.sponsorLinkEnabled && Boolean(announcement.href);
+    const sponsorLinkEnabled = siteVisibility.homepage.sponsorEntry === true && Boolean(announcement.href);
     if (announcementLink instanceof HTMLAnchorElement) {
         announcementLink.classList.toggle("is-clickable", sponsorLinkEnabled);
         if (sponsorLinkEnabled && announcement.href) {

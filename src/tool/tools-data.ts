@@ -22,9 +22,6 @@ const tools: ToolItem[] = [
 
 const announcement: SiteAnnouncement = {
     message: "🎉🎉🎉校对之王用户体验极致优化！",
-    enabled: true,
-    // true 启用赞助商入口并在新标签页打开；false 只保留公告原文，整条公告不可点击。
-    sponsorLinkEnabled: true,
     href: "../sponsor/index.html"
 };
 

@@ -26,7 +26,7 @@ function renderContributors() {
     if (title) title.textContent = textValue(labels.title);
     if (count) count.textContent = textValue(labels.pendingCount);
     if (empty) empty.textContent = textValue(labels.emptyMessage);
-    if (!container || config?.published !== true || !Array.isArray(config.people)) return;
+    if (!container || window.siteVisibility?.sponsorPage?.contributors !== true || !Array.isArray(config?.people)) return;
 
     const people = config.people.filter((person) => person?.name && person?.contribution);
     if (!people.length) return;
