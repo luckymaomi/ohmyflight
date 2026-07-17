@@ -16,7 +16,7 @@
         index = 0
     ): AuditKingCheckItem {
         return {
-            id: nextId("check-item"),
+            id: input.id || nextId("check-item"),
             code: String(input.code || "").trim(),
             name: String(input.name || "").trim(),
             keyword: String(input.keyword || "").trim(),

@@ -10,6 +10,7 @@
         runtime.WorkbookActions.bindWorkbookActions(context);
         runtime.FolderScriptActions.bindFolderScriptActions(context);
         runtime.PdfLocatorActions.bindPdfLocatorActions(context);
+        runtime.ProjectActions.bindProjectActions(context);
         context.refresh("上传检查单和手册后，创建检查项并填写关键词开始检索。");
     }
 

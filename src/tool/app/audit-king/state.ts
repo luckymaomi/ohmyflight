@@ -5,6 +5,7 @@
 
     function createState(): AuditKingStateModel {
         return {
+            checklistFile: null,
             checklistBlocks: [],
             documents: [],
             documentIndex: null,
@@ -247,6 +248,38 @@
         }));
     }
 
+    function restoreProject(state: AuditKingStateModel, input: AuditProjectRestoreInput): void {
+        state.checklistFile = input.checklistFile;
+        setChecklistBlocks(state, input.checklistBlocks);
+        setDocuments(state, input.documents);
+        replaceCheckItems(state, input.checkItems);
+        state.pdfLocator.documents = [...input.locatorDocuments];
+        state.pdfLocator.slots = runtime.PdfLocatorModel?.rebindWorkspaceSlotsToDocuments
+            ? runtime.PdfLocatorModel.rebindWorkspaceSlotsToDocuments(input.pdfWorkspace.slots, state.pdfLocator.documents)
+            : [...input.pdfWorkspace.slots];
+        state.pdfLocator.selectedSlotId = state.pdfLocator.slots.some((slot) => slot.id === input.pdfWorkspace.selectedSlotId)
+            ? input.pdfWorkspace.selectedSlotId
+            : state.pdfLocator.slots[0]?.id || "";
+        state.pdfLocator.expandContextPages = input.pdfWorkspace.expandContextPages !== false;
+        state.pdfLocator.results = state.pdfLocator.slots
+            .map((slot) => slot.result)
+            .filter((result): result is AuditKingPdfLocatorResult => result !== undefined);
+        state.pdfLocator.summary = runtime.PdfLocatorModel?.summarizeResults
+            ? runtime.PdfLocatorModel.summarizeResults(state.pdfLocator.results)
+            : state.pdfLocator.results.reduce((summary, result) => {
+                summary[result.status] += 1;
+                return summary;
+            }, { trusted: 0, review: 0, miss: 0, skip: 0 });
+        state.currentCheckItemId = state.checkItems.some((item) => item.id === input.view.currentCheckItemId)
+            ? input.view.currentCheckItemId
+            : state.checkItems[0]?.id || "all";
+        state.documentFilterId = getEnabledDocuments(state).some((item) => item.id === input.view.documentFilterId)
+            ? input.view.documentFilterId
+            : "all";
+        state.currentMatchIndex = 0;
+        resetMatchDetailContext(state);
+    }
+
     runtime.State = {
         createState, resetMatchDetailContext, expandMatchDetailContext,
         addCheckItem, replaceCheckItems, updateCheckItem, removeCheckItem, moveCheckItemToPosition,
@@ -254,6 +287,6 @@
         setChecklistBlocks, setDocuments, appendDocuments, removeDocument, setDocumentEnabled, getEnabledDocuments,
         setCurrentCheckItem, setDocumentFilter, setSearchResult,
         addManualEvidence, removeManualEvidence, adoptManualEvidence,
-        addAuditEvidence, updateAuditEvidence, removeAuditEvidence, buildEvidenceGroups
+        addAuditEvidence, updateAuditEvidence, removeAuditEvidence, buildEvidenceGroups, restoreProject
     };
 })();

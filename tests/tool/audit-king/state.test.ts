@@ -109,4 +109,24 @@ describe("audit-king check item state", () => {
     expect(state.checkItems.map((item: any) => item.code)).toEqual(["1.1"]);
   });
 
+  it("restores one complete project without changing check item identities", () => {
+    const state = stateApi.createState();
+    const manual = { id: "doc-1", name: "手册.pdf", blocks: [], sourceFile: new File(["manual"], "手册.pdf") };
+    stateApi.restoreProject(state, {
+      checklistFile: new File(["checklist"], "检查单.docx"),
+      checklistBlocks: [],
+      documents: [manual],
+      checkItems: [{ id: "item-stable", code: "1.1", name: "资格", keyword: "训练", color: "#123456", enabled: true, manualEvidences: [], auditEvidences: [] }],
+      locatorDocuments: [],
+      pdfWorkspace: { slots: [{ id: "slot-1", sequence: "1.1", title: "资格", content: "", note: "", selected: true, pdfId: "", startPage: "", endPage: "" }], selectedSlotId: "slot-1", expandContextPages: false },
+      view: { currentCheckItemId: "item-stable", documentFilterId: "doc-1" }
+    });
+
+    expect(state.checklistFile.name).toBe("检查单.docx");
+    expect(state.checkItems[0].id).toBe("item-stable");
+    expect(state.currentCheckItemId).toBe("item-stable");
+    expect(state.documentFilterId).toBe("doc-1");
+    expect(state.pdfLocator.slots[0].id).toBe("slot-1");
+  });
+
 });

@@ -5,6 +5,7 @@
         try {
             context.runtime.View.renderStatus(`正在读取检查单：${file.name}`, "info");
             const documentItem = await context.runtime.DocumentReader.readFile(file, 0);
+            context.state.checklistFile = file;
             context.runtime.State.setChecklistBlocks(context.state, documentItem.blocks);
             context.refresh(`检查单已读取：${file.name}（${documentItem.blocks.length} 段）。不会自动提取关键词。`, "success");
         } catch (error) {

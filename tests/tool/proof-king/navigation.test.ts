@@ -77,6 +77,22 @@ describe("校对之王修订导航", () => {
             kind: "modified", total: 3, matched: 2
         }));
     });
+
+    it("章节树只提供小节起点，事件流始终保留当前大类和搜索的全部事件", () => {
+        const events = [
+            event("revision-1", "reference-added", "5.7.2 模拟机训练", "新增训练一"),
+            event("revision-2", "reference-added", "5.8.1 检查程序", "新增检查"),
+            event("revision-3", "reference-added", "5.7.2 模拟机训练", "新增训练二"),
+            event("revision-4", "modified", "5.7.2 模拟机训练", "修改训练")
+        ];
+
+        const visible = navigation.filterEvents(events, "reference-added", "");
+        const outline = navigation.buildOutline(events, "reference-added", "");
+        const starts = outline.flatMap((chapter: any) => chapter.sections.map((section: any) => section.startEventId));
+
+        expect(visible.map((item: any) => item.id)).toEqual(["revision-1", "revision-2", "revision-3"]);
+        expect(starts).toEqual(["revision-1", "revision-2", "revision-3"]);
+    });
 });
 
 function event(id: string, kind: string, title: string, text: string) {

@@ -15,6 +15,7 @@ interface AuditKingDocument {
     enabled?: boolean;
     format?: "docx" | "pdf";
     pageCount?: number;
+    sourceFile: File;
 }
 
 interface AuditKingCheckItemSource {
@@ -67,6 +68,7 @@ interface AuditKingCheckItem {
 }
 
 interface AuditKingImportedCheckItem {
+    id?: string;
     order?: number;
     code?: string;
     name?: string;
@@ -161,6 +163,7 @@ interface AuditKingPdfLocatorDocument {
     arrayBuffer?: ArrayBuffer;
     pdf?: any;
     pages: AuditKingPdfLocatorPage[];
+    sourceFile: File;
 }
 
 interface AuditKingPdfLocatorTarget {
@@ -238,6 +241,7 @@ interface AuditKingPdfLocatorState {
 }
 
 interface AuditKingStateModel {
+    checklistFile: File | null;
     checklistBlocks: AuditKingTextBlock[];
     documents: AuditKingDocument[];
     documentIndex: AuditKingDocumentIndex | null;
@@ -250,6 +254,52 @@ interface AuditKingStateModel {
     pdfLocator: AuditKingPdfLocatorState;
 }
 
+interface AuditProjectSourceMetadata {
+    path: string;
+    name: string;
+    type: string;
+}
+
+interface AuditProjectSnapshot {
+    version: number;
+    sources: {
+        checklist: AuditProjectSourceMetadata;
+        manuals: AuditProjectSourceMetadata[];
+        locatorFiles: AuditProjectSourceMetadata[];
+    };
+    checkItems: AuditKingCheckItem[];
+    pdfWorkspace: {
+        slots: AuditKingPdfLocatorSlot[];
+        selectedSlotId: string;
+        expandContextPages: boolean;
+    };
+    view: {
+        currentCheckItemId: string;
+        documentFilterId: string;
+    };
+}
+
+interface AuditProjectBuildInput {
+    checklistFile: File;
+    manualFiles: File[];
+    locatorFiles: File[];
+    state: {
+        checkItems: AuditKingCheckItem[];
+        pdfWorkspace: AuditProjectSnapshot["pdfWorkspace"];
+        view: AuditProjectSnapshot["view"];
+    };
+    workbook: Uint8Array;
+    onProgress?: (message: string, completed: number, total: number) => void;
+}
+
+interface AuditProjectReadResult {
+    state: AuditProjectSnapshot;
+    checklistFile: File;
+    manualFiles: File[];
+    locatorFiles: File[];
+    workbook: Uint8Array;
+}
+
 interface AuditKingAppContext {
     runtime: Record<string, any>;
     state: AuditKingStateModel;
@@ -260,6 +310,16 @@ interface AuditKingAppContext {
     getCurrentFilteredMatch(): AuditKingMatch | null;
     focusMatch(index: number): void;
     formatLocalDate(date: Date): string;
+}
+
+interface AuditProjectRestoreInput {
+    checklistFile: File;
+    checklistBlocks: AuditKingTextBlock[];
+    documents: AuditKingDocument[];
+    checkItems: AuditKingCheckItem[];
+    locatorDocuments: AuditKingPdfLocatorDocument[];
+    pdfWorkspace: AuditProjectSnapshot["pdfWorkspace"];
+    view: AuditProjectSnapshot["view"];
 }
 
 interface Window {

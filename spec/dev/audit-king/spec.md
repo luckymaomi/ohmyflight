@@ -39,6 +39,13 @@
 - 自动命中默认可向前后各扩一页但不得越界，用户可改页码、预览、保存工作区 JSON 和导出 PDF。
 - 业务忽略行或弱片段规则默认为空，只允许通过 `AuditKing.PdfLocatorHooks` 外部注入。
 
+## 完整项目包
+
+- 完整项目 ZIP 以检查项为唯一主对象，保存检查单原文件、普通手册原文件、检查项及其候选证据和审计依据、PDF 工作区原文件、槽位、视图状态与可读检查项工作簿。
+- 工作簿和 PDF 工作区 JSON 继续作为单项导入导出格式；二者都不是完整项目恢复格式。
+- ZIP 清单记录工具类型、格式版本、文件路径、大小与 SHA-256。导入先完成清单、哈希、检查单、手册与 PDF 的临时读取，全部成功后才替换当前状态。
+- 恢复时保留检查项、候选证据、审计依据和槽位 ID；手册证据与 PDF 槽位按稳定 ID 和文件名重新绑定。
+
 ## 附属能力与边界
 
 页面可按一个完整编号范围生成独立 Python 脚本，脚本只在运行目录逐个创建编号文件夹；范围无效时拒绝生成。页面不自动生成检查项字段、不自动采纳证据、不把检索结果当审计结论。
@@ -50,5 +57,6 @@
 - 文档与检索：`document-reader.ts`、`search-engine.ts`、`source-locator.ts`
 - 工作簿与导出：`check-item-workbook.ts`、`export.ts`
 - PDF 工作区：`pdf-locator-*.ts`
+- 完整项目：`project-package.ts`、`project-actions.ts`、`src/tool/project-archive.ts`
 - 文件夹脚本：`folder-script-generator.ts`
 - 测试：`tests/tool/audit-king/`

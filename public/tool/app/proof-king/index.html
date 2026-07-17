@@ -20,7 +20,11 @@
         .upload-title { margin-bottom: 7px; font-weight: 650; }
         .range-row { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 7px; }
         .manual-status { min-height: 20px; margin-top: 7px; color: #6c757d; font-size: 12px; overflow-wrap: anywhere; }
-        .actions { display: flex; gap: 8px; margin-top: 10px; }
+        .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+        .project-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e5e8; }
+        .project-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+        .project-status { color: #6c757d; font-size: 12px; }
+        .project-status.dirty { color: #a52834; font-weight: 650; }
         .summary-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
         .summary-item { min-height: 62px; padding: 9px 11px; border: 1px solid #dfe3e7; background: #fff; }
         .summary-item span { display: block; color: #6c757d; font-size: 12px; }
@@ -43,7 +47,8 @@
         .outline-level { margin-bottom: 9px; }
         .outline-level-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; color: #59636d; font-size: 11px; font-weight: 650; }
         .outline-navigation { max-height: 142px; overflow-y: auto; border: 1px solid #dfe3e7; background: #fff; }
-        .section-navigation { max-height: 178px; }
+        .outline-navigation { max-height: 286px; }
+        .outline-chapter + .outline-chapter { border-top: 1px solid #edf0f2; }
         .outline-button { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 100%; min-height: 34px; padding: 5px 8px 5px 24px; border: 0; border-bottom: 1px solid #edf0f2; background: #fff; color: #343a40; text-align: left; font-size: 12px; }
         .outline-button:last-child { border-bottom: 0; }
         .outline-button::before { position: absolute; left: 9px; width: 7px; height: 7px; border-right: 1.5px solid #6c757d; border-bottom: 1.5px solid #6c757d; content: ""; transform: rotate(-45deg); }
@@ -51,12 +56,22 @@
         .outline-button.active::before { top: 11px; transform: rotate(45deg); }
         .outline-button span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .outline-button strong { color: #6c757d; font-size: 11px; }
-        .section-button { min-height: 38px; }
+        .outline-sections { background: #fafbfc; }
+        .outline-section { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 100%; min-height: 38px; padding: 6px 8px 6px 28px; border: 0; border-top: 1px solid #edf0f2; background: transparent; color: #495057; text-align: left; font-size: 11px; }
+        .outline-section span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .outline-section strong { color: #6c757d; }
+        .outline-section.active { color: #0a58ca; background: #eef5ff; font-weight: 650; }
         .outline-empty { padding: 12px 9px; color: #8a939b; font-size: 11px; text-align: center; }
-        .queue-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; color: #6c757d; font-size: 12px; }
+        .decision-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin: 7px 0; }
+        .decision-count { display: flex; flex-direction: column; min-width: 0; padding: 5px 6px; border: 1px solid #dfe3e7; background: #fff; color: #6c757d; font-size: 10px; }
+        .decision-count strong { color: #343a40; font-size: 14px; }
+        .decision-included strong { color: #146c43; }
+        .decision-excluded strong { color: #a52834; }
+        .batch-actions { display: flex; flex-wrap: wrap; gap: 5px; }
+        .queue-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 7px; color: #6c757d; font-size: 12px; }
         .event-navigation { position: relative; min-height: 0; flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding-right: 5px; }
         .event-visible { position: absolute; inset: 0 0 auto; }
-        .event-row { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto auto; gap: 2px 7px; width: 100%; height: 112px; padding: 8px; border: 1px solid #e0e4e8; background: #fff; text-align: left; overflow: hidden; }
+        .event-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto auto auto; gap: 2px 7px; width: 100%; height: 112px; padding: 8px; border: 1px solid #e0e4e8; background: #fff; text-align: left; overflow: hidden; cursor: pointer; }
         .event-row.active { border-color: #0d6efd; background: #f4f8ff; box-shadow: inset 0 0 0 1px #0d6efd; }
         .event-reference-added .event-kind { color: #146c43; background: #eaf6ef; }
         .event-reference-removed .event-kind { color: #a52834; background: #fbeaec; }
@@ -64,6 +79,10 @@
         .event-review .event-kind { color: #59636d; background: #edf0f2; }
         .event-kind { align-self: start; padding: 1px 5px; background: #edf0f2; color: #495057; font-size: 11px; }
         .event-row strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+        .event-include { display: flex; align-items: center; gap: 4px; color: #6c757d; font-size: 10px; cursor: pointer; white-space: nowrap; }
+        .event-include input { margin: 0; }
+        .decision-included .event-include { color: #146c43; font-weight: 650; }
+        .decision-excluded { opacity: .66; }
         .event-location { grid-column: 1 / -1; color: #6c757d; font-size: 11px; }
         .event-excerpt { grid-column: 1 / -1; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; color: #495057; font-size: 12px; line-height: 1.45; }
         .event-excerpt mark { padding: 0 1px; background: #ffe69c; color: #212529; }
@@ -72,6 +91,13 @@
         .selection-head { min-height: 66px; padding: 10px 12px; border-bottom: 1px solid #dfe3e7; }
         .selection-head h2 { margin: 0 0 3px; font-size: 16px; }
         .selection-head p { margin: 0; color: #6c757d; font-size: 12px; }
+        .selection-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+        .decision-bar { display: inline-flex; flex: 0 0 auto; border: 1px solid #ced4da; }
+        .decision-bar button { min-width: 76px; padding: 4px 8px; border: 0; border-right: 1px solid #ced4da; background: #fff; color: #495057; font-size: 11px; }
+        .decision-bar button:last-child { border-right: 0; }
+        .decision-bar button.active[data-decision="pending"] { background: #edf0f2; color: #343a40; font-weight: 650; }
+        .decision-bar button.active[data-decision="included"] { background: #d1e7dd; color: #0f5132; font-weight: 650; }
+        .decision-bar button.active[data-decision="excluded"] { background: #f8d7da; color: #842029; font-weight: 650; }
         .token-changes { margin-top: 4px; color: #842029; font-size: 12px; }
         .change-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-bottom: 1px solid #dfe3e7; }
         .change-side { min-width: 0; min-height: 210px; padding: 10px 12px; }
@@ -121,6 +147,9 @@
             .source-grid { height: auto; }
             .source-view { height: 560px; flex: 0 0 auto; }
             .change-side + .change-side, .source-pane + .source-pane { border-left: 0; border-top: 1px solid #dfe3e7; }
+            .selection-top { flex-direction: column; }
+            .decision-bar { width: 100%; }
+            .decision-bar button { flex: 1 1 0; min-width: 0; }
         }
     </style>
 </head>
@@ -149,7 +178,17 @@
                     <div id="referenceStatus" class="manual-status">未上传</div>
                 </div>
             </div>
-            <div class="actions"><button id="compareButton" class="btn btn-primary btn-sm" type="button">开始比对</button><button id="exportButton" class="btn btn-outline-primary btn-sm" type="button" disabled>导出 Excel</button><button id="exportWordButton" class="btn btn-outline-primary btn-sm" type="button" disabled>导出 Word</button></div>
+            <div class="actions">
+                <button id="compareButton" class="btn btn-primary btn-sm" type="button">开始比对</button>
+                <div id="reportActions" class="d-flex flex-wrap gap-2">
+                    <div class="dropdown"><button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" disabled>导出 Excel</button><div class="dropdown-menu"><button class="dropdown-item" type="button" data-report-format="excel" data-report-scope="all">全部修订事件</button><button class="dropdown-item" type="button" data-report-format="excel" data-report-scope="included">仅纳入报告</button></div></div>
+                    <div class="dropdown"><button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" disabled>导出 Word</button><div class="dropdown-menu"><button class="dropdown-item" type="button" data-report-format="word" data-report-scope="all">全部修订事件</button><button class="dropdown-item" type="button" data-report-format="word" data-report-scope="included">仅纳入报告</button></div></div>
+                </div>
+            </div>
+            <div class="project-bar">
+                <div class="project-actions"><button id="importProjectButton" class="btn btn-outline-secondary btn-sm" type="button">导入项目 ZIP</button><button id="saveProjectButton" class="btn btn-outline-success btn-sm" type="button" disabled>保存项目 ZIP</button><input id="projectInput" class="d-none" type="file" accept=".zip,application/zip"></div>
+                <span id="projectStatus" class="project-status">尚未建立项目</span>
+            </div>
         </div>
     </section>
 
@@ -162,23 +201,21 @@
                 <div class="queue-search">
                     <input id="eventSearch" class="form-control form-control-sm" type="search" placeholder="搜索编号、小节或原文">
                 </div>
+                <div class="form-check form-switch mb-2"><input id="onlyIncluded" class="form-check-input" type="checkbox"><label class="form-check-label small" for="onlyIncluded">只看纳入报告</label></div>
                 <div class="outline-level">
-                    <div class="outline-level-head"><span>章节</span><span id="chapterCount"></span></div>
+                    <div class="outline-level-head"><span>章节与小节（点击小节定位）</span><span><span id="chapterCount"></span> / <span id="sectionCount"></span></span></div>
                     <div id="chapterNavigation" class="outline-navigation"></div>
                 </div>
-                <div class="outline-level">
-                    <div class="outline-level-head"><span>当前章节的小节</span><span id="sectionCount"></span></div>
-                    <div id="sectionNavigation" class="outline-navigation section-navigation"></div>
-                </div>
-                <div class="queue-meta"><span>当前小节的修订事件</span><span id="resultCount"></span></div>
+                <div id="decisionSummary" class="decision-summary"></div>
+                <div id="batchActions" class="batch-actions"><button class="btn btn-outline-success btn-sm" type="button" data-batch-decision="included">当前范围全部纳入</button><button class="btn btn-outline-secondary btn-sm" type="button" data-batch-decision="pending">当前范围重置</button></div>
+                <div class="queue-meta"><span>当前条件的全部事件</span><span id="resultCount"></span></div>
             </div>
             <div id="eventNavigation" class="event-navigation"><div id="eventSpacer"></div><div id="eventVisible" class="event-visible"></div></div>
         </section>
 
         <section class="review">
             <div class="selection-head">
-                <h2 id="selectionTitle">选择一项修订事件</h2>
-                <p id="selectionReason">新增和删除排在前面；一致内容默认不进入待办。</p>
+                <div class="selection-top"><div><h2 id="selectionTitle">选择一项修订事件</h2><p id="selectionReason">新增和删除排在前面；一致内容默认不进入待办。</p></div><div id="decisionBar" class="decision-bar" aria-label="人工决定"><button type="button" data-decision="pending" disabled>待处理</button><button type="button" data-decision="included" disabled>纳入报告</button><button type="button" data-decision="excluded" disabled>不纳入</button></div></div>
                 <div id="tokenChanges" class="token-changes"></div>
             </div>
             <div class="change-grid">
@@ -198,6 +235,8 @@
 <script src="../../../libs/pdf.min.js"></script>
 <script src="../../../libs/xlsx-js-style.min.js"></script>
 <script src="../../../libs/docx.iife.js"></script>
+<script src="../../../libs/jszip.min.js"></script>
+<script src="../../project-archive.js"></script>
 <script src="special-rules.js"></script>
 <script src="manual-reader.js"></script>
 <script src="navigation.js"></script>
@@ -205,9 +244,13 @@
 <script src="document-context.js"></script>
 <script src="word-document-view.js"></script>
 <script src="pdf-document-view.js"></script>
+<script src="revision-review-view.js"></script>
 <script src="report-model.js"></script>
+<script src="decision-model.js"></script>
 <script src="excel-report.js"></script>
 <script src="word-report.js"></script>
+<script src="project-package.js"></script>
+<script src="project-actions.js"></script>
 <script src="workspace.js"></script>
 <script src="main.js"></script>
 </body>

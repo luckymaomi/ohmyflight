@@ -38,7 +38,7 @@
             chapter: number ? `第 ${number.split(".")[0]} 章` : "未识别章节",
             number,
             title,
-            explanation: `${runtime.Navigation?.label?.(event.kind) || event.kind}；${event.reason}`,
+            explanation: "",
             myLocation: event.myLocation,
             referenceLocation: event.referenceLocation,
             myRuns: diffRuns(event.myDiff || [], "my"),

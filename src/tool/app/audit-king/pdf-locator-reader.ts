@@ -2,7 +2,7 @@
     const runtime = window.AuditKing || (window.AuditKing = {});
 
     function makeDocumentId(file: File, index: number): string {
-        return `pdf-locator-${Date.now()}-${index}-${file.name.replace(/\W+/g, "-")}`;
+        return `pdf-locator-${index + 1}-${file.name.replace(/\W+/g, "-")}`;
     }
 
     function getPdfJs() {
@@ -44,7 +44,8 @@
             pageCount: pdf.numPages,
             arrayBuffer: buffer,
             pdf,
-            pages
+            pages,
+            sourceFile: file
         };
     }
 

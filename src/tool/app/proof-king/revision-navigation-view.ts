@@ -16,8 +16,7 @@
     }
 
     function renderOutline(
-        chapterNavigation: HTMLElement,
-        sectionNavigation: HTMLElement,
+        navigation: HTMLElement,
         chapterCount: HTMLElement,
         sectionCount: HTMLElement,
         resultCount: HTMLElement,
@@ -28,31 +27,32 @@
         hasComparison: boolean
     ): void {
         if (!outline.length) {
-            chapterNavigation.innerHTML = hasComparison
+            navigation.innerHTML = hasComparison
                 ? '<div class="outline-empty">当前范围没有章节。</div>'
                 : '<div class="outline-empty">完成比对后显示章节。</div>';
-            sectionNavigation.innerHTML = '<div class="outline-empty">选择章节后显示小节。</div>';
             chapterCount.textContent = "";
             sectionCount.textContent = "";
             resultCount.textContent = "";
             return;
         }
-        chapterNavigation.innerHTML = outline.map((chapter) => `
-            <button type="button" class="outline-button${chapter.key === chapterKey ? " active" : ""}"
-                data-chapter-key="${escapeHtml(chapter.key)}" aria-expanded="${chapter.key === chapterKey}">
-                <span>${escapeHtml(chapter.label)}</span><strong>${chapter.count}</strong>
-            </button>
-        `).join("");
-        const chapter = outline.find((item) => item.key === chapterKey);
-        const sections = chapter?.sections || [];
-        sectionNavigation.innerHTML = sections.map((section) => `
-            <button type="button" class="outline-button section-button${section.key === sectionKey ? " active" : ""}"
-                data-section-key="${escapeHtml(section.key)}" aria-expanded="${section.key === sectionKey}">
-                <span>${escapeHtml(section.label)}</span><strong>${section.count}</strong>
-            </button>
-        `).join("");
+        navigation.innerHTML = outline.map((chapter) => {
+            const expanded = chapter.key === chapterKey;
+            const sections = expanded ? chapter.sections.map((section) => `
+                <button type="button" class="outline-section${section.key === sectionKey ? " active" : ""}"
+                    data-section-key="${escapeHtml(section.key)}" data-start-event-id="${escapeHtml(section.startEventId)}">
+                    <span>${escapeHtml(section.label)}</span><strong>${section.count}</strong>
+                </button>
+            `).join("") : "";
+            return `<div class="outline-chapter">
+                <button type="button" class="outline-button${expanded ? " active" : ""}"
+                    data-chapter-key="${escapeHtml(chapter.key)}" aria-expanded="${expanded}">
+                    <span>${escapeHtml(chapter.label)}</span><strong>${chapter.count}</strong>
+                </button>
+                ${expanded ? `<div class="outline-sections">${sections}</div>` : ""}
+            </div>`;
+        }).join("");
         chapterCount.textContent = `${outline.length} 章`;
-        sectionCount.textContent = `${sections.length} 节`;
+        sectionCount.textContent = `${outline.reduce((count, chapter) => count + chapter.sections.length, 0)} 节`;
         resultCount.textContent = visibleEventCount ? `${visibleEventCount} 项` : "";
     }
 
@@ -63,12 +63,13 @@
         events: RevisionNavigationEvent[],
         selectedId: string,
         query: string,
+        decisions: RevisionDecisionMap,
         hasComparison: boolean
     ): void {
         if (!events.length) {
             spacer.style.height = "0";
             visible.innerHTML = hasComparison
-                ? '<div class="navigation-empty">当前小节没有修订事件。</div>'
+                ? '<div class="navigation-empty">当前条件下没有修订事件。</div>'
                 : '<div class="navigation-empty">完成比对后显示修订事件。</div>';
             return;
         }
@@ -79,14 +80,20 @@
         ) as VirtualWindow;
         spacer.style.height = `${range.totalHeight}px`;
         visible.style.transform = `translateY(${range.offsetTop}px)`;
-        visible.innerHTML = events.slice(range.start, range.end).map((event) => `
-            <button type="button" class="event-row event-${event.kind}${event.id === selectedId ? " active" : ""}" data-event-id="${escapeHtml(event.id)}">
+        visible.innerHTML = events.slice(range.start, range.end).map((event) => {
+            const decision = runtime.Decisions?.get(decisions, event.id) as RevisionDecision || "pending";
+            return `
+            <div role="button" tabindex="0" class="event-row event-${event.kind} decision-${decision}${event.id === selectedId ? " active" : ""}" data-event-id="${escapeHtml(event.id)}">
                 <span class="event-kind">${escapeHtml(runtime.Navigation.label(event.kind))}</span>
                 <strong>${escapeHtml(event.title)}</strong>
+                <label class="event-include" title="勾选后纳入报告">
+                    <input type="checkbox" data-decision-toggle="${escapeHtml(event.id)}"${decision === "included" ? " checked" : ""}>
+                    <span>${escapeHtml(runtime.Decisions?.label(decision) || "待处理")}</span>
+                </label>
                 <span class="event-location">${escapeHtml(matchedSideLabel(event, query))} · ${escapeHtml(matchedLocation(event))}</span>
                 <span class="event-excerpt">${highlightQuery(event.matchedExcerpt || event.referenceText || event.myText, query)}</span>
-            </button>
-        `).join("");
+            </div>`;
+        }).join("");
     }
 
     function matchedSideLabel(event: RevisionNavigationEvent, query: string): string {

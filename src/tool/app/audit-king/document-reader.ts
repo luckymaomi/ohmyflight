@@ -35,7 +35,7 @@
         const id = makeDocumentId(file, index);
         const blocks = splitTextBlocks(result.value || "", id, file.name);
         if (!blocks.length) throw new Error(`${file.name} 未提取到文字。`);
-        return { id, name: file.name, format: "docx", blocks };
+        return { id, name: file.name, format: "docx", blocks, sourceFile: file };
     }
 
     function joinPdfItems(items: any[]): string {
@@ -95,7 +95,7 @@
             blocks.push(...groupPdfPageItems(content.items || [], id, file.name, pageNumber, blocks.length + 1));
         }
         if (!blocks.length) throw new Error(`${file.name} 没有可读取文字层，暂不支持扫描件或图片 PDF。`);
-        return { id, name: file.name, format: "pdf", pageCount: pdf.numPages, blocks };
+        return { id, name: file.name, format: "pdf", pageCount: pdf.numPages, blocks, sourceFile: file };
     }
 
     async function readFile(file: File, index = 0): Promise<AuditKingDocument> {

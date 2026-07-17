@@ -61,6 +61,7 @@
                 key: `section:${run.index}`,
                 label: run.sectionLabel,
                 count: filtered.length,
+                startEventId: filtered[0].id,
                 events: filtered
             });
             chapter.count += filtered.length;

@@ -12,6 +12,9 @@
         query: string;
         chapterKey: string;
         sectionKey: string;
+        decisions: RevisionDecisionMap;
+        onlyIncluded: boolean;
+        dirty: boolean;
         worker: Worker | null;
         requestId: number;
         previewRequestId: number;
@@ -26,59 +29,106 @@
         query: "",
         chapterKey: "",
         sectionKey: "",
+        decisions: {},
+        onlyIncluded: false,
+        dirty: false,
         worker: null,
         requestId: 0,
         previewRequestId: 0
     };
 
-    let myWordView: any;
-    let referenceWordView: any;
-    let myPdfView: any;
-    let referencePdfView: any;
+    let reviewView: any;
     let navigationFrame: number | null = null;
 
     function bind(): void {
-        myWordView = new runtime.DocumentViews.WordReaderView(element("mySource"));
-        referenceWordView = new runtime.DocumentViews.WordReaderView(element("referenceSource"));
-        myPdfView = new runtime.DocumentViews.PdfDocumentView(element("mySource"));
-        referencePdfView = new runtime.DocumentViews.PdfDocumentView(element("referenceSource"));
+        reviewView = new runtime.RevisionReviewView();
 
         input("myInput").addEventListener("change", () => void safely(() => loadManual("my")));
         input("referenceInput").addEventListener("change", () => void safely(() => loadManual("reference")));
         button("compareButton").addEventListener("click", () => void safely(startComparison));
-        button("exportButton").addEventListener("click", () => {
-            if (state.comparison) runtime.ExcelReport.exportWorkbook(state.comparison);
+        element("reportActions").addEventListener("click", (event) => {
+            const target = (event.target as HTMLElement).closest<HTMLElement>("[data-report-format][data-report-scope]");
+            if (!target || !state.comparison) return;
+            const included = runtime.Decisions.eventsWith(state.comparison.events, state.decisions, "included") as RevisionEvent[];
+            const events = target.dataset.reportScope === "included" ? included : state.comparison.events;
+            const scope = target.dataset.reportScope === "included" ? "纳入报告" : "全部";
+            if (!events.length) return setMessage(`当前没有可导出的${scope}事件。`, "danger");
+            if (target.dataset.reportFormat === "excel") runtime.ExcelReport.exportWorkbook(state.comparison, events, state.decisions, scope);
+            else void safely(() => runtime.WordReport.exportDocument(state.comparison, events, scope));
         });
-        button("exportWordButton").addEventListener("click", () => void safely(async () => {
-            if (state.comparison) await runtime.WordReport.exportDocument(state.comparison);
-        }));
         input("eventSearch").addEventListener("input", () => {
             state.query = input("eventSearch").value;
+            markDirty();
             applyFilter();
         });
         element("filterBar").addEventListener("click", (event) => {
             const target = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-filter]");
             if (!target?.dataset.filter) return;
             state.filter = target.dataset.filter as RevisionKind | "all";
+            markDirty();
+            applyFilter();
+        });
+        input("onlyIncluded").addEventListener("change", () => {
+            state.onlyIncluded = input("onlyIncluded").checked;
+            markDirty();
             applyFilter();
         });
         element("chapterNavigation").addEventListener("click", (event) => {
-            const target = (event.target as HTMLElement).closest<HTMLElement>("[data-chapter-key]");
-            if (!target?.dataset.chapterKey) return;
-            selectChapter(target.dataset.chapterKey);
-        });
-        element("sectionNavigation").addEventListener("click", (event) => {
-            const target = (event.target as HTMLElement).closest<HTMLElement>("[data-section-key]");
-            if (!target?.dataset.sectionKey) return;
-            selectSection(target.dataset.sectionKey);
+            const section = (event.target as HTMLElement).closest<HTMLElement>("[data-section-key]");
+            if (section?.dataset.sectionKey && section.dataset.startEventId) {
+                selectSection(section.dataset.sectionKey, section.dataset.startEventId);
+                return;
+            }
+            const chapter = (event.target as HTMLElement).closest<HTMLElement>("[data-chapter-key]");
+            if (chapter?.dataset.chapterKey) selectChapter(chapter.dataset.chapterKey);
         });
         element("eventNavigation").addEventListener("scroll", scheduleNavigation);
         element("eventNavigation").addEventListener("click", (event) => {
+            const decisionToggle = (event.target as HTMLElement).closest<HTMLInputElement>("[data-decision-toggle]");
+            if (decisionToggle?.dataset.decisionToggle) {
+                setDecision(decisionToggle.dataset.decisionToggle, decisionToggle.checked ? "included" : "pending");
+                return;
+            }
             const target = (event.target as HTMLElement).closest<HTMLElement>("[data-event-id]");
             if (!target?.dataset.eventId) return;
             state.selectedId = target.dataset.eventId;
             renderNavigation();
             void safely(renderSelection);
+        });
+        element("eventNavigation").addEventListener("keydown", (event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            const target = (event.target as HTMLElement).closest<HTMLElement>("[data-event-id]");
+            if (!target?.dataset.eventId) return;
+            event.preventDefault();
+            state.selectedId = target.dataset.eventId;
+            renderNavigation();
+            void safely(renderSelection);
+        });
+        element("decisionBar").addEventListener("click", (event) => {
+            const target = (event.target as HTMLElement).closest<HTMLElement>("[data-decision]");
+            if (target?.dataset.decision && state.selectedId) setDecision(state.selectedId, target.dataset.decision as RevisionDecision);
+        });
+        element("batchActions").addEventListener("click", (event) => {
+            const target = (event.target as HTMLElement).closest<HTMLElement>("[data-batch-decision]");
+            if (!target?.dataset.batchDecision || !state.visibleEvents.length) return;
+            state.decisions = runtime.Decisions.setMany(
+                state.decisions,
+                state.visibleEvents.map((item) => item.id),
+                target.dataset.batchDecision as RevisionDecision
+            );
+            markDirty();
+            applyFilter(false);
+        });
+        runtime.ProjectActions.bind({
+            getProjectInput,
+            restoreProject,
+            markProjectSaved,
+            setMessage
+        } as ProofProjectActionsContext);
+        window.addEventListener("beforeunload", (event) => {
+            if (!state.dirty) return;
+            event.preventDefault();
+            event.returnValue = "";
         });
         renderState();
     }
@@ -92,6 +142,7 @@
         if (role === "my") state.myManual = manual;
         else state.referenceManual = manual;
         clearComparison();
+        markDirty();
         if (state.myManual && state.referenceManual) {
             setMessage(`当前方向：我的手册「${state.myManual.name}」→ 参考手册「${state.referenceManual.name}」。`, "info");
         } else {
@@ -102,10 +153,7 @@
     }
 
     async function showInitialManual(manual: LocalManual): Promise<void> {
-        const wordView = manual.role === "my" ? myWordView : referenceWordView;
-        const pdfView = manual.role === "my" ? myPdfView : referencePdfView;
-        if (manual.format === "docx") wordView.show(manual, []);
-        else await pdfView.show(manual, manual.units.slice(0, 1), "完成比对后按差异定位 PDF 原页。 ");
+        await reviewView.showInitial(manual);
     }
 
     async function startComparison(): Promise<void> {
@@ -136,7 +184,11 @@
             state.query = "";
             state.chapterKey = "";
             state.sectionKey = "";
+            state.decisions = {};
+            state.onlyIncluded = false;
+            input("onlyIncluded").checked = false;
             input("eventSearch").value = "";
+            markDirty();
             applyFilter();
             setMessage(`比对完成：${response.comparison.summary.myManualName} → ${response.comparison.summary.referenceManualName}，整理为 ${response.comparison.events.length} 个修订事件。`, "success");
         });
@@ -154,19 +206,22 @@
         } as ComparisonWorkerRequest);
     }
 
-    function applyFilter(): void {
-        state.outline = state.comparison
-            ? runtime.Navigation.buildOutline(state.comparison.events, state.filter, state.query)
+    function applyFilter(resetScroll = true): void {
+        const filtered = state.comparison
+            ? runtime.Navigation.filterEvents(state.comparison.events, state.filter, state.query) as RevisionNavigationEvent[]
             : [];
+        state.visibleEvents = state.onlyIncluded
+            ? runtime.Decisions.eventsWith(filtered, state.decisions, "included") as RevisionNavigationEvent[]
+            : filtered;
+        state.outline = runtime.Navigation.buildOutline(state.visibleEvents, "all", "");
         const chapter = state.outline.find((item) => item.key === state.chapterKey) || state.outline[0];
         state.chapterKey = chapter?.key || "";
         const section = chapter?.sections.find((item) => item.key === state.sectionKey) || chapter?.sections[0];
         state.sectionKey = section?.key || "";
-        state.visibleEvents = section?.events || [];
         if (!state.visibleEvents.some((event) => event.id === state.selectedId)) {
             state.selectedId = state.visibleEvents[0]?.id || "";
         }
-        element("eventNavigation").scrollTop = 0;
+        if (resetScroll) element("eventNavigation").scrollTop = 0;
         renderState();
         if (state.selectedId) void safely(renderSelection);
     }
@@ -177,8 +232,11 @@
         renderFilters();
         renderOutline();
         renderNavigation();
-        button("exportButton").disabled = !state.comparison;
-        button("exportWordButton").disabled = !state.comparison;
+        element("reportActions").querySelectorAll<HTMLButtonElement>("button").forEach((item) => item.disabled = !state.comparison);
+        button("saveProjectButton").disabled = !getProjectInput();
+        renderDecisionSummary();
+        element("projectStatus").textContent = state.dirty ? "有未保存更改" : state.comparison ? "项目已保存" : "尚未建立项目";
+        element("projectStatus").className = `project-status${state.dirty ? " dirty" : ""}`;
         if (!state.selectedId) renderEmptySelection();
     }
 
@@ -220,7 +278,6 @@
     function renderOutline(): void {
         runtime.RevisionNavigationView.renderOutline(
             element("chapterNavigation"),
-            element("sectionNavigation"),
             element("chapterCount"),
             element("sectionCount"),
             element("resultCount"),
@@ -235,29 +292,22 @@
     function selectChapter(chapterKey: string): void {
         const chapter = state.outline.find((item) => item.key === chapterKey);
         if (!chapter) return;
-        state.chapterKey = chapter.key;
-        state.sectionKey = chapter.sections[0]?.key || "";
-        syncOutlineSelection();
+        state.chapterKey = state.chapterKey === chapter.key ? "" : chapter.key;
+        if (state.chapterKey) state.sectionKey = chapter.sections[0]?.key || "";
+        renderOutline();
+        markDirty();
     }
 
-    function selectSection(sectionKey: string): void {
-        const section = currentChapter()?.sections.find((item) => item.key === sectionKey);
-        if (!section) return;
-        state.sectionKey = section.key;
-        syncOutlineSelection();
-    }
-
-    function syncOutlineSelection(): void {
-        const section = currentChapter()?.sections.find((item) => item.key === state.sectionKey);
-        state.visibleEvents = section?.events || [];
-        state.selectedId = state.visibleEvents[0]?.id || "";
-        element("eventNavigation").scrollTop = 0;
-        renderState();
-        if (state.selectedId) void safely(renderSelection);
-    }
-
-    function currentChapter(): RevisionChapterGroup | undefined {
-        return state.outline.find((item) => item.key === state.chapterKey);
+    function selectSection(sectionKey: string, startEventId: string): void {
+        const index = state.visibleEvents.findIndex((item) => item.id === startEventId);
+        if (index < 0) return;
+        state.sectionKey = sectionKey;
+        state.selectedId = startEventId;
+        element("eventNavigation").scrollTop = index * runtime.Navigation.rowHeight;
+        renderOutline();
+        renderNavigation();
+        markDirty();
+        void safely(renderSelection);
     }
 
     function renderNavigation(): void {
@@ -269,6 +319,7 @@
             state.visibleEvents,
             state.selectedId,
             state.query,
+            state.decisions,
             !!state.comparison
         );
     }
@@ -278,6 +329,7 @@
         navigationFrame = requestAnimationFrame(() => {
             navigationFrame = null;
             renderNavigation();
+            syncOutlineFromScroll();
         });
     }
 
@@ -287,119 +339,140 @@
             || comparison?.events.find((item) => item.id === state.selectedId);
         if (!comparison || !event || !state.myManual || !state.referenceManual) return;
         const requestId = ++state.previewRequestId;
-        element("selectionTitle").textContent = `${runtime.Navigation.label(event.kind)} / ${event.title}`;
-        element("selectionReason").textContent = event.reason;
-        element("myChangeLocation").textContent = selectionLocation(state.myManual, event, "my");
-        element("referenceChangeLocation").textContent = selectionLocation(state.referenceManual, event, "reference");
-        element("myChangeText").innerHTML = renderEventContext(state.myManual, event, "my");
-        element("referenceChangeText").innerHTML = renderEventContext(state.referenceManual, event, "reference");
-        element("tokenChanges").textContent = tokenDescription(event);
-
-        const myUnits = unitsFor(state.myManual, focusUnitIds(event, "my"));
-        const referenceUnits = unitsFor(state.referenceManual, focusUnitIds(event, "reference"));
-        await Promise.all([
-            showSource(state.myManual, myUnits, myWordView, myPdfView, "该修订事件在我的手册中没有对应原文。 "),
-            showSource(state.referenceManual, referenceUnits, referenceWordView, referencePdfView, "该修订事件在参考手册中没有对应原文。 ")
-        ]);
+        renderDecisionBar(event.id);
+        await reviewView.show(event, state.myManual, state.referenceManual);
         if (requestId !== state.previewRequestId) return;
     }
 
-    async function showSource(manual: LocalManual, units: ManualUnit[], wordView: any, pdfView: any, emptyMessage: string): Promise<void> {
-        if (manual.format === "docx") {
-            pdfView.reset();
-            wordView.show(manual, units.map((unit) => unit.id));
-        }
-        else await pdfView.show(manual, units, emptyMessage);
-    }
-
-    function unitsFor(manual: LocalManual, ids: string[]): ManualUnit[] {
-        const idSet = new Set(ids);
-        return manual.units.filter((unit) => idSet.has(unit.id));
-    }
-
-    function renderDiff(segments: DiffSegment[]): string {
-        return segments.map((segment) => `<span class="diff-${segment.kind}">${escapeHtml(segment.text)}</span>`).join("");
-    }
-
-    function renderEventContext(manual: LocalManual, event: RevisionEvent, role: ManualRole): string {
-        const eventText = role === "my" ? event.myText : event.referenceText;
-        const difference = role === "my" ? event.myDiff : event.referenceDiff;
-        const unitIds = role === "my" ? event.myUnitIds : event.referenceUnitIds;
-        if (event.contextAnchors.length && (event.kind === "reference-added" || event.kind === "reference-removed")) {
-            return renderAnchoredContext(event, role, eventText, difference);
-        }
-        if (!eventText) return '<span class="missing-text">无对应原文</span>';
-        const context = runtime.DocumentViews.buildContextWindow(manual, unitIds, eventText);
-        if (!context) return `<span class="context-focus">${renderDiff(difference)}</span>`;
-        return [
-            `<span class="context-neighbor">${escapeHtml(context.before)}</span>`,
-            `<span class="context-focus">${renderDiff(difference)}</span>`,
-            `<span class="context-neighbor">${escapeHtml(context.after)}</span>`
-        ].join("");
-    }
-
-    function renderAnchoredContext(
-        event: RevisionEvent,
-        role: ManualRole,
-        eventText: string,
-        difference: DiffSegment[]
-    ): string {
-        const before = event.contextAnchors.find((anchor) => anchor.position === "before");
-        const after = event.contextAnchors.find((anchor) => anchor.position === "after");
-        const anchorText = (anchor: RevisionContextAnchor) => role === "my" ? anchor.myText : anchor.referenceText;
-        const blocks: string[] = [];
-        blocks.push(before
-            ? contextBlock("共同前文", anchorText(before), "context-anchor")
-            : contextBlock("共同前文", "文档开头或前方没有可靠共同锚点", "context-missing"));
-        if (eventText) {
-            blocks.push(`<span class="context-block context-focus">${renderDiff(difference)}</span>`);
-        } else {
-            const label = event.kind === "reference-added" ? "参考手册在此处新增内容" : "参考手册在此处删除内容";
-            blocks.push(contextBlock("对应位置", label, "context-insertion"));
-        }
-        blocks.push(after
-            ? contextBlock("共同后文", anchorText(after), "context-anchor")
-            : contextBlock("共同后文", "文档结尾或后方没有可靠共同锚点", "context-missing"));
-        return blocks.join("");
-    }
-
-    function contextBlock(label: string, value: string, className: string): string {
-        return `<span class="context-block ${className}"><span class="context-block-label">${escapeHtml(label)}</span>${escapeHtml(value)}</span>`;
-    }
-
-    function focusUnitIds(event: RevisionEvent, role: ManualRole): string[] {
-        const eventUnitIds = role === "my" ? event.myUnitIds : event.referenceUnitIds;
-        if (eventUnitIds.length) return eventUnitIds;
-        return Array.from(new Set(event.contextAnchors.map((anchor) => role === "my" ? anchor.myUnitId : anchor.referenceUnitId)));
-    }
-
-    function selectionLocation(manual: LocalManual, event: RevisionEvent, role: ManualRole): string {
-        const eventLocation = role === "my" ? event.myLocation : event.referenceLocation;
-        if (eventLocation !== "无对应原文") return eventLocation;
-        const contextUnits = unitsFor(manual, focusUnitIds(event, role));
-        if (!contextUnits.length) return eventLocation;
-        const first = contextUnits[0];
-        const last = contextUnits[contextUnits.length - 1];
-        const describe = (unit: ManualUnit) => unit.pageNumber ? `第 ${unit.pageNumber} 页` : `第 ${unit.index} 段`;
-        const range = describe(first) === describe(last) ? describe(first) : `${describe(first)} - ${describe(last)}`;
-        return `对应位置附近：${range}`;
-    }
-
-    function tokenDescription(event: RevisionEvent): string {
-        const parts: string[] = [];
-        if (event.myTokensOnly.length) parts.push(`我的手册独有：${event.myTokensOnly.join("、")}`);
-        if (event.referenceTokensOnly.length) parts.push(`参考手册独有：${event.referenceTokensOnly.join("、")}`);
-        return parts.join("；");
-    }
-
     function renderEmptySelection(): void {
-        element("selectionTitle").textContent = "选择一项修订事件";
-        element("selectionReason").textContent = "新增和删除排在前面；一致内容默认不进入待办。";
-        element("myChangeLocation").textContent = "";
-        element("referenceChangeLocation").textContent = "";
-        element("myChangeText").innerHTML = '<span class="missing-text">等待选择</span>';
-        element("referenceChangeText").innerHTML = '<span class="missing-text">等待选择</span>';
-        element("tokenChanges").textContent = "";
+        reviewView.empty();
+        renderDecisionBar("");
+    }
+
+    function renderDecisionBar(eventId: string): void {
+        const decision = eventId ? runtime.Decisions.get(state.decisions, eventId) as RevisionDecision : "pending";
+        element("decisionBar").querySelectorAll<HTMLButtonElement>("[data-decision]").forEach((item) => {
+            item.classList.toggle("active", !!eventId && item.dataset.decision === decision);
+            item.disabled = !eventId;
+        });
+    }
+
+    function renderDecisionSummary(): void {
+        const summary = runtime.Decisions.summarize(state.comparison?.events || [], state.decisions) as RevisionDecisionSummary;
+        element("decisionSummary").innerHTML = [
+            ["待处理", summary.pending, "pending"],
+            ["纳入报告", summary.included, "included"],
+            ["不纳入", summary.excluded, "excluded"]
+        ].map(([label, count, tone]) => `<span class="decision-count decision-${tone}">${label}<strong>${count}</strong></span>`).join("");
+    }
+
+    function setDecision(eventId: string, decision: RevisionDecision): void {
+        state.decisions = runtime.Decisions.set(state.decisions, eventId, decision);
+        markDirty();
+        if (state.onlyIncluded && decision !== "included") applyFilter(false);
+        else {
+            renderDecisionSummary();
+            renderNavigation();
+            renderDecisionBar(state.selectedId);
+        }
+    }
+
+    function syncOutlineFromScroll(): void {
+        if (!state.visibleEvents.length || !state.outline.length) return;
+        const index = Math.min(
+            state.visibleEvents.length - 1,
+            Math.max(0, Math.floor(element("eventNavigation").scrollTop / runtime.Navigation.rowHeight))
+        );
+        const eventId = state.visibleEvents[index]?.id;
+        const activeChapter = state.outline.find((chapter) => chapter.sections.some((section) => (
+            section.events.some((event) => event.id === eventId)
+        )));
+        const activeSection = activeChapter?.sections.find((section) => section.events.some((event) => event.id === eventId));
+        if (!eventId || !activeChapter || !activeSection) return;
+        if (state.chapterKey !== activeChapter.key || state.sectionKey !== activeSection.key) {
+            state.chapterKey = activeChapter.key;
+            state.sectionKey = activeSection.key;
+            renderOutline();
+        }
+    }
+
+    function getProjectInput(): ProofWorkspaceProjectInput | null {
+        if (!state.myManual || !state.referenceManual || !state.comparison) return null;
+        return {
+            myFile: state.myManual.sourceFile,
+            referenceFile: state.referenceManual.sourceFile,
+            myRange: pdfRange("my"),
+            referenceRange: pdfRange("reference"),
+            comparison: state.comparison,
+            decisions: state.decisions,
+            view: {
+                filter: state.filter,
+                query: state.query,
+                selectedId: state.selectedId,
+                expandedChapterKey: state.chapterKey,
+                onlyIncluded: state.onlyIncluded,
+                scrollTop: element("eventNavigation").scrollTop
+            }
+        };
+    }
+
+    async function restoreProject(result: ProofProjectReadResult): Promise<void> {
+        setMessage("正在重建两本手册，请稍候。", "info");
+        const [myManual, referenceManual] = await Promise.all([
+            runtime.ManualReader.readManual(result.myFile, "my", result.state.manuals.my.range),
+            runtime.ManualReader.readManual(result.referenceFile, "reference", result.state.manuals.reference.range)
+        ]);
+        validateRestoredComparison(result.state.comparison, myManual, referenceManual);
+        stopWorker();
+        state.myManual = myManual;
+        state.referenceManual = referenceManual;
+        state.comparison = result.state.comparison;
+        state.decisions = runtime.Decisions.normalize(state.comparison.events, result.state.decisions);
+        state.filter = result.state.view.filter || "all";
+        state.query = result.state.view.query || "";
+        state.selectedId = result.state.view.selectedId || "";
+        state.chapterKey = result.state.view.expandedChapterKey || "";
+        state.sectionKey = "";
+        state.onlyIncluded = result.state.view.onlyIncluded === true;
+        input("myStartPage").value = String(result.state.manuals.my.range.startPage || "");
+        input("myEndPage").value = String(result.state.manuals.my.range.endPage || "");
+        input("referenceStartPage").value = String(result.state.manuals.reference.range.startPage || "");
+        input("referenceEndPage").value = String(result.state.manuals.reference.range.endPage || "");
+        input("eventSearch").value = state.query;
+        input("onlyIncluded").checked = state.onlyIncluded;
+        applyFilter();
+        element("eventNavigation").scrollTop = Number(result.state.view.scrollTop) || 0;
+        state.dirty = false;
+        renderState();
+        if (state.selectedId) await renderSelection();
+        else await Promise.all([showInitialManual(myManual), showInitialManual(referenceManual)]);
+        setMessage(`项目已恢复：${state.comparison.events.length} 个修订事件，${runtime.Decisions.summarize(state.comparison.events, state.decisions).included} 个已纳入报告。`, "success");
+    }
+
+    function validateRestoredComparison(comparison: ManualComparison, myManual: LocalManual, referenceManual: LocalManual): void {
+        if (!Array.isArray(comparison?.events) || !comparison.summary) throw new Error("项目缺少有效比较结果。");
+        const ids = new Set<string>();
+        comparison.events.forEach((event) => {
+            if (!event?.id || ids.has(event.id)) throw new Error("项目中的修订事件编号无效或重复。");
+            ids.add(event.id);
+        });
+        if (comparison.summary.myManualName !== myManual.name || comparison.summary.referenceManualName !== referenceManual.name) {
+            throw new Error("项目比较结果与原始手册名称不一致。");
+        }
+    }
+
+    function markDirty(): void {
+        state.dirty = true;
+        const status = document.getElementById("projectStatus");
+        if (status) {
+            status.textContent = "有未保存更改";
+            status.className = "project-status dirty";
+        }
+    }
+
+    function markProjectSaved(): void {
+        state.dirty = false;
+        renderState();
     }
 
     function pdfRange(role: ManualRole): { startPage: number | ""; endPage: number | "" } {
@@ -420,6 +493,8 @@
         state.selectedId = "";
         state.chapterKey = "";
         state.sectionKey = "";
+        state.decisions = {};
+        state.onlyIncluded = false;
         state.previewRequestId += 1;
     }
 

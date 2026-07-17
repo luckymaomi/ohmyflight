@@ -2,10 +2,10 @@
     const runtime = window.ManualProof || (window.ManualProof = {});
     const headerFill = "D9E2F3";
 
-    function buildDocument(comparison: ManualComparison): any {
+    function buildDocument(comparison: ManualComparison, events: RevisionEvent[] = comparison.events): any {
         const library = window.docx;
         if (!library?.Document || !library?.Packer) throw new Error("页面缺少 Word 导出组件。 ");
-        const groups = runtime.ReportModel.buildGroups(comparison.events) as RevisionReportGroup[];
+        const groups = runtime.ReportModel.buildGroups(events) as RevisionReportGroup[];
         const tableRows = [
             new library.TableRow({
                 tableHeader: true,
@@ -110,12 +110,12 @@
         return { top: 90, right: 100, bottom: 90, left: 100 };
     }
 
-    async function exportDocument(comparison: ManualComparison): Promise<void> {
-        const blob = await window.docx.Packer.toBlob(buildDocument(comparison));
+    async function exportDocument(comparison: ManualComparison, events = comparison.events, scope = "全部"): Promise<void> {
+        const blob = await window.docx.Packer.toBlob(buildDocument(comparison, events));
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `校对之王修订事件_${dateStamp(new Date())}.docx`;
+        link.download = `校对之王修订事件_${scope}_${dateStamp(new Date())}.docx`;
         link.click();
         setTimeout(() => URL.revokeObjectURL(url), 0);
     }

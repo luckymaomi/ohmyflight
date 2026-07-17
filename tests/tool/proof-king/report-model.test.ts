@@ -22,6 +22,7 @@ describe("校对之王 Word 报告模型", () => {
         }]);
 
         expect(rows[0]).toMatchObject({ chapter: "第 5 章", number: "5.7.2", title: "5.7.2 训练模块和科目" });
+        expect(rows[0].explanation).toBe("");
         expect(rows[0].myRuns).toContainEqual({ text: "飞行技能考试", color: "FF0000" });
         expect(rows[0].referenceRuns).toContainEqual({ text: "转机型训练实践考试", color: "00B0F0" });
     });

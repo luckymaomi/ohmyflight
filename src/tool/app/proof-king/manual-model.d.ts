@@ -3,6 +3,14 @@ type ManualFormat = "docx" | "pdf";
 type ManualUnitKind = "paragraph" | "table-row" | "pdf-paragraph";
 type RevisionKind = "reference-added" | "reference-removed" | "modified" | "review";
 type DiffKind = "equal" | "added" | "removed";
+type RevisionDecision = "pending" | "included" | "excluded";
+type RevisionDecisionMap = Record<string, RevisionDecision>;
+
+interface RevisionDecisionSummary {
+    pending: number;
+    included: number;
+    excluded: number;
+}
 
 interface AlignmentMatch {
     myStart: number;
@@ -31,6 +39,7 @@ interface LocalManual {
     name: string;
     format: ManualFormat;
     units: ManualUnit[];
+    sourceFile: File;
     pageCount?: number;
     pdfStartPage?: number;
     pdfEndPage?: number;
@@ -117,6 +126,7 @@ interface RevisionSectionGroup {
     key: string;
     label: string;
     count: number;
+    startEventId: string;
     events: RevisionNavigationEvent[];
 }
 
@@ -178,6 +188,66 @@ interface ComparisonOptions {
     minimumCandidateSimilarity?: number;
 }
 
+interface ProofProjectManualMetadata {
+    path: string;
+    name: string;
+    type: string;
+    range: { startPage: number | ""; endPage: number | "" };
+}
+
+interface ProofProjectViewState {
+    filter: RevisionKind | "all";
+    query: string;
+    selectedId: string;
+    expandedChapterKey: string;
+    onlyIncluded?: boolean;
+    scrollTop?: number;
+}
+
+interface ProofProjectSnapshot {
+    version: number;
+    manuals: { my: ProofProjectManualMetadata; reference: ProofProjectManualMetadata };
+    comparison: ManualComparison;
+    decisions: RevisionDecisionMap;
+    view: ProofProjectViewState;
+}
+
+interface ProofProjectBuildInput {
+    myFile: File;
+    referenceFile: File;
+    myRange: { startPage: number | ""; endPage: number | "" };
+    referenceRange: { startPage: number | ""; endPage: number | "" };
+    comparison: ManualComparison;
+    decisions: RevisionDecisionMap;
+    view: ProofProjectViewState;
+    workbook: Uint8Array;
+    onProgress?: (message: string, completed: number, total: number) => void;
+}
+
+interface ProofProjectReadResult {
+    state: ProofProjectSnapshot;
+    myFile: File;
+    referenceFile: File;
+    workbook: Uint8Array;
+}
+
+interface ProofWorkspaceProjectInput {
+    myFile: File;
+    referenceFile: File;
+    myRange: { startPage: number | ""; endPage: number | "" };
+    referenceRange: { startPage: number | ""; endPage: number | "" };
+    comparison: ManualComparison;
+    decisions: RevisionDecisionMap;
+    view: ProofProjectViewState;
+}
+
+interface ProofProjectActionsContext {
+    getProjectInput(): ProofWorkspaceProjectInput | null;
+    restoreProject(result: ProofProjectReadResult): Promise<void>;
+    markProjectSaved(): void;
+    setMessage(message: string, tone: "secondary" | "info" | "success" | "danger"): void;
+}
+
 interface ManualProofHookConfig {
     ignoredNoisePhrases?: string[];
 }
@@ -236,4 +306,5 @@ interface Window {
     pdfjsLib: any;
     XLSX: any;
     docx: any;
+    JSZip: any;
 }

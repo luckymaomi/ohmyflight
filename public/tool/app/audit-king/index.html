@@ -14,6 +14,8 @@
         .status-bar.error { background: #ffebe9; color: #cf222e; }
         .upload-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: end; }
         .upload-status { grid-column: 1 / -1; }
+        .project-strip { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+        .project-strip p { margin: 0; color: #6c757d; font-size: 12px; }
         .top-work-grid, .result-grid, .bottom-work-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
         .top-work-grid > .card, .result-grid > .card, .bottom-work-grid > .card { min-width: 0; }
         .panel-scroll { min-height: 320px; max-height: 56vh; overflow: auto; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; padding: 12px; }
@@ -128,6 +130,13 @@
         <div class="card-body text-center position-relative py-2">
             <a href="../../../index.html" class="position-absolute start-0 top-50 translate-middle-y ms-3 text-decoration-none">返回</a>
             <h5 class="card-title mb-0">审计之王</h5>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body py-2 project-strip">
+            <div><strong>完整审计项目</strong><p>一次保存检查单、手册、检查项证据链、PDF 工作区和工作簿。</p></div>
+            <div class="d-flex flex-wrap gap-2"><button class="btn btn-sm btn-outline-secondary" id="importProjectBtn">导入项目 ZIP</button><button class="btn btn-sm btn-outline-success" id="saveProjectBtn">保存项目 ZIP</button><input class="d-none" type="file" id="projectImportInput" accept=".zip,application/zip"></div>
         </div>
     </div>
 
@@ -331,6 +340,7 @@
 <script src="../../../libs/pdf.min.js"></script>
 <script src="../../../libs/pdf-lib.min.js"></script>
 <script src="../../../libs/jszip.min.js"></script>
+<script src="../../project-archive.js"></script>
 <script src="types.js"></script>
 <script src="text-normalizer.js"></script>
 <script src="document-reader.js"></script>
@@ -356,6 +366,8 @@
 <script src="pdf-locator-export.js"></script>
 <script src="pdf-locator-view.js"></script>
 <script src="pdf-locator-actions.js"></script>
+<script src="project-package.js"></script>
+<script src="project-actions.js"></script>
 <script src="main.js"></script>
 </body>
 </html>

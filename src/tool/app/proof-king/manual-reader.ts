@@ -3,7 +3,7 @@
 
     function makeManualId(role: ManualRole, file: File): string {
         const name = (file.name || "manual").replace(/[^0-9a-zA-Z\u4e00-\u9fff-]+/g, "-");
-        return `${role}-${Date.now()}-${name}`;
+        return `${role}-${name}`;
     }
 
     async function readManual(file: File, role: ManualRole, range: { startPage: number | ""; endPage: number | "" }): Promise<LocalManual> {
@@ -19,7 +19,7 @@
         const extracted = await window.mammoth.extractRawText({ arrayBuffer: data });
         const units = splitWordUnits(extracted.value || "", id);
         if (!units.length) throw new Error(`${file.name} 未提取到可比对文字。`);
-        return { id, role, name: file.name, format: "docx", units };
+        return { id, role, name: file.name, format: "docx", units, sourceFile: file };
     }
 
     function splitWordUnits(value: unknown, manualId: string): ManualUnit[] {
@@ -77,6 +77,7 @@
             name: file.name,
             format: "pdf",
             units,
+            sourceFile: file,
             pageCount: pdfDocument.numPages,
             pdfStartPage: range.start,
             pdfEndPage: range.end,
