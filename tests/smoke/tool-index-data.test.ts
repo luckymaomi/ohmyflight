@@ -2,7 +2,7 @@ import fs from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { loadManualsData, loadSiteVisibility, loadSkillsData, loadToolsData } from "../helpers/browser-context";
+import { loadManualsData, loadSiteVisibility, loadSkillsData, loadToolsData, loadWorkflowsData } from "../helpers/browser-context";
 import { resolveFromDist, resolveFromRoot } from "../helpers/paths";
 
 describe("tool index data", () => {
@@ -29,12 +29,44 @@ describe("tool index data", () => {
     expect(wipNames).toEqual([]);
   });
 
+  it("publishes the default homepage workflows from existing tool entries", () => {
+    const tools = loadToolsData() || [];
+    const workflows = loadWorkflowsData() || [];
+    const toolEntries = new Set(tools.map((tool) => tool.entry));
+    const homepage = fs.readFileSync(resolveFromRoot("public", "tool", "index.html"), "utf8");
+
+    expect(workflows).toEqual([
+      { id: "lock-entry", name: "锁班", entries: ["text-joiner", "crew-match-name-id", "lock-entry-helper"] },
+      { id: "manual-review", name: "手册", entries: ["pdf-stamp", "proof-king", "audit-king"] },
+      {
+        id: "qualification-operations",
+        name: "资质运行",
+        entries: [
+          "hotel-bill-check",
+          "focus-crew",
+          "crew-flight-stats",
+          "flight-stats-helper",
+          "qualification-query-helper"
+        ]
+      }
+    ]);
+    workflows.flatMap((workflow) => workflow.entries).forEach((entry) => {
+      expect(toolEntries.has(entry), `workflow references missing tool: ${entry}`).toBe(true);
+    });
+    expect(new Set(workflows.map((workflow) => workflow.id)).size).toBe(workflows.length);
+    expect(homepage).toContain('data-default-category="workflow"');
+    expect(homepage).toContain('data-category="workflow"');
+  });
+
   it("centralizes every public visibility switch", () => {
     const tools = loadToolsData() || [];
+    const workflows = loadWorkflowsData() || [];
     const visibility = loadSiteVisibility();
 
     expect(Object.keys(visibility.tools).sort()).toEqual(tools.map((tool) => tool.entry).sort());
+    expect(Object.keys(visibility.workflows).sort()).toEqual(workflows.map((workflow) => workflow.id).sort());
     expect(Object.values(visibility.tools).every((value) => typeof value === "boolean")).toBe(true);
+    expect(Object.values(visibility.workflows).every((value) => typeof value === "boolean")).toBe(true);
     expect(visibility.homepage).toMatchObject({
       patternGate: expect.any(Boolean),
       announcement: expect.any(Boolean),

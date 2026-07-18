@@ -28,6 +28,11 @@ const siteVisibility: SiteVisibilityConfig = {
         "text-joiner": true,
         "crew-extract-id": true,
         "personnel-structure-stats": true
+    },
+    workflows: {
+        "lock-entry": true,
+        "manual-review": true,
+        "qualification-operations": true
     }
 };
 

@@ -14,6 +14,12 @@ interface SiteAnnouncement {
   href?: string;
 }
 
+interface WorkflowItem {
+  id: string;
+  name: string;
+  entries: string[];
+}
+
 interface SkillItem {
   name: string;
   description: string;
