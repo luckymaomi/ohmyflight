@@ -49,6 +49,24 @@ function buildWorkbook() {
   return workbook;
 }
 
+function buildSecurityTsaWorkbook(
+  securityRows: unknown[][],
+  tsaRows: unknown[][]
+): XLSX.WorkBook {
+  const workbook = buildWorkbook();
+  const projectHeaders = ["员工号", "姓名", "项目名称", "培训信息是否录入", "培训开始日期", "培训结束日期", "有效期", "备注"];
+
+  workbook.Sheets["航空安保"] = XLSX.utils.aoa_to_sheet([
+    projectHeaders,
+    ...securityRows
+  ], { cellDates: true });
+  workbook.Sheets.TSA = XLSX.utils.aoa_to_sheet([
+    projectHeaders,
+    ...tsaRows
+  ], { cellDates: true });
+  return workbook;
+}
+
 describe("workbook health", () => {
   let Scanner: any;
   let WorkbookHealth: any;
@@ -89,5 +107,48 @@ describe("workbook health", () => {
     expect(messages.some((message: string) => message.includes("2026 年 CRM 核对可生成。"))).toBe(true);
     expect(messages.some((message: string) => message.includes("2026 年 CRM 有 1 人重复安排。"))).toBe(true);
     expect(messages.some((message: string) => message.includes("工作表“新雇员培训”当前不参与培训皇帝监控。"))).toBe(true);
+  });
+
+  it("checks attendee consistency only for security and TSA sessions with the same date range", () => {
+    const sameStart = makeDate(2026, 5, 10);
+    const sameEnd = makeDate(2026, 5, 11);
+    const workbook = buildSecurityTsaWorkbook([
+      ["1001", "张三", "航空安保", "否", sameStart, sameEnd, "", ""],
+      ["1002", "李四", "航空安保", "否", sameStart, sameEnd, "", ""],
+      ["1005", "已取消", "航空安保", "否", sameStart, sameEnd, "", "取消"],
+      ["1003", "日期不同", "航空安保", "否", makeDate(2026, 6, 1), makeDate(2026, 6, 1), "", ""]
+    ], [
+      ["1001", "张三", "TSA", "是", sameStart, sameEnd, "", ""],
+      ["1004", "王五", "TSA", "否", sameStart, sameEnd, "", ""],
+      ["1003", "日期不同", "TSA", "否", makeDate(2026, 6, 2), makeDate(2026, 6, 2), "", ""]
+    ]);
+    const analysis = Scanner.analyzeWorkbook(workbook);
+    const result = WorkbookHealth.buildWorkbookHealth(workbook, analysis, Scanner, { crmYear: 2026 });
+    const consistencyItems = result.items.filter((item: any) => item.area === "安保 / TSA 名单");
+
+    expect(consistencyItems).toHaveLength(1);
+    expect(consistencyItems[0].level).toBe("warning");
+    expect(consistencyItems[0].message).toBe("2026-05-10 至 2026-05-11 名单不一致。");
+    expect(consistencyItems[0].detail).toContain("仅航空安保：1002 / 李四（第3行）");
+    expect(consistencyItems[0].detail).toContain("仅 TSA：1004 / 王五（第3行）");
+    expect(consistencyItems[0].detail).not.toContain("已取消");
+    expect(consistencyItems[0].detail).not.toContain("日期不同");
+  });
+
+  it("does not warn when security and TSA attendee lists match for the same date range", () => {
+    const start = makeDate(2026, 7, 8);
+    const end = makeDate(2026, 7, 9);
+    const matchingRows = [
+      ["1001", "张三", "", "否", start, end, "", ""],
+      ["1002", "李四", "", "是", start, end, "", ""]
+    ];
+    const workbook = buildSecurityTsaWorkbook(
+      matchingRows.map((row) => [...row.slice(0, 2), "航空安保", ...row.slice(3)]),
+      matchingRows.map((row) => [...row.slice(0, 2), "TSA", ...row.slice(3)])
+    );
+    const analysis = Scanner.analyzeWorkbook(workbook);
+    const result = WorkbookHealth.buildWorkbookHealth(workbook, analysis, Scanner, { crmYear: 2026 });
+
+    expect(result.items.filter((item: any) => item.area === "安保 / TSA 名单")).toHaveLength(0);
   });
 });

@@ -8,7 +8,7 @@ const workflows: WorkflowItem[] = [
     {
         id: "lock-entry",
         name: "锁班",
-        entries: ["text-joiner", "crew-match-name-id", "lock-entry-helper"]
+        entries: ["text-joiner", "crew-match-name-id", "lock-entry-helper", "training-workbench"]
     },
     {
         id: "manual-review",

@@ -36,7 +36,11 @@ describe("tool index data", () => {
     const homepage = fs.readFileSync(resolveFromRoot("public", "tool", "index.html"), "utf8");
 
     expect(workflows).toEqual([
-      { id: "lock-entry", name: "锁班", entries: ["text-joiner", "crew-match-name-id", "lock-entry-helper"] },
+      {
+        id: "lock-entry",
+        name: "锁班",
+        entries: ["text-joiner", "crew-match-name-id", "lock-entry-helper", "training-workbench"]
+      },
       { id: "manual-review", name: "手册", entries: ["pdf-stamp", "proof-king", "audit-king"] },
       {
         id: "qualification-operations",

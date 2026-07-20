@@ -4,13 +4,38 @@
   const TrainingRecordPolicy = window.TrainingTool.TrainingRecordPolicy;
   const CrmAnnual = window.TrainingTool.CrmAnnual;
 
-  const LEVELS = {
+  type HealthLevel = "error" | "warning" | "info";
+
+  interface WorkbookHealthResult {
+    items: Array<{
+      level: HealthLevel;
+      levelLabel: string;
+      area: string;
+      message: string;
+      detail: string;
+    }>;
+    summary: Record<HealthLevel, number>;
+  }
+
+  const LEVELS: Record<HealthLevel, string> = {
     error: "严重",
     warning: "警告",
     info: "提示"
   };
 
-  function createResult() {
+  interface SecurityTsaPersonEntry {
+    key: string;
+    label: string;
+    rowNumber: number;
+  }
+
+  interface SecurityTsaSessionGroup {
+    startDate: string;
+    endDate: string;
+    people: Map<string, SecurityTsaPersonEntry>;
+  }
+
+  function createResult(): WorkbookHealthResult {
     return {
       items: [],
       summary: {
@@ -21,8 +46,14 @@
     };
   }
 
-  function addItem(result, level, area, message, detail = "") {
-    result.items.push({ level, levelLabel: LEVELS[level] || level, area, message, detail });
+  function addItem(
+    result: WorkbookHealthResult,
+    level: HealthLevel,
+    area: string,
+    message: string,
+    detail = ""
+  ): void {
+    result.items.push({ level, levelLabel: LEVELS[level], area, message, detail });
     result.summary[level] += 1;
   }
 
@@ -129,6 +160,95 @@
     });
   }
 
+  function buildSecurityTsaSessionGroups(
+    project: TrainingToolProjectAnalysis
+  ): Map<string, SecurityTsaSessionGroup> {
+    const groups = new Map<string, SecurityTsaSessionGroup>();
+    const sheetInfo = project.sheetInfo;
+    if (!sheetInfo) return groups;
+
+    sheetInfo.rows.forEach((row: TrainingToolSheetRow) => {
+      const recordState = TrainingRecordPolicy.classify(row, sheetInfo);
+      if (!recordState.active) return;
+
+      const startDate = Utils.parseDate(Utils.getValueByHeader(row, sheetInfo, "培训开始日期"));
+      const endDate = Utils.parseDate(Utils.getValueByHeader(row, sheetInfo, "培训结束日期"));
+      if (!startDate || !endDate) return;
+
+      const employeeId = Utils.normalizeText(Utils.getValueByHeader(row, sheetInfo, "员工号"));
+      const name = Utils.normalizeText(Utils.getValueByHeader(row, sheetInfo, "姓名"));
+      if (!employeeId && !name) return;
+
+      const startDateText = Utils.formatDate(startDate);
+      const endDateText = Utils.formatDate(endDate);
+      const sessionKey = `${startDateText}@@${endDateText}`;
+      const personKey = employeeId ? `id:${employeeId}` : `name:${name}`;
+      const group = groups.get(sessionKey) || {
+        startDate: startDateText,
+        endDate: endDateText,
+        people: new Map<string, SecurityTsaPersonEntry>()
+      };
+
+      if (!group.people.has(personKey)) {
+        group.people.set(personKey, {
+          key: personKey,
+          label: [employeeId, name].filter(Boolean).join(" / "),
+          rowNumber: row.rowNumber
+        });
+      }
+      groups.set(sessionKey, group);
+    });
+
+    return groups;
+  }
+
+  function formatSessionPerson(entry: SecurityTsaPersonEntry): string {
+    return `${entry.label}（第${entry.rowNumber}行）`;
+  }
+
+  function checkSecurityTsaAttendees(
+    result: WorkbookHealthResult,
+    analysis: TrainingToolAnalysis
+  ): void {
+    const securityProject = analysis.projectMap.get("航空安保");
+    const tsaProject = analysis.projectMap.get("TSA");
+    if (!securityProject || !tsaProject) return;
+
+    const securityGroups = buildSecurityTsaSessionGroups(securityProject);
+    const tsaGroups = buildSecurityTsaSessionGroups(tsaProject);
+
+    securityGroups.forEach((securityGroup, sessionKey) => {
+      const tsaGroup = tsaGroups.get(sessionKey);
+      if (!tsaGroup) return;
+
+      const securityOnly = [...securityGroup.people.values()]
+        .filter((person) => !tsaGroup.people.has(person.key));
+      const tsaOnly = [...tsaGroup.people.values()]
+        .filter((person) => !securityGroup.people.has(person.key));
+      if (!securityOnly.length && !tsaOnly.length) return;
+
+      const dateLabel = securityGroup.startDate === securityGroup.endDate
+        ? securityGroup.startDate
+        : `${securityGroup.startDate} 至 ${securityGroup.endDate}`;
+      const details = [
+        securityOnly.length
+          ? `仅航空安保：${securityOnly.map(formatSessionPerson).join("、")}`
+          : "",
+        tsaOnly.length
+          ? `仅 TSA：${tsaOnly.map(formatSessionPerson).join("、")}`
+          : ""
+      ].filter(Boolean);
+
+      addItem(
+        result,
+        "warning",
+        "安保 / TSA 名单",
+        `${dateLabel} 名单不一致。`,
+        details.join("；")
+      );
+    });
+  }
+
   function checkCrm(result, workbook, analysis, scanner, yearValue) {
     const year = CrmAnnual.normalizeYear(yearValue || new Date().getFullYear());
     const crmLikeSheets = workbook.SheetNames.filter((name) => Utils.normalizeText(name).includes("CRM"));
@@ -201,6 +321,7 @@
 
     checkPeopleSheet(result, analysis);
     checkProjects(result, analysis);
+    checkSecurityTsaAttendees(result, analysis);
     checkCrm(result, workbook, analysis, scanner, healthOptions.crmYear);
     checkIgnoredSheets(result, workbook, analysis);
 
