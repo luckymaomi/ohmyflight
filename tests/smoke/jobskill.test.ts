@@ -23,12 +23,12 @@ function localMarkdownImages(markdown: string): string[] {
 }
 
 describe("jobskill subsite", () => {
-  it("publishes the six indexed business skills", () => {
+  it("publishes the seven indexed business skills", () => {
     const items = loadPublishedItems();
     const names = items.map(([name]) => name);
     const relativePaths = items.map(([, relativePath]) => relativePath);
 
-    expect(items).toHaveLength(6);
+    expect(items).toHaveLength(7);
     expect(new Set(names).size).toBe(items.length);
     expect(new Set(relativePaths).size).toBe(items.length);
 
