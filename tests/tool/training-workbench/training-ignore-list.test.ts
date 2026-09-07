@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { TrainingToolTrainingIgnoreList as TrainingIgnoreList } from "../../../src/tool/app/training-workbench/scripts/training-ignore-list";
 
 describe("training ignore list", () => {
-  it.each(["程春林", "宋云龙", "邢晓楠"])("ignores every monitored qualification for non-flying person %s", (name) => {
+  it.each(["程春林", "宋云龙", "邢晓楠", "于炳贤"])("ignores every monitored qualification for non-flying person %s", (name) => {
     expect(TrainingIgnoreList.shouldIgnore({ name }, "危险品")).toBe(true);
     expect(TrainingIgnoreList.shouldIgnore({ name }, "飞行作风")).toBe(true);
     expect(TrainingIgnoreList.shouldIgnore({ name }, "汉语能力")).toBe(true);

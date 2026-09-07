@@ -29,6 +29,12 @@ const Utils = TrainingToolUtils;
       reason: "自动过滤清单：不飞人员，所有资质均不用监控。"
     },
     {
+      name: "于炳贤",
+      projects: [],
+      ignoreAllProjects: true,
+      reason: "自动过滤清单：不飞人员，所有资质均不用监控。"
+    },
+    {
       name: "沈欣",
       projects: ["航空安保", "TSA"],
       reason: "自动过滤清单：安保教员不用管航空安保和TSA。"
